@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO="static-pages"
-GITHUB_USER="markyoyoh"
+GITHUB_USER="yolandastarGit"
 BASE_URL="https://${GITHUB_USER}.github.io/${REPO}"
 
 usage() {

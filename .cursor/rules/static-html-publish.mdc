@@ -10,10 +10,10 @@ alwaysApply: true
 
 ## 配置
 
-- GitHub 用户名: `markyoyoh`
+- GitHub 用户名: `yolandastarGit`
 - 仓库名: `static-pages`
 - 页面目录: `pages/`
-- 基础 URL: `https://markyoyoh.github.io/static-pages`
+- 基础 URL: `https://yolandastarGit.github.io/static-pages`
 
 ## 发布步骤
 
@@ -27,7 +27,7 @@ alwaysApply: true
    ```
 4. 向用户返回完整链接:
    ```
-   https://markyoyoh.github.io/static-pages/pages/{文件名}.html
+   https://yolandastarGit.github.io/static-pages/pages/{文件名}.html
    ```
 5. 提醒：首次推送后 GitHub Actions 部署约需 1–2 分钟
 

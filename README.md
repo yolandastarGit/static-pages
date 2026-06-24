@@ -5,7 +5,7 @@
 ## 链接格式
 
 ```
-https://markyoyoh.github.io/static-pages/pages/你的文件名.html
+https://yolandastarGit.github.io/static-pages/pages/你的文件名.html
 ```
 
 ## 首次设置（只需做一次）
@@ -21,13 +21,13 @@ https://markyoyoh.github.io/static-pages/pages/你的文件名.html
 
 ```bash
 cd "/Users/yolandaw-/Documents/仓库"
-git remote add origin https://github.com/markyoyoh/static-pages.git
+git remote add origin https://github.com/yolandastarGit/static-pages.git
 git push -u origin main
 ```
 
 ### 3. 开启 GitHub Pages
 
-1. 打开 https://github.com/markyoyoh/static-pages/settings/pages
+1. 打开 https://github.com/yolandastarGit/static-pages/settings/pages
 2. **Source** 选 **GitHub Actions**
 3. 推送代码后，Actions 会自动部署（约 1–2 分钟）
 
