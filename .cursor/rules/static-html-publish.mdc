@@ -1,0 +1,38 @@
+---
+description: 发布静态 HTML 到 GitHub Pages 并返回分享链接
+globs: pages/**/*.html
+alwaysApply: true
+---
+
+# 静态 HTML 发布流程
+
+当用户提供静态 HTML 文件或 HTML 内容时，自动完成发布并返回可访问链接。
+
+## 配置
+
+- GitHub 用户名: `markyoyoh`
+- 仓库名: `static-pages`
+- 页面目录: `pages/`
+- 基础 URL: `https://markyoyoh.github.io/static-pages`
+
+## 发布步骤
+
+1. 将 HTML 保存到 `pages/{文件名}.html`（文件名用小写英文、数字、连字符，如 `report-2024.html`）
+2. 若用户未指定文件名，根据内容生成简短 slug
+3. 执行 git 提交并推送:
+   ```bash
+   git add pages/{文件名}.html
+   git commit -m "publish: {文件名}.html"
+   git push origin main
+   ```
+4. 向用户返回完整链接:
+   ```
+   https://markyoyoh.github.io/static-pages/pages/{文件名}.html
+   ```
+5. 提醒：首次推送后 GitHub Actions 部署约需 1–2 分钟
+
+## 注意
+
+- 不要修改 `.github/workflows/deploy-pages.yml` 除非用户明确要求
+- 若 remote 未配置或 push 失败，告知用户按 README 完成首次设置
+- 返回链接时使用 markdown 链接格式，方便用户点击
