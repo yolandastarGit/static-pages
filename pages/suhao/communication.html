@@ -68,9 +68,22 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<script>window.CRM_MODULE_FILE="communication.html";</script>
 <script src="assets/shared.js"></script>
 <script src="assets/router.js"></script>
-<script>bootstrapLoginPage();</script>
+<script>document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && isAIDrawerOpen) setIsAIDrawerOpen(false);
+  if(e.key==="Escape" && openRowActionMenuId){ closeRowActionMenu(); syncRowActionMenus(); }
+});
+document.addEventListener("click",e=>{
+  if(!openRowActionMenuId) return;
+  if(e.target.closest(".row-action-more-wrap")) return;
+  closeRowActionMenu();
+  syncRowActionMenus();
+});
+document.addEventListener("scroll",repositionOpenRowActionMenu,true);
+window.addEventListener("resize",repositionOpenRowActionMenu);
+bootstrapModulePage("communication-desk");</script>
 
 </body>
 </html>
