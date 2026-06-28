@@ -16,7 +16,7 @@ import {
   toolbar
 } from "./components.js";
 import { customerName, formatCurrency, leadName, siteName, userName } from "./data.js";
-import { getAppPathname, navigate, queryParams, withQuery } from "./router.js";
+import { navigate, queryParams, withQuery } from "./router.js";
 import { canOperate, mutate, openDrawer, openModal, setSelectedRows, state, toast } from "./store.js";
 import { loginAs, logout } from "./store.js";
 
@@ -1576,7 +1576,7 @@ function userCenterPage(title, children) {
   return h("div", {}, [
     pageHeader({ title, description: "用户中心为非菜单入口，由 Header 用户头像进入。", breadcrumbs: ["用户中心", title] }),
     h("div", { class: "role-shell user-center-shell" }, [
-      h("div", { class: "role-list" }, links.map(([label, path]) => h("a", { href: path, class: `folder-item ${getAppPathname() === path ? "active" : ""}`, onclick: (event) => { event.preventDefault(); navigate(path); } }, label))),
+      h("div", { class: "role-list" }, links.map(([label, path]) => h("a", { href: path, class: `folder-item ${window.location.pathname === path ? "active" : ""}`, onclick: (event) => { event.preventDefault(); navigate(path); } }, label))),
       h("div", { class: "section-body" }, children)
     ])
   ]);

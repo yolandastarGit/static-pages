@@ -1,6 +1,6 @@
 import { drawerLayer, h, icon, modalLayer, noPermission, notificationTrigger, toastLayer } from "./components.js";
 import { navigation, users } from "./data.js";
-import { getAppLocation, getAppPathname, getCurrentRoute, navigate, replace } from "./router.js";
+import { getCurrentRoute, navigate, replace } from "./router.js";
 import { canAccess, closeAllChromeTabs, closeChromeTab, closeOtherChromeTabs, logout, notify, openChromeTab, setUser, state } from "./store.js";
 import {
   AcquisitionAnalyticsPage,
@@ -77,7 +77,7 @@ export const routes = [
 ];
 
 export function App() {
-  if (getAppPathname() === "/") replace("/dashboard");
+  if (window.location.pathname === "/") replace("/dashboard");
   const { route, params } = getCurrentRoute();
   if (!state.auth.loggedIn && !route?.public) {
     replace(state.auth.expired ? "/session-expired" : "/login");
@@ -86,7 +86,7 @@ export function App() {
   const currentRoute = current.route;
   const currentParams = current.params;
   if (currentRoute && !currentRoute.public && canAccess(currentRoute.pageId)) {
-    openChromeTab({ path: getAppLocation(), title: currentRoute.title, pageId: currentRoute.pageId });
+    openChromeTab({ path: window.location.pathname + window.location.search, title: currentRoute.title, pageId: currentRoute.pageId });
   }
   const content = currentRoute && (currentRoute.public || canAccess(currentRoute.pageId)) ? currentRoute.render(currentParams) : currentRoute ? noPermission() : NotFoundPage();
 
@@ -152,8 +152,8 @@ function navLink(item, activeRoute) {
 }
 
 function dynamicTabs(activeRoute) {
-  const activePath = getAppLocation();
-  const activePathname = getAppPathname();
+  const activePath = window.location.pathname + window.location.search;
+  const activePathname = window.location.pathname;
   const tabs = state.ui.openTabs.length ? state.ui.openTabs : [{ path: "/dashboard", title: "工作台", pageId: "dashboard", pinned: true }];
   return h("div", { class: "chrome-tabs-shell" }, [
     h("div", { class: "chrome-tabs", role: "tablist" }, tabs.map((item) =>
