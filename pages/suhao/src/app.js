@@ -15,7 +15,6 @@ import {
   FirstLoginPasswordPage,
   ForbiddenPage,
   ForgotPasswordPage,
-  FollowLogsPage,
   LeadDetailPage,
   LeadsPage,
   LoginPage,
@@ -32,7 +31,6 @@ import {
   SalesAnalyticsPage,
   ServerErrorPage,
   SessionExpiredPage,
-  SiteConfigPage,
   SiteDetailPage,
   SitesPage,
   UsersPage,
@@ -53,7 +51,6 @@ export const routes = [
   { path: "/communication/whatsapp", pageId: "whatsapp", title: "WhatsApp", render: WhatsappPage },
   { path: "/leads", pageId: "lead-list", title: "线索列表", render: LeadsPage },
   { path: "/leads/public-pool", pageId: "public-pool", title: "公海池", render: PublicPoolPage },
-  { path: "/leads/follow-logs", pageId: "lead-list", title: "跟进日志", render: FollowLogsPage },
   { path: "/leads/:id", pageId: "lead-list", title: "线索详情", render: LeadDetailPage },
   { path: "/customers", pageId: "customer-list", title: "客户列表", render: CustomersPage },
   { path: "/customers/:id", pageId: "customer-list", title: "客户详情", render: CustomerDetailPage },
@@ -64,7 +61,6 @@ export const routes = [
   { path: "/analytics/customers", pageId: "customer-analytics", title: "客户经营", render: CustomerAnalyticsPage },
   { path: "/sites", pageId: "site-management", title: "站点管理", render: SitesPage },
   { path: "/sites/:id", pageId: "site-management", title: "站点详情", render: SiteDetailPage },
-  { path: "/sites/:id/config", pageId: "site-management", title: "站点配置", render: SiteConfigPage },
   { path: "/user/profile", pageId: "dashboard", title: "我的资料", render: ProfilePage },
   { path: "/user/bindings", pageId: "dashboard", title: "账号绑定", render: AccountBindingPage },
   { path: "/user/password", pageId: "dashboard", title: "修改密码", render: ChangePasswordPage },
@@ -106,6 +102,8 @@ export function App() {
 function sidebar(activeRoute) {
   const activeGroupId = activeRoute ? findActiveGroupId(activeRoute.pageId) : "dashboard";
   const expandedGroupId = state.ui.expandedMenu || readExpandedMenu() || activeGroupId;
+  const parentGroups = navigation.filter((item) => item.children?.length);
+  const visibleChildren = (item) => item.children.filter((child) => canAccess(child.id));
   return h("aside", { class: "sidebar" }, [
     h("div", { class: "brand" }, [
       h("div", { class: "brand-mark" }, "AI"),
@@ -114,16 +112,21 @@ function sidebar(activeRoute) {
     h(
       "nav",
       {},
-      navigation.map((item) =>
-        h("div", { class: "nav-group" }, [
-          item.path
+      navigation.map((item) => {
+        const children = item.children ? visibleChildren(item) : [];
+        const isOpen = expandedGroupId === item.id;
+        const parentIndex = parentGroups.findIndex((group) => group.id === item.id);
+        return h("div", { class: `nav-group ${isOpen ? "open" : ""}` }, [
+          item.path || !children.length
             ? navLink(item, activeRoute)
             : h(
                 "button",
                 {
-                  class: `nav-parent ${expandedGroupId === item.id ? "open" : ""} ${activeGroupId === item.id ? "current" : ""}`,
+                  class: `nav-parent ${isOpen ? "open" : ""} ${activeGroupId === item.id ? "current" : ""}`,
+                  "aria-expanded": String(isOpen),
+                  "aria-controls": `nav-children-${item.id}`,
                   onclick: () => {
-                    const next = expandedGroupId === item.id ? "" : item.id;
+                    const next = isOpen ? "" : item.id;
                     state.ui.expandedMenu = next;
                     writeExpandedMenu(next);
                     notify();
@@ -134,11 +137,15 @@ function sidebar(activeRoute) {
                   h("span", { class: "nav-caret" }, "›")
                 ]
               ),
-          item.children && expandedGroupId === item.id
-            ? h("div", { class: "nav-children" }, item.children.filter((child) => canAccess(child.id)).map((child) => navLink(child, activeRoute)))
+          item.children
+            ? h("div", {
+                id: `nav-children-${item.id}`,
+                class: `nav-children ${isOpen ? "open" : ""}`,
+                style: `--child-count:${Math.max(children.length, 1)};--parent-index:${Math.max(parentIndex, 0)}`
+              }, children.map((child) => navLink(child, activeRoute)))
             : null
-        ])
-      )
+        ]);
+      })
     )
   ]);
 }

@@ -764,12 +764,12 @@ export const notifications = [
   {
     id: "noti-010",
     type: "site",
-    title: "站点配置更新",
-    summary: "全球旗舰商城已更新公海自动回收规则。",
+    title: "站点状态更新",
+    summary: "全球旗舰商城站点运行状态已更新。",
     module: "站点中心",
     time: "2026-06-28 09:02",
     read: true,
-    target: "/sites/global-shop/config"
+    target: "/sites/global-shop"
   }
 ];
 

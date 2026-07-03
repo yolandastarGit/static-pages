@@ -325,10 +325,6 @@ function notificationTargetExists(target = "") {
   if (path.startsWith("/leads/")) return state.data.leads.some((lead) => `/leads/${lead.id}` === path);
   if (path.startsWith("/customers/")) return state.data.customers.some((customer) => `/customers/${customer.id}` === path);
   if (path.startsWith("/contracts/")) return state.data.contracts.some((contract) => `/contracts/${contract.id}` === path);
-  if (path.startsWith("/sites/") && path.endsWith("/config")) {
-    const siteId = path.split("/")[2];
-    return state.data.sites.some((site) => site.id === siteId);
-  }
   if (path.startsWith("/sites/")) {
     const siteId = path.split("/")[2];
     return state.data.sites.some((site) => site.id === siteId);

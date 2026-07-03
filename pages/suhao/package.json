@@ -8,5 +8,8 @@
     "start": "node scripts/dev-server.mjs",
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "^24.43.1"
   }
 }

@@ -425,7 +425,6 @@ export function LeadsPage() {
     selected.length === 1 ? button("录入跟进", { variant: "primary", permission: "follow", onClick: () => openFollowDrawer(rows.find((lead) => lead.id === selected[0])) }) : null,
     selected.length ? button("批量分配", { permission: "assign", onClick: () => openAssignLeadModal(selected) }) : null,
     selected.length ? button("回收", { variant: "danger", permission: "recycle", onClick: () => openRecycleLeadModal(selected) }) : null,
-    button("跟进日志", { onClick: () => navigate("/leads/follow-logs") }),
     button("刷新", { iconName: "refresh", onClick: () => toast("线索列表已刷新") }),
     button("导出", { iconName: "export", permission: "export", onClick: () => toast("已创建线索导出任务") })
   ];
@@ -580,22 +579,6 @@ function followLogTable(leadId = "") {
       { label: "内容", render: (log) => log.content },
       { label: "下次跟进", render: (log) => log.nextFollow || "-" }
     ]
-  });
-}
-
-export function FollowLogsPage() {
-  return listPage({
-    title: "跟进日志",
-    desc: "查看授权范围内所有线索的跟进记录。",
-    breadcrumbs: ["线索中心", "线索列表", "跟进日志"],
-    actions: [button("返回线索列表", { onClick: () => navigate("/leads") }), button("导出", { iconName: "export", permission: "export", onClick: () => toast("已创建跟进日志导出任务") })],
-    fields: [
-      { label: "时间范围", type: "date" },
-      { label: "跟进人", type: "select", options: ["全部", ...ownerOptions()], value: "全部" },
-      { label: "线索关键词", placeholder: "线索编号或名称" },
-      { label: "跟进方式", type: "select", options: ["全部", "电话", "邮件", "WhatsApp", "会议", "拜访", "备注"], value: "全部" }
-    ],
-    table: followLogTable()
   });
 }
 
@@ -1085,7 +1068,7 @@ export function SitesPage() {
   const rows = state.data.sites;
   return listPage({
     title: "站点管理",
-    desc: "管理所有销售站点、联系方式和站点配置入口。",
+    desc: "管理所有销售站点、联系方式和运行状态。",
     breadcrumbs: ["站点中心", "站点管理"],
     actions: [button("新增站点", { variant: "primary", iconName: "plus", onClick: () => openSiteDrawer() }), button("刷新", { iconName: "refresh", onClick: () => toast("站点列表已刷新") })],
     fields: [{ label: "站点关键词", placeholder: "站点名称或编码" }],
@@ -1103,8 +1086,7 @@ export function SitesPage() {
                 site.status === "启用"
                   ? confirmAction({ title: "停用站点", message: "停用后该站点将不再接收新消息，历史数据保留。", danger: true, okText: "停用" })
                   : toast("站点已启用")
-            }),
-            button("配置", { variant: "text", onClick: () => navigate(`/sites/${site.id}/config`) })
+            })
           ])
       })),
       columns: [
@@ -1142,7 +1124,7 @@ export function SiteDetailPage({ id }) {
       title: site.name,
       description: `${site.code} · ${tag(site.status).outerHTML}`,
       breadcrumbs: ["站点中心", "站点管理", "站点详情"],
-      actions: [button("进入配置", { variant: "primary", onClick: () => navigate(`/sites/${site.id}/config`) }), button("返回列表", { onClick: () => navigate("/sites") })]
+      actions: [button("返回列表", { onClick: () => navigate("/sites") })]
     }),
     h("div", { class: "metrics-grid" }, [
       metricCard("线索总数", String(state.data.leads.filter((lead) => lead.siteId === site.id).length), "该站点下"),
@@ -1158,72 +1140,14 @@ export function SiteDetailPage({ id }) {
         { label: "联系邮箱", value: site.email },
         { label: "WhatsApp", value: site.whatsapp },
         { label: "创建时间", value: site.createdAt },
-        { label: "配置摘要", value: `阶段 ${site.config.stageCount} · 公海 ${site.config.publicPool} · AI ${site.config.ai} · 系统规则 ${site.config.rules}` }
+        { label: "运行摘要", value: `阶段 ${site.config.stageCount} · 公海 ${site.config.publicPool} · AI ${site.config.ai} · 系统规则 ${site.config.rules}` }
       ])
     ])
   ]);
 }
 
-export function SiteConfigPage({ id }) {
-  const site = state.data.sites.find((item) => item.id === id);
-  if (!site) return emptyState("站点不存在", "请返回站点管理重新选择。");
-  return h("div", {}, [
-    pageHeader({
-      title: `${site.name} · 站点配置`,
-      description: `${site.code} · 各配置分组独立保存`,
-      breadcrumbs: ["站点中心", "站点管理", "站点配置"],
-      actions: [button("返回详情", { onClick: () => navigate(`/sites/${site.id}`) })]
-    }),
-    tabs(
-      [
-        { id: "contact", label: "联系方式", render: () => configForm([{ label: "联系邮箱", value: site.email }, { label: "WhatsApp", value: site.whatsapp }]) },
-        { id: "process", label: "业务流程", render: () => stageConfig(site) },
-        { id: "pool", label: "公海规则", render: () => configForm([{ label: "启用自动回收", type: "select", options: ["开启", "关闭"], value: site.config.publicPool }, { label: "回收超时时长", value: "7 天" }]) },
-        { id: "ai", label: "AI 规则", render: () => configForm([{ label: "启用 AI 识别", type: "select", options: ["开启", "关闭"], value: site.config.ai }]) },
-        { id: "rules", label: "系统规则", render: () => ruleConfig() }
-      ],
-      "contact",
-      () => {}
-    )
-  ]);
-}
-
 function configForm(fields) {
   return section("配置项", [simpleForm(fields), h("div", { class: "page-actions", style: "margin-top:12px" }, [button("保存配置", { variant: "primary", onClick: () => toast("配置已保存") })])]);
-}
-
-function stageConfig(site) {
-  return section("阶段管理", [
-    dataTable({
-      selectable: false,
-      rows: site.stages.map((stage, index) => ({ id: `${stage.name}-${index}`, ...stage, actions: () => rowActionButtons([button("编辑", { variant: "text", onClick: () => toast("阶段已更新") }), button("删除", { variant: "text", onClick: () => confirmAction({ title: "删除阶段", message: "该阶段可能已被线索引用，确认删除吗？", danger: true, okText: "删除" }) })]) })),
-      columns: [
-        { label: "阶段名称", fixed: true, render: (stage) => stage.name },
-        { label: "触发高意向", render: (stage) => (stage.highIntent ? tag("启用") : tag("停用")) },
-        { label: "排序", render: (_, index) => index + 1 }
-      ]
-    })
-  ], [button("新增阶段", { variant: "primary", iconName: "plus", onClick: () => toast("已新增阶段") })]);
-}
-
-function ruleConfig() {
-  const rows = [
-    { id: "rule-1", name: "询价关键词", keywords: "quote,buy,purchase", logic: "包含任一", priority: 10, status: "启用" },
-    { id: "rule-2", name: "屏蔽内部域名", keywords: "internal,test", logic: "包含任一", priority: 1, status: "停用" }
-  ];
-  return section("关键词规则", [
-    dataTable({
-      selectable: false,
-      rows: rows.map((row) => ({ ...row, actions: () => rowActionButtons([button("编辑", { variant: "text", onClick: () => toast("规则已更新") }), button("启用/停用", { variant: "text", onClick: () => toast("规则状态已更新") })]) })),
-      columns: [
-        { label: "规则名称", fixed: true, render: (row) => row.name },
-        { label: "关键词", render: (row) => row.keywords },
-        { label: "匹配逻辑", render: (row) => row.logic },
-        { label: "优先级", render: (row) => row.priority },
-        { label: "状态", render: (row) => tag(row.status) }
-      ]
-    })
-  ], [button("新增规则", { variant: "primary", iconName: "plus", onClick: () => toast("规则已新增") })]);
 }
 
 export function UsersPage() {

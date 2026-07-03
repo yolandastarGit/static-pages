@@ -145,7 +145,7 @@ button {
 
 .nav-caret {
   color: var(--sidebar-muted);
-  transition: transform 160ms ease;
+  transition: transform 180ms ease, color 180ms ease;
 }
 
 .nav-parent.open .nav-caret {
@@ -157,23 +157,25 @@ button {
   margin: 4px 0 6px;
   padding: 0;
   border-left: 0;
-  animation: menuIn 120ms ease-out;
+  max-height: calc(var(--child-count, 1) * 42px + 10px);
+  opacity: 1;
+  overflow: hidden;
+  transform: translateY(0);
+  transition: max-height 220ms ease, opacity 180ms ease, margin 180ms ease, transform 180ms ease;
+}
+
+.nav-children:not(.open) {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
 }
 
 .nav-children .nav-item {
   padding-left: 40px;
   font-size: 13px;
-}
-
-@keyframes menuIn {
-  from {
-    opacity: 0;
-    transform: translateY(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 svg {
