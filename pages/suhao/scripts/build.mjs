@@ -25,20 +25,10 @@ function injectVersion(content, file) {
   if (file === "index.html") {
     next = next.replace(/href="\.\/src\/styles\.css(\?v=[^"]*)?"/, `href="./src/styles.css?v=${version}"`);
     next = next.replace(/src="\.\/src\/main\.js(\?v=[^"]*)?"/, `src="./src/main.js?v=${version}"`);
-    if (!next.includes("<base ")) {
-      next = next.replace(
-        "<head>",
-        `<head>\n    <base href="https://yolandastarGit.github.io/static-pages/pages/suhao/" />`
-      );
-    }
-    if (!next.includes("deploy-version")) {
-      next = next.replace("</head>", `    <meta name="deploy-version" content="${version}" />\n  </head>`);
-    } else {
-      next = next.replace(/content="[^"]*"\s*\/>[\s\S]*?<meta name="deploy-version"/, `content="${version}" />\n    <meta name="deploy-version"`);
-      next = next.replace(/<meta name="deploy-version" content="[^"]*"/, `<meta name="deploy-version" content="${version}"`);
-    }
+    next = next.replace(/<meta name="deploy-version" content="[^"]*"/, `<meta name="deploy-version" content="${version}"`);
   }
   if (file === "src/main.js") {
+    next = next.replace(/^console\.info\("\[suhao deploy [^"]+"\);\n?/, "");
     next = `console.info("[suhao deploy ${version}]");\n${next}`;
   }
   return next;
