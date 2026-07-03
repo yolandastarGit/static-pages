@@ -16,9 +16,10 @@ window.CRMUI = {
   },
   badge(text) {
     const color = {
-      "启用": "green", "停用": "gray", "跟进中": "blue", "已分配": "cyan", "高意向": "violet",
+      "启用": "green", "停用": "gray", "待跟进": "cyan", "跟进中": "blue", "已分配": "cyan", "高意向": "violet",
       "已成交": "green", "公海待分配": "amber", "无效": "gray", "丢失": "red",
-      "执行中": "blue", "已签约": "green", "已完成": "green", "已终止": "red", "已作废": "gray"
+      "执行中": "blue", "已签约": "green", "已完成": "green", "已终止": "red", "已作废": "gray",
+      "开启": "green", "关闭": "gray"
     }[text] || "gray";
     return `<span class="badge ${color}">${text}</span>`;
   },
@@ -94,5 +95,9 @@ window.CRMUI = {
   },
   formSelect(label, name, options, value = "") {
     return `<div class="form-field"><label>${label}</label><select name="${name}">${options.map(o => `<option value="${o.value}" ${o.value === value ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>`;
+  },
+  formMultiSelect(label, name, options, values = []) {
+    const selected = new Set(values);
+    return `<div class="form-field"><label>${label}</label><select name="${name}" multiple>${options.map(o => `<option value="${o.value}" ${selected.has(o.value) ? "selected" : ""}>${o.label}</option>`).join("")}</select><small class="muted">按住 Command/Ctrl 可选择多个标签</small></div>`;
   }
 };

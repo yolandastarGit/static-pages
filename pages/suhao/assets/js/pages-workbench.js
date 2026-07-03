@@ -13,8 +13,8 @@ window.CRMWorkbenchPage = {
       </div>
       <div class="grid cols-4" style="margin-top:16px">
         ${[
-          ["公海池", "待分配线索", "leads", "status=公海待分配"],
-          ["线索列表", "跟进、打标、转客户", "leads", ""],
+          ["公海池", "待分配线索", "publicPool", ""],
+          ["线索列表", "跟进、打标、转高意向客户", "leads", ""],
           ["客户列表", "客户资产沉淀", "customers", ""],
           ["合同中心", "成交合同与追溯", "contracts", ""]
         ].map(item => `<div class="card metric" data-quick="${item[2]}" data-query="${item[3]}"><div class="metric-label">${item[0]}</div><div class="metric-foot">${item[1]}</div></div>`).join("")}
@@ -57,7 +57,7 @@ window.CRMWorkbenchPage = {
   },
   renderCharts() {
     CRMUI.createChart("funnelChart", "bar", {
-      labels: ["全部消息", "识别线索", "跟进中", "高意向", "转客户"],
+      labels: ["全部消息", "识别线索", "跟进中", "高意向", "转高意向客户"],
       datasets: [{ label: "数量", data: CRM_MOCK.analytics.funnel, backgroundColor: ["#0756d8", "#3f7fe7", "#77a5ef", "#a8c3f2", "#d6e3fa"] }]
     }, { indexAxis: "y" });
     CRMUI.createChart("amountChart", "line", {

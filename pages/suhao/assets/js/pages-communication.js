@@ -11,7 +11,7 @@ window.CRMCommunicationPage = {
         <button class="btn" id="batchAi">批量 AI 提炼</button>
       </div>
       <div class="tabs">
-        ${[["unread", "未读"], ["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map((t, i) => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
+        ${[["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map(t => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
       </div>
       <div class="split">
         <div class="card" id="mailList"></div>
@@ -33,11 +33,11 @@ window.CRMCommunicationPage = {
     this.renderMailList();
   },
   folderCount(folder) {
-    return CRM_MOCK.emails.filter(mail => folder === "unread" ? !mail.read : mail.folder === folder).length;
+    return CRM_MOCK.emails.filter(mail => mail.folder === folder).length;
   },
   getFilteredMails() {
     return CRM_MOCK.emails.filter(mail => {
-      const byFolder = this.mailState.folder === "unread" ? !mail.read : mail.folder === this.mailState.folder;
+      const byFolder = mail.folder === this.mailState.folder;
       const text = `${mail.from} ${mail.subject} ${mail.body}`.toLowerCase();
       return byFolder && text.includes(this.mailState.query);
     });
@@ -104,6 +104,7 @@ window.CRMCommunicationPage = {
         ${CRMUI.formInput("联系人", "contact", mail.senderName)}
         ${CRMUI.formInput("邮箱", "email", mail.from.match(/<(.+)>/)?.[1] || "")}
         <div class="form-field"><label>来源站点</label><select name="siteId" required><option value="">请选择</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></div>
+        ${CRMUI.formSelect("采购意向", "purchaseIntent", (CRM_MOCK.purchaseIntentOptions || []).map(v => ({ value: v, label: v })))}
       </div>`, form => {
       const lead = {
         id: `l${Date.now()}`,
@@ -118,6 +119,7 @@ window.CRMCommunicationPage = {
         status: "公海待分配",
         stage: "待首响",
         products: ["待识别"],
+        purchaseIntent: form.get("purchaseIntent"),
         aiTags: mail.aiTags,
         manualTags: [],
         createdAt: "2026-07-02 12:00",

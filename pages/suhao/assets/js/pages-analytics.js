@@ -69,7 +69,7 @@ window.CRMAnalyticsPage = {
       { title: "排名", render: r => r.rank },
       { title: "业务员", render: r => r.name },
       { title: "线索数", render: () => "128" },
-      { title: "转客户数", render: () => "34" },
+      { title: "转高意向客户数", render: () => "34" },
       { title: "成交金额", render: () => "¥860,000" }
     ], rows);
   }

@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  if (!CRMAuth.requireAuth()) return;
   const page = document.body.dataset.page || "workbench";
   const routeKey = CRMRouter.currentKey(page);
   const root = CRMLayout.mount(routeKey);

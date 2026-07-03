@@ -1,24 +1,132 @@
 window.CRM_MOCK = {
   currentUser: {
     id: "u01",
-    name: "Yolanda Wang",
+    name: "管理员",
     role: "销售主管",
     roleCode: "supervisor",
-    avatar: "YW",
+    avatar: "AD",
     sites: ["s01", "s02"]
   },
+  authUsers: [
+    { username: "admin", email: "demo@example.com", password: "123456", userId: "u01" }
+  ],
   users: [
-    { id: "u01", name: "Yolanda Wang", role: "销售主管", status: "启用", siteIds: ["s01", "s02"] },
+    { id: "u01", name: "管理员", role: "销售主管", status: "启用", siteIds: ["s01", "s02"] },
     { id: "u02", name: "Chen Hao", role: "业务员", status: "启用", siteIds: ["s01"] },
     { id: "u03", name: "Mia Liu", role: "业务员", status: "启用", siteIds: ["s02"] },
     { id: "u04", name: "Alex Xu", role: "区域负责人", status: "启用", siteIds: ["s01", "s02", "s03"] }
   ],
   sites: [
-    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01" },
-    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01" },
-    { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04" }
+    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
+  ],
+  customerTags: ["北美零售", "私标客户", "德国客户", "复购", "重点客户", "长期跟进"],
+  leadTags: ["墨西哥市场", "北美零售", "德国客户", "手动录入", "大额采购", "样品优先"],
+  contactTags: ["采购经理", "决策人", "技术联系人", "财务联系人", "重点联系人"],
+  purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
+  notificationChannels: ["站内信", "钉钉"],
+  notificationTargetOptions: ["当前负责人", "创建人", "分配人", "部门负责人", "指定用户"],
+  notificationScenes: ["新线索分配", "新客户分配", "商机阶段变更", "合同到期提醒", "线索状态变更", "待跟进超时", "客户转移", "合同创建", "合同状态变更", "邮件未读数量提醒", "邮件未读超时提醒"],
+  notificationRules: [
+    { id: "nr01", scene: "新线索分配", channels: ["站内信", "钉钉"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "新线索已分配", body: "您有一条新的线索需要跟进，请及时查看线索详情。", status: "开启" },
+    { id: "nr02", scene: "新客户分配", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "新客户已分配", body: "系统已为您分配新客户，请完善客户信息并建立跟进计划。", status: "开启" },
+    { id: "nr03", scene: "商机阶段变更", channels: ["站内信", "钉钉"], targets: ["当前负责人", "创建人"], userIds: [], title: "商机阶段已变更", body: "商机阶段发生变化，请关注后续处理动作。", status: "开启" },
+    { id: "nr04", scene: "合同到期提醒", channels: ["站内信"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "合同即将到期", body: "合同即将到期，请提前确认续约或关闭计划。", status: "关闭" },
+    { id: "nr05", scene: "线索状态变更", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "线索状态变更", body: "线索状态已更新，请查看最新状态。", status: "开启" },
+    { id: "nr06", scene: "待跟进超时", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "待跟进超时提醒", body: "存在超时未跟进线索，请尽快处理。", status: "开启" },
+    { id: "nr07", scene: "客户转移", channels: ["站内信"], targets: ["当前负责人", "分配人"], userIds: [], title: "客户已转移", body: "客户负责人发生变化，请关注客户交接信息。", status: "开启" },
+    { id: "nr08", scene: "合同创建", channels: ["站内信"], targets: ["创建人", "部门负责人"], userIds: [], title: "合同已创建", body: "新的合同记录已创建，请关注审批和履约进度。", status: "开启" },
+    { id: "nr09", scene: "合同状态变更", channels: ["站内信"], targets: ["当前负责人", "创建人"], userIds: [], title: "合同状态变更", body: "合同状态已更新，请查看合同详情。", status: "开启" },
+    { id: "nr10", scene: "邮件未读数量提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "邮件未读数量提醒", body: "当前存在较多未读邮件，请及时处理。", status: "开启" },
+    { id: "nr11", scene: "邮件未读超时提醒", channels: ["站内信", "钉钉"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "邮件未读超时提醒", body: "存在长时间未读邮件，请及时查看并跟进。", status: "开启" }
   ],
   mailboxes: ["sales@industrial.example.com", "info@toys.example.com"],
+  mailServiceConfig: {
+    imapServer: "imap.qq.com",
+    imapPort: 993,
+    imapSsl: true,
+    smtpServer: "smtp.qq.com",
+    smtpPort: 465,
+    smtpSsl: true,
+    masterUsername: "719869119@qq.com",
+    masterPassword: "",
+    authMode: "MASTER_PASSWORD（子邮箱授权码）",
+    pullInterval: 1800
+  },
+  whatsappServiceConfig: {
+    provider: "Meta Cloud API",
+    baseUrl: "https://graph.facebook.com/v20.0",
+    apiKey: "wa_********",
+    accessToken: "token_********",
+    appId: "app_102938",
+    appSecret: "secret_********",
+    businessAccountId: "biz_829103",
+    phoneNumberId: "phone_561829",
+    webhookUrl: "https://crm.example.com/webhook/whatsapp",
+    webhookVerifyToken: "verify_********",
+    callbackUrl: "https://crm.example.com/callback/whatsapp",
+    timeout: 30,
+    retryCount: 3,
+    enabled: true,
+    defaultSender: "+1 650-123-4567"
+  },
+  personalEmailAccounts: [
+    { id: "pe01", userId: "u01", email: "demo@example.com", isDefault: true, status: "已验证", boundAt: "2026-06-30 10:12" },
+    { id: "pe02", userId: "u01", email: "demo.work@example.com", isDefault: false, status: "已验证", boundAt: "2026-07-01 09:20" }
+  ],
+  personalWhatsappAccount: {
+    id: "pwa01",
+    userId: "u01",
+    account: "+1 650-123-4567",
+    status: "已绑定",
+    lastSyncAt: "2026-07-03 09:30",
+    boundAt: "2026-06-28 15:40"
+  },
+  emailAccounts: [
+    {
+      id: "mail01",
+      email: "sales@industrial.example.com",
+      displayName: "工业事业部销售邮箱",
+      provider: "Google Workspace",
+      imapHost: "imap.gmail.com",
+      imapPort: "993",
+      imapSsl: "开启",
+      imapUser: "sales@industrial.example.com",
+      imapPassword: "******",
+      smtpHost: "smtp.gmail.com",
+      smtpPort: "465",
+      smtpSsl: "开启",
+      smtpUser: "sales@industrial.example.com",
+      smtpPassword: "******",
+      imapStatus: "已验证",
+      smtpStatus: "已验证",
+      isDefault: true,
+      status: "启用",
+      createdAt: "2026-06-18 10:20"
+    },
+    {
+      id: "mail02",
+      email: "info@toys.example.com",
+      displayName: "玩具站询盘邮箱",
+      provider: "Microsoft 365",
+      imapHost: "outlook.office365.com",
+      imapPort: "993",
+      imapSsl: "开启",
+      imapUser: "info@toys.example.com",
+      imapPassword: "******",
+      smtpHost: "smtp.office365.com",
+      smtpPort: "587",
+      smtpSsl: "开启",
+      smtpUser: "info@toys.example.com",
+      smtpPassword: "******",
+      imapStatus: "已验证",
+      smtpStatus: "已验证",
+      isDefault: false,
+      status: "启用",
+      createdAt: "2026-06-22 14:35"
+    }
+  ],
   emails: [
     {
       id: "m01",
@@ -75,8 +183,8 @@ window.CRM_MOCK = {
       id: "m04",
       mailbox: "sales@industrial.example.com",
       folder: "sent",
-      from: "Yolanda Wang <sales@industrial.example.com>",
-      senderName: "Yolanda Wang",
+      from: "管理员 <sales@industrial.example.com>",
+      senderName: "管理员",
       subject: "Re: Inquiry for custom CNC aluminum parts",
       summary: "Thanks for your inquiry. We can support CNC aluminum housing...",
       body: "Thanks for your inquiry. We can support CNC aluminum housing with ISO9001 and full inspection report. Please find our initial questions attached.",
@@ -92,8 +200,8 @@ window.CRM_MOCK = {
       id: "m05",
       mailbox: "sales@industrial.example.com",
       folder: "draft",
-      from: "Yolanda Wang <sales@industrial.example.com>",
-      senderName: "Yolanda Wang",
+      from: "管理员 <sales@industrial.example.com>",
+      senderName: "管理员",
       subject: "Draft: CNC sample policy",
       summary: "We can provide samples with inspection report...",
       body: "We can provide samples with inspection report. Sample fee can be refunded after bulk order confirmation.",
@@ -180,6 +288,7 @@ window.CRM_MOCK = {
       status: "跟进中",
       stage: "需求确认",
       products: ["CNC 铝件", "工业壳体"],
+      purchaseIntent: "明确采购",
       aiTags: ["高增长潜力", "批量采购"],
       manualTags: ["墨西哥市场"],
       createdAt: "2026-06-28 10:42",
@@ -201,13 +310,14 @@ window.CRM_MOCK = {
       status: "高意向",
       stage: "报价",
       products: ["毛绒玩具", "私标包装"],
+      purchaseIntent: "价格咨询",
       aiTags: ["节日订单", "认证关注"],
       manualTags: ["北美零售"],
       createdAt: "2026-07-01 16:18",
       lastFollowAt: "2026-07-02 09:20",
       nextFollowAt: "2026-07-03 14:00",
       customerId: "",
-      aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转客户并录入报价跟进。"
+      aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转高意向客户并录入报价跟进。"
     },
     {
       id: "l03",
@@ -222,6 +332,7 @@ window.CRM_MOCK = {
       status: "公海待分配",
       stage: "待首响",
       products: ["毛绒玩具", "活动礼品"],
+      purchaseIntent: "明确采购",
       aiTags: ["高意向"],
       manualTags: [],
       createdAt: "2026-07-02 09:31",
@@ -245,6 +356,7 @@ window.CRM_MOCK = {
       status: "已成交",
       stage: "合同已成交",
       products: ["五金支架"],
+      purchaseIntent: "复购扩展",
       aiTags: ["复购询盘"],
       manualTags: ["德国客户"],
       createdAt: "2026-05-18 13:22",
@@ -292,15 +404,77 @@ window.CRM_MOCK = {
     }
   ],
   contacts: [
-    { id: "p01", customerId: "c02", name: "Lucas Meyer", title: "Procurement Manager", email: "lucas@meyer-auto.de", phone: "+49 151 2345 7788", whatsapp: "+49 151 2345 7788", role: "采购经理", primary: true, aiDetected: true },
-    { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false }
+    { id: "p01", customerId: "c02", name: "Lucas Meyer", title: "Procurement Manager", email: "lucas@meyer-auto.de", phone: "+49 151 2345 7788", whatsapp: "+49 151 2345 7788", role: "采购经理", primary: true, aiDetected: true, tags: ["采购经理", "重点联系人"] },
+    { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false, tags: ["采购经理"] }
   ],
   contracts: [
     { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", status: "执行中", ownerId: "u02", attachments: ["contract-0081.pdf"] }
   ],
-  aiCapabilities: [
-    { id: "ai01", provider: "OpenAI", model: "GPT-4o", endpoint: "https://api.openai.com/v1", status: "启用", createdAt: "2026-06-01" },
-    { id: "ai02", provider: "DeepSeek", model: "DeepSeek-V3", endpoint: "https://api.deepseek.com", status: "停用", createdAt: "2026-06-10" }
+  aiConfig: {
+    api: {
+      apiKey: "sk-********",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o",
+      secret: "",
+      timeout: 30,
+      temperature: 0.2,
+      maxTokens: 4096
+    },
+    features: {
+      mailAnalysis: "开启",
+      whatsappAnalysis: "开启",
+      leadSummary: "开启"
+    }
+  },
+  aiProviders: [
+    {
+      id: "aip01",
+      name: "OpenAI",
+      type: "大语言模型",
+      defaultModel: "gpt-4o",
+      status: "启用",
+      updatedAt: "2026-07-02 16:20",
+      config: {
+        api: {
+          apiKey: "sk-********",
+          baseUrl: "https://api.openai.com/v1",
+          model: "gpt-4o",
+          secret: "",
+          timeout: 30,
+          temperature: 0.2,
+          maxTokens: 4096
+        },
+        features: {
+          mailAnalysis: "开启",
+          whatsappAnalysis: "开启",
+          leadSummary: "开启"
+        }
+      }
+    },
+    {
+      id: "aip02",
+      name: "Azure OpenAI",
+      type: "企业模型服务",
+      defaultModel: "gpt-4o-mini",
+      status: "停用",
+      updatedAt: "2026-06-28 11:05",
+      config: {
+        api: {
+          apiKey: "",
+          baseUrl: "https://example.openai.azure.com",
+          model: "gpt-4o-mini",
+          secret: "",
+          timeout: 45,
+          temperature: 0.3,
+          maxTokens: 2048
+        },
+        features: {
+          mailAnalysis: "关闭",
+          whatsappAnalysis: "关闭",
+          leadSummary: "开启"
+        }
+      }
+    }
   ],
   analytics: {
     metrics: [
