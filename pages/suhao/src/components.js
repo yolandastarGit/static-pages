@@ -1,5 +1,5 @@
-import { navigate } from "./router.js";
-import { canOperate, closeDrawer, closeModal, markAllNotificationsRead, markNotificationRead, openDrawer, openModal, removeNotification, state, toast } from "./store.js";
+import { navigate } from "./router.js?v=202607031422";
+import { canOperate, closeDrawer, closeModal, markAllNotificationsRead, markNotificationRead, openDrawer, openModal, removeNotification, state, toast } from "./store.js?v=202607031422";
 
 export function h(tag, attrs = {}, children = []) {
   const element = document.createElement(tag);

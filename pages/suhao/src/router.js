@@ -1,4 +1,4 @@
-import { openChromeTab, restoreTabSnapshot, snapshotCurrentTab, state } from "./store.js";
+import { openChromeTab, restoreTabSnapshot, snapshotCurrentTab, state } from "./store.js?v=202607031422";
 
 const routes = [];
 let fallback = null;

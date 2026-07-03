@@ -13,7 +13,7 @@ import {
   systemLogs,
   systemParams,
   users
-} from "./data.js";
+} from "./data.js?v=202607031422";
 
 const subscribers = new Set();
 

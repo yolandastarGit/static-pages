@@ -1,6 +1,7 @@
-import { App, routes } from "./app.js";
-import { defineRoutes } from "./router.js";
-import { subscribe } from "./store.js";
+console.info("[suhao deploy 202607031422]");
+import { App, routes } from "./app.js?v=202607031422";
+import { defineRoutes } from "./router.js?v=202607031422";
+import { subscribe } from "./store.js?v=202607031422";
 
 const root = document.getElementById("app");
 
