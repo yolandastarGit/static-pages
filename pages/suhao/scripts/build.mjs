@@ -1,61 +1,28 @@
-import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { cp, mkdir, readdir } from "node:fs/promises";
+import path from "node:path";
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const dist = join(root, "dist");
-const version = process.env.DEPLOY_VERSION || new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+const root = process.cwd();
+const dist = path.join(root, "dist");
 
-const files = [
+const entries = [
   "index.html",
-  "src/app.js",
-  "src/components.js",
-  "src/data.js",
-  "src/main.js",
-  "src/pages.js",
-  "src/router.js",
-  "src/store.js",
-  "src/styles.css"
+  ".nojekyll",
+  "README.md",
+  "VERSION.txt",
+  "pages",
+  "assets",
+  "router",
+  "layout",
+  "mock",
+  "docs"
 ];
 
-function injectVersion(content, file) {
-  let next = content.replace(/from "(\.\/[^"]+\.js)(\?v=[^"]*)?"/g, `from "$1?v=${version}"`);
-  if (file === "index.html") {
-    next = next.replace(/href="\.\/src\/styles\.css(\?v=[^"]*)?"/, `href="./src/styles.css?v=${version}"`);
-    next = next.replace(/src="\.\/src\/main\.js(\?v=[^"]*)?"/, `src="./src/main.js?v=${version}"`);
-    next = next.replace(/<meta name="deploy-version" content="[^"]*"/, `<meta name="deploy-version" content="${version}"`);
-  }
-  if (file === "src/main.js") {
-    next = next.replace(/^console\.info\("\[suhao deploy [^"]+"\);\n?/, "");
-    next = `console.info("[suhao deploy ${version}]");\n${next}`;
-  }
-  return next;
+await mkdir(dist, { recursive: true });
+
+for (const entry of entries) {
+  await cp(path.join(root, entry), path.join(dist, entry), { recursive: true, force: true });
 }
 
-const check = spawnSync(process.execPath, [join(root, "scripts/check.mjs")], {
-  cwd: root,
-  stdio: "inherit"
-});
-
-if (check.status !== 0) {
-  process.exit(check.status || 1);
-}
-
-await rm(dist, { recursive: true, force: true });
-
-for (const file of files) {
-  const sourcePath = join(root, file);
-  if (!existsSync(sourcePath)) {
-    console.error(`Missing build input: ${file}`);
-    process.exit(1);
-  }
-  const destPath = join(dist, file);
-  await mkdir(dirname(destPath), { recursive: true });
-  const content = await readFile(sourcePath, "utf8");
-  await writeFile(destPath, injectVersion(content, file));
-}
-
-await writeFile(join(dist, "VERSION.txt"), `${version}\n`);
-console.log(`Build completed: ${dist} (version ${version})`);
+const topLevel = await readdir(dist);
+console.log(`Build completed: ${dist}`);
+console.log(`Included: ${topLevel.sort().join(", ")}`);

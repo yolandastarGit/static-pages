@@ -1,0 +1,323 @@
+window.CRM_MOCK = {
+  currentUser: {
+    id: "u01",
+    name: "Yolanda Wang",
+    role: "销售主管",
+    roleCode: "supervisor",
+    avatar: "YW",
+    sites: ["s01", "s02"]
+  },
+  users: [
+    { id: "u01", name: "Yolanda Wang", role: "销售主管", status: "启用", siteIds: ["s01", "s02"] },
+    { id: "u02", name: "Chen Hao", role: "业务员", status: "启用", siteIds: ["s01"] },
+    { id: "u03", name: "Mia Liu", role: "业务员", status: "启用", siteIds: ["s02"] },
+    { id: "u04", name: "Alex Xu", role: "区域负责人", status: "启用", siteIds: ["s01", "s02", "s03"] }
+  ],
+  sites: [
+    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01" },
+    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01" },
+    { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04" }
+  ],
+  mailboxes: ["sales@industrial.example.com", "info@toys.example.com"],
+  emails: [
+    {
+      id: "m01",
+      mailbox: "sales@industrial.example.com",
+      folder: "inbox",
+      from: "Elena Rodriguez <elena@aeromex-parts.com>",
+      senderName: "Elena Rodriguez",
+      subject: "Inquiry for custom CNC aluminum parts",
+      summary: "We are looking for a supplier for CNC aluminum housings, 12,000 pcs per quarter...",
+      body: "Hello, we are sourcing custom CNC aluminum housings for our Mexico assembly plant. Please share MOQ, lead time, certificates and sample policy. Expected quarterly volume is 12,000 pcs.",
+      time: "2026-07-02 10:42",
+      read: false,
+      siteId: "s01",
+      leadId: "l01",
+      attachments: ["drawing-v3.pdf", "spec-sheet.xlsx"],
+      aiTags: ["高意向", "批量采购", "需资质"],
+      aiSummary: "客户明确给出季度采购量，关注 MOQ、交期、认证和样品政策，建议优先回复并同步技术规格确认。"
+    },
+    {
+      id: "m02",
+      mailbox: "info@toys.example.com",
+      folder: "inbox",
+      from: "Sarah Jenkins <purchase@playnorth.co>",
+      senderName: "Sarah Jenkins",
+      subject: "Plush toy private label quote",
+      summary: "Can you quote plush toys with custom label and EN71 certificate?",
+      body: "Hi team, we need plush toys for a retail campaign in Q4. Please quote 5,000 and 10,000 pcs options with private label, EN71 certificate and packaging design support.",
+      time: "2026-07-01 16:18",
+      read: true,
+      siteId: "s02",
+      leadId: "l02",
+      attachments: ["reference-photo.jpg"],
+      aiTags: ["节日订单", "定制包装"],
+      aiSummary: "客户关注私标、认证与包装设计，具备明确活动节点，可作为高优先级商机推进。"
+    },
+    {
+      id: "m03",
+      mailbox: "sales@industrial.example.com",
+      folder: "inbox",
+      from: "unknown@protonmail.com",
+      senderName: "Unknown Buyer",
+      subject: "Need price quickly",
+      summary: "Send me best price today for steel valves...",
+      body: "Need best price today for steel valves. We buy many items. Reply soon.",
+      time: "2026-06-30 09:11",
+      read: false,
+      siteId: "",
+      leadId: "",
+      attachments: [],
+      aiTags: ["来源待确认", "信息不足"],
+      aiSummary: "采购意图存在但身份信息不足，发件域名无法匹配站点，建议先确认公司与应用场景。"
+    },
+    {
+      id: "m04",
+      mailbox: "sales@industrial.example.com",
+      folder: "sent",
+      from: "Yolanda Wang <sales@industrial.example.com>",
+      senderName: "Yolanda Wang",
+      subject: "Re: Inquiry for custom CNC aluminum parts",
+      summary: "Thanks for your inquiry. We can support CNC aluminum housing...",
+      body: "Thanks for your inquiry. We can support CNC aluminum housing with ISO9001 and full inspection report. Please find our initial questions attached.",
+      time: "2026-07-02 11:05",
+      read: true,
+      siteId: "s01",
+      leadId: "l01",
+      attachments: ["question-list.docx"],
+      aiTags: ["已回复"],
+      aiSummary: "我方已完成首轮回复，下一步等待客户补充图纸细节。"
+    },
+    {
+      id: "m05",
+      mailbox: "sales@industrial.example.com",
+      folder: "draft",
+      from: "Yolanda Wang <sales@industrial.example.com>",
+      senderName: "Yolanda Wang",
+      subject: "Draft: CNC sample policy",
+      summary: "We can provide samples with inspection report...",
+      body: "We can provide samples with inspection report. Sample fee can be refunded after bulk order confirmation.",
+      time: "2026-07-02 12:18",
+      read: true,
+      siteId: "s01",
+      leadId: "l01",
+      attachments: [],
+      aiTags: ["草稿"],
+      aiSummary: "草稿内容围绕样品政策与批量订单抵扣规则。"
+    },
+    {
+      id: "m06",
+      mailbox: "info@toys.example.com",
+      folder: "trash",
+      from: "promo@unknown-mail.net",
+      senderName: "Unknown Promo",
+      subject: "Marketing service offer",
+      summary: "We can help you reach more buyers...",
+      body: "We can help you reach more buyers with advertising service.",
+      time: "2026-06-29 08:30",
+      read: true,
+      siteId: "s02",
+      leadId: "",
+      attachments: [],
+      aiTags: ["无效营销"],
+      aiSummary: "该邮件为营销推广内容，不建议生成线索。"
+    }
+  ],
+  whatsappConversations: [
+    {
+      id: "w01",
+      name: "Ahmed Khan",
+      phone: "+971 55 128 9012",
+      company: "Gulf Retail Group",
+      location: "Dubai, UAE",
+      listTime: "13:37",
+      unreadCount: 14,
+      avatarTone: "cyan",
+      previewIcon: "↘",
+      siteId: "s02",
+      leadId: "l03",
+      customerId: "",
+      aiTags: ["高意向", "采购经理"],
+      aiSummary: "联系人连续询问报价、包装和交期，采购窗口较近，建议今天完成报价并确认样品费。",
+      messages: [
+        { id: "wm01", from: "customer", text: "Hi, can you make plush toys with our logo?", time: "09:20" },
+        { id: "wm02", from: "me", text: "Yes, please send size and quantity requirements.", time: "09:24" },
+        { id: "wm03", from: "customer", text: "Need 8000 pcs, 25cm, delivery before October.", time: "09:31" }
+      ]
+    },
+    {
+      id: "w02",
+      name: "Lucas Meyer",
+      phone: "+49 151 2345 7788",
+      company: "Meyer Automation GmbH",
+      location: "Munich, Germany",
+      listTime: "11:26",
+      unreadCount: 0,
+      avatarTone: "sage",
+      previewIcon: "✓✓",
+      siteId: "s01",
+      leadId: "l04",
+      customerId: "c02",
+      aiTags: ["老客户", "复购"],
+      aiSummary: "该客户已有合同记录，本次咨询为复购扩展，适合由原负责人直接跟进。",
+      messages: [
+        { id: "wm04", from: "customer", text: "We need another batch of brackets in August.", time: "昨天" },
+        { id: "wm05", from: "me", text: "I will check previous contract and send the updated quote.", time: "昨天" }
+      ]
+    }
+  ],
+  leads: [
+    {
+      id: "l01",
+      no: "LEAD-2026-0911",
+      company: "Aeromex Parts S.A.",
+      contact: "Elena Rodriguez",
+      email: "elena@aeromex-parts.com",
+      phone: "+52 55 2012 8890",
+      siteId: "s01",
+      channel: "邮件",
+      ownerId: "u02",
+      status: "跟进中",
+      stage: "需求确认",
+      products: ["CNC 铝件", "工业壳体"],
+      aiTags: ["高增长潜力", "批量采购"],
+      manualTags: ["墨西哥市场"],
+      createdAt: "2026-06-28 10:42",
+      lastFollowAt: "2026-07-02 11:10",
+      nextFollowAt: "2026-07-04 10:00",
+      customerId: "",
+      aiSummary: "客户有明确季度采购量，建议快速推动样品与认证资料。"
+    },
+    {
+      id: "l02",
+      no: "LEAD-2026-0912",
+      company: "PlayNorth Trading",
+      contact: "Sarah Jenkins",
+      email: "purchase@playnorth.co",
+      phone: "+1 415 890 2211",
+      siteId: "s02",
+      channel: "邮件",
+      ownerId: "u03",
+      status: "高意向",
+      stage: "报价",
+      products: ["毛绒玩具", "私标包装"],
+      aiTags: ["节日订单", "认证关注"],
+      manualTags: ["北美零售"],
+      createdAt: "2026-07-01 16:18",
+      lastFollowAt: "2026-07-02 09:20",
+      nextFollowAt: "2026-07-03 14:00",
+      customerId: "",
+      aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转客户并录入报价跟进。"
+    },
+    {
+      id: "l03",
+      no: "LEAD-2026-0913",
+      company: "Gulf Retail Group",
+      contact: "Ahmed Khan",
+      email: "",
+      phone: "+971 55 128 9012",
+      siteId: "s02",
+      channel: "WhatsApp",
+      ownerId: "",
+      status: "公海待分配",
+      stage: "待首响",
+      products: ["毛绒玩具", "活动礼品"],
+      aiTags: ["高意向"],
+      manualTags: [],
+      createdAt: "2026-07-02 09:31",
+      lastFollowAt: "",
+      nextFollowAt: "",
+      customerId: "",
+      poolReason: "系统采集",
+      poolEnteredAt: "2026-07-02 09:35",
+      aiSummary: "WhatsApp 会话显示客户有 8000 件订单需求，需要尽快分配负责人。"
+    },
+    {
+      id: "l04",
+      no: "LEAD-2026-0880",
+      company: "Meyer Automation GmbH",
+      contact: "Lucas Meyer",
+      email: "lucas@meyer-auto.de",
+      phone: "+49 151 2345 7788",
+      siteId: "s01",
+      channel: "WhatsApp",
+      ownerId: "u02",
+      status: "已成交",
+      stage: "合同已成交",
+      products: ["五金支架"],
+      aiTags: ["复购询盘"],
+      manualTags: ["德国客户"],
+      createdAt: "2026-05-18 13:22",
+      lastFollowAt: "2026-06-20 10:10",
+      nextFollowAt: "2026-07-08 10:00",
+      customerId: "c02",
+      aiSummary: "老客户复购，合同已成交，可进入客户经营。"
+    }
+  ],
+  followLogs: [
+    { id: "f01", leadId: "l01", userId: "u02", method: "邮件", stage: "需求确认", content: "已回复客户，确认图纸版本、材料牌号和认证要求。", nextFollowAt: "2026-07-04 10:00", createdAt: "2026-07-02 11:10" },
+    { id: "f02", leadId: "l02", userId: "u03", method: "电话", stage: "报价", content: "客户希望今天收到 5000/10000 件阶梯报价。", nextFollowAt: "2026-07-03 14:00", createdAt: "2026-07-02 09:20" },
+    { id: "f03", leadId: "l04", userId: "u02", method: "备注", stage: "合同已成交", content: "录入合同 CON-2026-0081。", nextFollowAt: "2026-07-08 10:00", createdAt: "2026-06-20 10:10" }
+  ],
+  customers: [
+    {
+      id: "c01",
+      no: "CUS-2026-0301",
+      name: "Northwind Retail Inc.",
+      siteId: "s02",
+      country: "United States",
+      industry: "Retail",
+      ownerId: "u03",
+      status: "跟进中",
+      tags: ["北美零售", "私标客户"],
+      leadIds: [],
+      contractIds: [],
+      aiProfile: "手动创建客户，暂无 AI 画像数据。",
+      createdAt: "2026-06-12"
+    },
+    {
+      id: "c02",
+      no: "CUS-2026-0268",
+      name: "Meyer Automation GmbH",
+      siteId: "s01",
+      country: "Germany",
+      industry: "Manufacturing",
+      ownerId: "u02",
+      status: "已成交",
+      tags: ["德国客户", "复购"],
+      leadIds: ["l04"],
+      contractIds: ["ct01"],
+      aiProfile: "德国自动化设备制造企业，关注稳定供货、批次一致性和技术响应速度。",
+      createdAt: "2026-05-20"
+    }
+  ],
+  contacts: [
+    { id: "p01", customerId: "c02", name: "Lucas Meyer", title: "Procurement Manager", email: "lucas@meyer-auto.de", phone: "+49 151 2345 7788", whatsapp: "+49 151 2345 7788", role: "采购经理", primary: true, aiDetected: true },
+    { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false }
+  ],
+  contracts: [
+    { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", status: "执行中", ownerId: "u02", attachments: ["contract-0081.pdf"] }
+  ],
+  aiCapabilities: [
+    { id: "ai01", provider: "OpenAI", model: "GPT-4o", endpoint: "https://api.openai.com/v1", status: "启用", createdAt: "2026-06-01" },
+    { id: "ai02", provider: "DeepSeek", model: "DeepSeek-V3", endpoint: "https://api.deepseek.com", status: "停用", createdAt: "2026-06-10" }
+  ],
+  analytics: {
+    metrics: [
+      { label: "新增线索", value: 842, foot: "较上期 +4.2%" },
+      { label: "待跟进", value: 37, foot: "今日待处理" },
+      { label: "成交额", value: "¥4.2M", foot: "较上期 +2.1%" },
+      { label: "线索转化率", value: "24.8%", foot: "行业均值 18%" }
+    ],
+    funnel: [25000, 12482, 8240, 3120, 1220],
+    months: ["1月", "2月", "3月", "4月", "5月", "6月", "7月"],
+    leadsTrend: [420, 510, 660, 590, 720, 810, 842],
+    amountTrend: [1.2, 1.5, 1.8, 1.7, 2.6, 3.1, 4.2],
+    channels: {
+      email: { total: 4520, ai: 3096, valid: "68.5%", leads: 89, conversion: "1.97%" },
+      whatsapp: { total: 8912, ai: 7316, valid: "82.1%", leads: 156, conversion: "1.75%" }
+    },
+    customersByIndustry: { Retail: 38, Manufacturing: 28, Technology: 18, Healthcare: 9, Other: 7 },
+    customersByCountry: { "United States": 32, Germany: 21, UAE: 18, Mexico: 15, Canada: 11 }
+  }
+};
