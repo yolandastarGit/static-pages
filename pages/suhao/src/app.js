@@ -1,7 +1,7 @@
-import { drawerLayer, h, icon, modalLayer, noPermission, notificationTrigger, toastLayer } from "./components.js?v=20260703073511";
-import { navigation, users } from "./data.js?v=20260703073511";
-import { getAppPath, getAppPathname, getCurrentRoute, navigate, replace } from "./router.js?v=20260703073511";
-import { canAccess, closeAllChromeTabs, closeChromeTab, closeOtherChromeTabs, logout, notify, openChromeTab, setUser, state } from "./store.js?v=20260703073511";
+import { drawerLayer, h, icon, modalLayer, noPermission, notificationTrigger, toastLayer } from "./components.js?v=20260703074251";
+import { navigation, users } from "./data.js?v=20260703074251";
+import { getAppPath, getAppPathname, getCurrentRoute, navigate, replace } from "./router.js?v=20260703074251";
+import { canAccess, closeAllChromeTabs, closeChromeTab, closeOtherChromeTabs, logout, notify, openChromeTab, setUser, state } from "./store.js?v=20260703074251";
 import {
   AcquisitionAnalyticsPage,
   AccountBindingPage,
@@ -35,7 +35,7 @@ import {
   SitesPage,
   UsersPage,
   WhatsappPage
-} from "./pages.js?v=20260703073511";
+} from "./pages.js?v=20260703074251";
 
 export const routes = [
   { path: "/login", pageId: "public", title: "登录", public: true, render: LoginPage },

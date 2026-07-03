@@ -1,7 +1,7 @@
-console.info("[suhao deploy 20260703073511]");
-import { App, routes } from "./app.js?v=20260703073511";
-import { defineRoutes } from "./router.js?v=20260703073511";
-import { subscribe } from "./store.js?v=20260703073511";
+console.info("[suhao deploy 20260703074251]");
+import { App, routes } from "./app.js?v=20260703074251";
+import { defineRoutes } from "./router.js?v=20260703074251";
+import { subscribe } from "./store.js?v=20260703074251";
 
 const root = document.getElementById("app");
 
