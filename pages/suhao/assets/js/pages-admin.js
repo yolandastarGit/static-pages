@@ -7,8 +7,6 @@ window.CRMAdminPage = {
     return this.renderAi(root);
   },
   renderAi(root) {
-    const q = CRMRouter.query();
-    if (q.mode === "config") return this.renderAiConfig(root, q.providerId);
     root.innerHTML = `
       <div class="toolbar">
         <button class="btn primary" id="newAiProvider">新增配置</button>
@@ -17,7 +15,7 @@ window.CRMAdminPage = {
       <div id="aiProviderTable"></div>
     `;
     this.renderAiProviderTable();
-    CRMUI.$("#newAiProvider").addEventListener("click", () => this.openAiProviderModal());
+    CRMUI.$("#newAiProvider").addEventListener("click", () => this.openAiConfigModal());
   },
   renderAiProviderTable() {
     const providers = CRM_MOCK.aiProviders || [];
@@ -27,43 +25,60 @@ window.CRMAdminPage = {
       { title: "默认模型", render: row => row.defaultModel },
       { title: "状态", render: row => CRMUI.badge(row.status) },
       { title: "更新时间", render: row => row.updatedAt },
-      { title: "操作", render: row => `<button class="btn primary" data-ai-config="${row.id}">配置</button> <button class="btn" data-ai-edit="${row.id}">编辑</button> <button class="btn" data-ai-delete="${row.id}">删除</button>` }
+      { title: "操作", render: row => `<button class="btn primary" data-ai-config="${row.id}">配置</button> <button class="btn" data-ai-delete="${row.id}">删除</button>` }
     ], providers, "暂无 AI 服务商配置");
-    CRMUI.$$("[data-ai-config]").forEach(btn => btn.addEventListener("click", () => CRMRouter.goto("ai", { mode: "config", providerId: btn.dataset.aiConfig })));
-    CRMUI.$$("[data-ai-edit]").forEach(btn => btn.addEventListener("click", () => this.openAiProviderModal(CRM_MOCK.aiProviders.find(item => item.id === btn.dataset.aiEdit))));
+    CRMUI.$$("[data-ai-config]").forEach(btn => btn.addEventListener("click", () => this.openAiConfigModal(CRM_MOCK.aiProviders.find(item => item.id === btn.dataset.aiConfig))));
     CRMUI.$$("[data-ai-delete]").forEach(btn => btn.addEventListener("click", () => this.openAiProviderDeleteModal(btn.dataset.aiDelete)));
   },
   aiConfigTemplate() {
     return JSON.parse(JSON.stringify(CRM_MOCK.aiConfig));
   },
-  openAiProviderModal(provider) {
-    CRMUI.modal(provider ? "编辑 AI 服务商" : "新增 AI 服务商", `
+  openAiConfigModal(provider) {
+    const isEdit = Boolean(provider);
+    const config = provider?.config || this.aiConfigTemplate();
+    CRMUI.modal(isEdit ? `${provider.name} 配置` : "新增 AI 配置", `
       <div class="form-grid">
         ${CRMUI.formInput("服务商名称", "name", provider?.name || "")}
         ${CRMUI.formInput("服务类型", "type", provider?.type || "大语言模型")}
-        ${CRMUI.formInput("默认模型", "defaultModel", provider?.defaultModel || "gpt-4o")}
         ${CRMUI.formSelect("状态", "status", ["启用", "停用"].map(value => ({ value, label: value })), provider?.status || "启用")}
+        ${CRMUI.formInput("API Key", "apiKey", config.api.apiKey)}
+        ${CRMUI.formInput("Base URL", "baseUrl", config.api.baseUrl)}
+        ${CRMUI.formInput("Model", "model", config.api.model)}
+        ${CRMUI.formInput("Secret", "secret", config.api.secret)}
+        ${CRMUI.formInput("Timeout（秒）", "timeout", config.api.timeout, "number")}
+        ${CRMUI.formInput("Temperature", "temperature", config.api.temperature, "number")}
+        ${CRMUI.formInput("Max Tokens", "maxTokens", config.api.maxTokens, "number")}
+        ${CRMUI.formSelect("邮件分析", "mailAnalysis", ["开启", "关闭"].map(value => ({ value, label: value })), config.features.mailAnalysis)}
+        ${CRMUI.formSelect("WhatsApp 会话分析", "whatsappAnalysis", ["开启", "关闭"].map(value => ({ value, label: value })), config.features.whatsappAnalysis)}
+        ${CRMUI.formSelect("线索摘要生成", "leadSummary", ["开启", "关闭"].map(value => ({ value, label: value })), config.features.leadSummary)}
       </div>`, form => {
-      if (!form.get("name") || !form.get("defaultModel")) return CRMUI.toast("请完善服务商名称和默认模型");
-      if (provider) {
-        provider.name = form.get("name");
-        provider.type = form.get("type");
-        provider.defaultModel = form.get("defaultModel");
-        provider.status = form.get("status");
-        provider.updatedAt = "2026-07-03 17:40";
-      } else {
-        CRM_MOCK.aiProviders.unshift({
-          id: `aip${Date.now()}`,
-          name: form.get("name"),
-          type: form.get("type"),
-          defaultModel: form.get("defaultModel"),
-          status: form.get("status"),
-          updatedAt: "2026-07-03 17:40",
-          config: this.aiConfigTemplate()
-        });
-      }
+      if (!form.get("name") || !form.get("apiKey") || !form.get("baseUrl") || !form.get("model")) return CRMUI.toast("请完善服务商名称、API Key、Base URL 和 Model");
+      const nextConfig = {
+        api: {
+          apiKey: form.get("apiKey"),
+          baseUrl: form.get("baseUrl"),
+          model: form.get("model"),
+          secret: form.get("secret"),
+          timeout: Number(form.get("timeout") || 30),
+          temperature: Number(form.get("temperature") || 0.2),
+          maxTokens: Number(form.get("maxTokens") || 4096)
+        },
+        features: {
+          mailAnalysis: form.get("mailAnalysis"),
+          whatsappAnalysis: form.get("whatsappAnalysis"),
+          leadSummary: form.get("leadSummary")
+        }
+      };
+      const nextProvider = provider || { id: `aip${Date.now()}` };
+      nextProvider.name = form.get("name");
+      nextProvider.type = form.get("type");
+      nextProvider.defaultModel = nextConfig.api.model;
+      nextProvider.status = form.get("status");
+      nextProvider.updatedAt = "2026-07-03 17:40";
+      nextProvider.config = nextConfig;
+      if (!isEdit) CRM_MOCK.aiProviders.unshift(nextProvider);
       CRMUI.closeModal();
-      CRMUI.toast("AI 服务商已保存");
+      CRMUI.toast(isEdit ? "AI 配置已保存" : "AI 配置已新增");
       this.renderAiProviderTable();
     });
   },
@@ -76,71 +91,6 @@ window.CRMAdminPage = {
       CRMUI.closeModal();
       CRMUI.toast("AI 服务商已删除");
       this.renderAiProviderTable();
-    });
-  },
-  renderAiConfig(root, providerId) {
-    const provider = (CRM_MOCK.aiProviders || []).find(item => item.id === providerId) || (CRM_MOCK.aiProviders || [])[0];
-    if (!provider) {
-      window.history.replaceState(null, "", "ai.html?view=ai");
-      return this.renderAi(root);
-    }
-    provider.config = provider.config || this.aiConfigTemplate();
-    const config = provider.config;
-    root.innerHTML = `
-      <form id="aiConfigForm">
-        <div class="toolbar">
-          <button class="btn" id="backAiProviders" type="button">返回服务商列表</button>
-        </div>
-        <div class="card pad">
-          <div class="section-title">${provider.name} API 配置</div>
-          <div class="form-grid">
-            ${CRMUI.formInput("API Key", "apiKey", config.api.apiKey)}
-            ${CRMUI.formInput("Base URL", "baseUrl", config.api.baseUrl)}
-            ${CRMUI.formInput("Model", "model", config.api.model)}
-            ${CRMUI.formInput("Secret", "secret", config.api.secret)}
-            ${CRMUI.formInput("Timeout（秒）", "timeout", config.api.timeout, "number")}
-            ${CRMUI.formInput("Temperature", "temperature", config.api.temperature, "number")}
-            ${CRMUI.formInput("Max Tokens", "maxTokens", config.api.maxTokens, "number")}
-          </div>
-        </div>
-        <div class="card pad" style="margin-top:16px">
-          <div class="section-title">其它 AI 配置</div>
-          <div class="form-grid">
-            ${CRMUI.formSelect("邮件分析", "mailAnalysis", ["开启", "关闭"].map(v => ({ value: v, label: v })), config.features.mailAnalysis)}
-            ${CRMUI.formSelect("WhatsApp 会话分析", "whatsappAnalysis", ["开启", "关闭"].map(v => ({ value: v, label: v })), config.features.whatsappAnalysis)}
-            ${CRMUI.formSelect("线索摘要生成", "leadSummary", ["开启", "关闭"].map(v => ({ value: v, label: v })), config.features.leadSummary)}
-          </div>
-        </div>
-        <div class="toolbar" style="margin-top:16px">
-          <button class="btn primary" type="submit">保存配置</button>
-          <button class="btn" id="resetAiConfig" type="button">重置</button>
-        </div>
-      </form>
-    `;
-    CRMUI.$("#aiConfigForm").addEventListener("submit", e => {
-      e.preventDefault();
-      const form = new FormData(e.target);
-      if (!form.get("apiKey") || !form.get("baseUrl") || !form.get("model")) return CRMUI.toast("请完善 API Key、Base URL 和 Model");
-      config.api.apiKey = form.get("apiKey");
-      config.api.baseUrl = form.get("baseUrl");
-      config.api.model = form.get("model");
-      config.api.secret = form.get("secret");
-      config.api.timeout = Number(form.get("timeout") || 30);
-      config.api.temperature = Number(form.get("temperature") || 0.2);
-      config.api.maxTokens = Number(form.get("maxTokens") || 4096);
-      config.features.mailAnalysis = form.get("mailAnalysis");
-      config.features.whatsappAnalysis = form.get("whatsappAnalysis");
-      config.features.leadSummary = form.get("leadSummary");
-      provider.defaultModel = config.api.model;
-      provider.updatedAt = "2026-07-03 17:40";
-      CRMUI.toast("AI 配置已保存");
-      window.history.replaceState(null, "", "ai.html?view=ai");
-      this.renderAi(root);
-    });
-    CRMUI.$("#resetAiConfig").addEventListener("click", () => this.renderAiConfig(root, provider.id));
-    CRMUI.$("#backAiProviders").addEventListener("click", () => {
-      window.history.replaceState(null, "", "ai.html?view=ai");
-      this.renderAi(root);
     });
   },
   renderSites(root) {
@@ -310,6 +260,8 @@ window.CRMAdminPage = {
       }
       CRMUI.closeModal();
       CRMUI.toast(status === "开启" ? "通知规则已保存并立即生效" : "通知规则已停用");
+      CRMLayout.ensureNotifications();
+      CRMLayout.renderNotificationBadge();
       this.renderNotificationTable();
     } catch (error) {
       CRMUI.toast(`保存失败：${error.message || "请稍后重试"}`);

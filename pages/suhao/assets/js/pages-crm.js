@@ -300,7 +300,7 @@ window.CRMCrmPage = {
         <button class="btn primary" id="newContract">新增合同</button>
       </div>
       <div class="filters card pad">
-        <input id="contractSearch" placeholder="搜索合同编号、客户名称">
+        <input id="contractSearch" placeholder="搜索合同编号、客户名称、关联线索、负责人">
         <select id="contractStatus"><option value="">全部状态</option><option>已签约</option><option>执行中</option><option>已完成</option><option>已终止</option><option>已作废</option></select>
         <select><option>全部负责人</option>${CRM_MOCK.users.map(u => `<option>${u.name}</option>`).join("")}</select>
       </div>
@@ -314,16 +314,19 @@ window.CRMCrmPage = {
   renderContractTable() {
     const rows = CRM_MOCK.contracts.filter(contract => {
       const customer = CRMUI.customerName(contract.customerId);
-      return `${contract.no} ${contract.name} ${customer}`.toLowerCase().includes(this.contractState.query) && (!this.contractState.status || contract.status === this.contractState.status);
+      const lead = this.contractLead(contract);
+      const owner = CRMUI.userName(contract.ownerId);
+      return `${contract.no} ${contract.name} ${customer} ${lead?.no || ""} ${lead?.company || ""} ${owner}`.toLowerCase().includes(this.contractState.query) && (!this.contractState.status || contract.status === this.contractState.status);
     });
     CRMUI.$("#contractTable").innerHTML = CRMUI.table([
       { title: "合同编号", render: c => `<a href="#" data-contract="${c.id}">${c.no}</a>` },
       { title: "合同名称", render: c => c.name },
       { title: "客户", render: c => CRMUI.customerName(c.customerId) },
+      { title: "关联线索", render: c => this.renderContractLeadLink(c) },
+      { title: "业务负责人", render: c => CRMUI.userName(c.ownerId) },
       { title: "金额", render: c => `¥${c.amount.toLocaleString()}` },
       { title: "签约日期", render: c => c.signedAt },
       { title: "状态", render: c => CRMUI.badge(c.status) },
-      { title: "负责人", render: c => CRMUI.userName(c.ownerId) },
       { title: "附件", render: c => `${c.attachments.length} 个附件` },
       { title: "操作", render: c => `<button class="btn" data-contract="${c.id}">详情</button> <button class="btn" data-contract-edit="${c.id}">编辑</button> <button class="btn danger" data-contract-void="${c.id}">作废</button>` }
     ], rows, "暂无合同");
@@ -334,28 +337,75 @@ window.CRMCrmPage = {
         <p>${CRMUI.badge(c.status)} <span class="badge gray">${CRMUI.customerName(c.customerId)}</span></p>
         <div class="grid cols-2">
           <div><div class="muted">合同名称</div><strong>${c.name}</strong></div>
+          <div><div class="muted">关联线索</div><strong>${this.renderContractLeadLink(c)}</strong></div>
+          <div><div class="muted">业务负责人</div><strong>${CRMUI.userName(c.ownerId)}</strong></div>
           <div><div class="muted">金额</div><strong>¥${c.amount.toLocaleString()}</strong></div>
           <div><div class="muted">签约日期</div><strong>${c.signedAt}</strong></div>
-          <div><div class="muted">负责人</div><strong>${CRMUI.userName(c.ownerId)}</strong></div>
         </div>
         <div class="section-title">附件</div><p>${c.attachments.map(a => `<span class="badge gray">${a}</span>`).join(" ") || "无附件"}</p>
       `);
+      this.bindContractLeadLinks();
     }));
+    this.bindContractLeadLinks();
     CRMUI.$$("[data-contract-edit]").forEach(btn => btn.addEventListener("click", () => this.openEditContractModal(btn.dataset.contractEdit)));
     CRMUI.$$("[data-contract-void]").forEach(btn => btn.addEventListener("click", () => this.voidContract(btn.dataset.contractVoid)));
+  },
+  contractLead(contract) {
+    return CRM_MOCK.leads.find(lead => lead.id === contract.leadId);
+  },
+  renderContractLeadLink(contract) {
+    const lead = this.contractLead(contract);
+    if (!lead) return `<span class="muted">未关联</span>`;
+    return `<a href="#" data-contract-lead="${lead.id}">${lead.no || lead.company}</a>`;
+  },
+  bindContractLeadLinks() {
+    document.querySelectorAll("[data-contract-lead]").forEach(link => {
+      if (link.dataset.leadBound) return;
+      link.dataset.leadBound = "true";
+      link.addEventListener("click", e => {
+        e.preventDefault();
+        const lead = CRM_MOCK.leads.find(item => item.id === link.dataset.contractLead);
+        if (lead) this.openLeadDrawer(lead);
+      });
+    });
+  },
+  contractCustomerOptions(value = "") {
+    return CRM_MOCK.customers.map(customer => `<option value="${customer.id}" ${customer.id === value ? "selected" : ""}>${customer.name}</option>`).join("");
+  },
+  contractLeadOptions(value = "") {
+    return `<option value="">未关联</option>${CRM_MOCK.leads.map(lead => `<option value="${lead.id}" ${lead.id === value ? "selected" : ""}>${lead.no} · ${lead.company}</option>`).join("")}`;
+  },
+  contractOwnerOptions(value = "") {
+    return CRM_MOCK.users
+      .filter(user => user.role === "业务员")
+      .map(user => `<option value="${user.id}" ${user.id === value ? "selected" : ""}>${user.name}</option>`)
+      .join("");
+  },
+  contractFormFields(contract = {}) {
+    const salesUsers = CRM_MOCK.users.filter(user => user.role === "业务员");
+    const ownerId = contract.ownerId || salesUsers[0]?.id || CRM_MOCK.currentUser.id;
+    return `
+      ${contract.no ? `<div class="form-field"><label>合同编号</label><input value="${contract.no}" disabled></div>` : CRMUI.formInput("合同编号", "no")}
+      ${CRMUI.formInput("合同名称", "name", contract.name || "")}
+      <div class="form-field"><label>客户</label><select name="customerId" required>${this.contractCustomerOptions(contract.customerId || "")}</select></div>
+      <div class="form-field"><label>关联线索</label><select name="leadId">${this.contractLeadOptions(contract.leadId || "")}</select></div>
+      <div class="form-field"><label>业务负责人</label><select name="ownerId" required>${this.contractOwnerOptions(ownerId)}</select></div>
+      ${CRMUI.formInput("金额", "amount", contract.amount || "", "number")}
+      ${CRMUI.formSelect("合同状态", "status", ["已签约", "执行中", "已完成", "已终止"].map(v => ({ value: v, label: v })), contract.status || "已签约")}
+    `;
   },
   openEditContractModal(id) {
     const c = CRM_MOCK.contracts.find(item => item.id === id);
     CRMUI.modal("编辑合同", `
       <div class="form-grid">
-        <div class="form-field"><label>合同编号</label><input value="${c.no}" disabled></div>
-        ${CRMUI.formInput("合同名称", "name", c.name)}
-        ${CRMUI.formInput("金额", "amount", c.amount, "number")}
-        ${CRMUI.formSelect("合同状态", "status", ["已签约", "执行中", "已完成", "已终止"].map(v => ({ value: v, label: v })), c.status)}
+        ${this.contractFormFields(c)}
       </div>`, form => {
       c.name = form.get("name");
       c.amount = Number(form.get("amount"));
       c.status = form.get("status");
+      c.customerId = form.get("customerId");
+      c.leadId = form.get("leadId");
+      c.ownerId = form.get("ownerId");
       CRMUI.closeModal();
       CRMUI.toast("合同已更新");
       this.renderContractTable();
@@ -377,11 +427,11 @@ window.CRMCrmPage = {
   },
   renderCustomers(root) {
     const q = CRMRouter.query();
-    this.customerState = { query: "", status: "", siteId: "" };
+    this.customerState = { query: "", status: "", siteId: "", selected: new Set() };
     root.innerHTML = `
       <div class="toolbar">
         <button class="btn primary" id="newCustomer">新建客户</button>
-        <button class="btn" id="transferCustomer">客户转移</button>
+        <button class="btn" id="transferCustomer">转高意向客户</button>
       </div>
       <div class="filters">
         <input id="customerSearch" placeholder="搜索客户名称、编号">
@@ -394,7 +444,7 @@ window.CRMCrmPage = {
     CRMUI.$("#customerStatus").addEventListener("change", e => { this.customerState.status = e.target.value; this.renderCustomerTable(); });
     CRMUI.$("#customerSite").addEventListener("change", e => { this.customerState.siteId = e.target.value; this.renderCustomerTable(); });
     CRMUI.$("#newCustomer").addEventListener("click", () => this.openCustomerModal());
-    CRMUI.$("#transferCustomer").addEventListener("click", () => this.openTransferCustomerModal(CRM_MOCK.customers[0].id));
+    CRMUI.$("#transferCustomer").addEventListener("click", () => this.openTransferCustomerModal(Array.from(this.customerState.selected), "batch"));
     this.renderCustomerTable();
     if (q.id) {
       const customer = CRM_MOCK.customers.find(c => c.id === q.id);
@@ -409,6 +459,7 @@ window.CRMCrmPage = {
   },
   renderCustomerTable() {
     CRMUI.$("#customerTable").innerHTML = CRMUI.table([
+      { title: "", render: c => `<input type="checkbox" data-check-customer="${c.id}" ${this.customerState.selected.has(c.id) ? "checked" : ""}>` },
       { title: "客户名称", render: c => `<a href="#" data-customer="${c.id}">${c.name}</a>` },
       { title: "编号", render: c => c.no },
       { title: "来源站点", render: c => CRMUI.siteName(c.siteId) },
@@ -416,8 +467,15 @@ window.CRMCrmPage = {
       { title: "状态", render: c => CRMUI.badge(c.status) },
       { title: "负责人", render: c => CRMUI.userName(c.ownerId) },
       { title: "标签", render: c => c.tags.length ? c.tags.map(t => `<span class="badge gray">${t}</span>`).join(" ") : `<span class="muted">暂无标签</span>` },
-      { title: "操作", render: c => `<button class="btn" data-customer="${c.id}">详情</button> <button class="btn" data-customer-tag="${c.id}">打标签</button> <button class="btn" data-ai-profile="${c.id}">AI画像</button>` }
+      { title: "操作", render: c => `<button class="btn" data-customer="${c.id}">详情</button> <button class="btn" data-customer-tag="${c.id}">打标签</button> <button class="btn" data-customer-transfer="${c.id}">转高意向客户</button> <button class="btn" data-ai-profile="${c.id}">AI画像</button>` }
     ], this.customerRows(), "暂无客户");
+    CRMUI.$$("[data-check-customer]").forEach(el => {
+      el.addEventListener("click", e => e.stopPropagation());
+      el.addEventListener("change", () => {
+        el.checked ? this.customerState.selected.add(el.dataset.checkCustomer) : this.customerState.selected.delete(el.dataset.checkCustomer);
+        this.updateCustomerBatchAction();
+      });
+    });
     CRMUI.$$("[data-customer]").forEach(el => el.addEventListener("click", e => {
       e.preventDefault();
       this.openCustomerDrawer(CRM_MOCK.customers.find(c => c.id === el.dataset.customer));
@@ -427,6 +485,14 @@ window.CRMCrmPage = {
       CRMUI.modal("AI 客户画像", `<p>${c.aiProfile}</p><p class="muted">该画像为线索转高意向客户时同步的只读信息。</p>`, () => CRMUI.closeModal());
     }));
     CRMUI.$$("[data-customer-tag]").forEach(el => el.addEventListener("click", () => this.openCustomerTagModal(el.dataset.customerTag)));
+    CRMUI.$$("[data-customer-transfer]").forEach(el => el.addEventListener("click", () => this.openTransferCustomerModal([el.dataset.customerTransfer], "single")));
+    this.updateCustomerBatchAction();
+  },
+  updateCustomerBatchAction() {
+    const button = CRMUI.$("#transferCustomer");
+    if (!button) return;
+    const count = this.customerState.selected.size;
+    button.textContent = count ? `转高意向客户（${count}）` : "转高意向客户";
   },
   customerTagOptions() {
     return Array.from(new Set([...(CRM_MOCK.customerTags || []), ...CRM_MOCK.customers.flatMap(c => c.tags)])).filter(Boolean);
@@ -524,24 +590,39 @@ window.CRMCrmPage = {
       this.openCustomerDrawer(CRM_MOCK.customers.find(customer => customer.id === customerId));
     });
   },
-  openTransferCustomerModal(customerId) {
-    const customer = CRM_MOCK.customers.find(c => c.id === customerId);
-    CRMUI.modal("客户转移", `
+  openTransferCustomerModal(customerIds, mode = "single") {
+    const ids = Array.isArray(customerIds) ? customerIds : [customerIds];
+    if (mode === "batch" && !ids.length) return CRMUI.toast("请先选择需要转移的客户。");
+    const customers = CRM_MOCK.customers.filter(c => ids.includes(c.id));
+    if (!customers.length) return CRMUI.toast("未找到需要转移的客户");
+    const isBatch = mode === "batch";
+    CRMUI.modal(isBatch ? "批量客户转移" : "客户转移", `
       <div class="form-grid">
-        <div class="form-field"><label>客户名称</label><input value="${customer.name}" disabled></div>
-        <div class="form-field"><label>当前负责人</label><input value="${CRMUI.userName(customer.ownerId)}" disabled></div>
-        <div class="form-field"><label>新负责人</label><select name="ownerId">${CRMUI.optionList(CRM_MOCK.users.filter(u => u.role === "业务员"))}</select></div>
-        <div class="form-field full"><label>转移备注</label><textarea name="note" required></textarea></div>
+        ${isBatch ? `<div class="form-field full"><label>已选择客户数量</label><input value="${customers.length} 个" disabled></div>` : `
+          <div class="form-field"><label>客户名称</label><input value="${customers[0].name}" disabled></div>
+          <div class="form-field"><label>当前负责人</label><input value="${CRMUI.userName(customers[0].ownerId)}" disabled></div>
+        `}
+        <div class="form-field"><label>转移目标业务员</label><select name="ownerId" required>${CRMUI.optionList(CRM_MOCK.users.filter(u => u.role === "业务员"))}</select></div>
+        <div class="form-field full"><label>转移原因</label><textarea name="note" placeholder="请输入转移原因（选填）"></textarea></div>
       </div>`, form => {
-      customer.ownerId = form.get("ownerId");
+      const ownerId = form.get("ownerId");
+      if (!ownerId) return CRMUI.toast("请选择新的负责人");
+      customers.forEach(customer => {
+        customer.ownerId = ownerId;
+      });
+      if (isBatch) this.customerState.selected.clear();
       CRMUI.closeModal();
-      CRMUI.toast("客户已转移");
+      CRMUI.toast(isBatch ? `已转移 ${customers.length} 个客户` : "客户已转移");
       this.renderCustomerTable();
     });
   },
   openContractModal(customerId, afterSave) {
-    CRMUI.modal("新增合同", `<div class="form-grid">${CRMUI.formInput("合同编号", "no")}${CRMUI.formInput("合同名称", "name")}${CRMUI.formInput("金额", "amount", "", "number")}${CRMUI.formSelect("合同状态", "status", ["已签约", "执行中", "已完成"].map(v => ({ value: v, label: v })))}</div>`, form => {
-      CRM_MOCK.contracts.unshift({ id: `ct${Date.now()}`, no: form.get("no"), name: form.get("name"), customerId, leadId: "", amount: Number(form.get("amount") || 0), signedAt: "2026-07-02", status: form.get("status"), ownerId: CRM_MOCK.currentUser.id, attachments: [] });
+    CRMUI.modal("新增合同", `<div class="form-grid">${this.contractFormFields({ customerId })}</div>`, form => {
+      const customerIdValue = form.get("customerId");
+      const ownerId = form.get("ownerId");
+      if (!customerIdValue) return CRMUI.toast("请选择客户");
+      if (!ownerId) return CRMUI.toast("请选择业务负责人");
+      CRM_MOCK.contracts.unshift({ id: `ct${Date.now()}`, no: form.get("no"), name: form.get("name"), customerId: customerIdValue, leadId: form.get("leadId"), amount: Number(form.get("amount") || 0), signedAt: "2026-07-02", status: form.get("status"), ownerId, attachments: [] });
       CRMUI.closeModal();
       CRMUI.toast("合同已新增");
       if (afterSave) afterSave();

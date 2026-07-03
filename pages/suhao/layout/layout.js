@@ -20,18 +20,20 @@ window.CRMLayout = {
   ],
   mount(pageKey) {
     const app = document.getElementById("app");
-    const title = CRMRouter.titles[pageKey] || "AI 智能 CRM";
     app.innerHTML = `
       <div class="app-shell" id="shell">
-        <aside class="sidebar">
-          <div class="brand"><div class="brand-mark">AI</div><span>智能 CRM</span></div>
-          <nav>${this.menu.map(item => this.renderMenuItem(item, pageKey)).join("")}</nav>
-        </aside>
         <main class="main">
           <header class="topbar">
-            <input class="global-search" id="globalSearch" placeholder="搜索线索、客户、邮件、合同" />
+            <div class="header-brand"><div class="brand-mark">AI</div><span>智能 CRM</span></div>
+            <div class="header-center">
+              <div class="breadcrumb" id="breadcrumb"></div>
+            </div>
             <div class="top-actions">
-              <button class="icon-btn" id="notifyBtn" title="通知">🔔</button>
+              <button class="icon-btn" id="globalSearchBtn" title="搜索">⌕</button>
+              <div class="notification-entry" id="notificationEntry">
+                <button class="icon-btn" id="notifyBtn" title="通知" type="button" aria-expanded="false">🔔<span class="notify-badge" id="notifyBadge"></span></button>
+                <div class="notification-popover" id="notificationPopover"></div>
+              </div>
               <div class="user-menu" id="userMenu">
                 <button class="user-trigger" id="userMenuTrigger" type="button" aria-expanded="false">
                   <span class="avatar">${CRM_MOCK.currentUser.avatar}</span>
@@ -48,37 +50,176 @@ window.CRMLayout = {
               </div>
             </div>
           </header>
-          <section class="content">
-            <div class="breadcrumb">AI 智能 CRM / ${title}</div>
-            <div class="page-head">
-              <h1 class="page-title">${title}</h1>
-            </div>
-            <div id="page-root"></div>
-          </section>
+          <div class="workspace-shell">
+            <aside class="sidebar">
+              <nav>${this.menu.map(item => this.renderMenuItem(item, pageKey)).join("")}</nav>
+            </aside>
+            <section class="workspace">
+              <div class="workspace-tabs" id="workspaceTabs"></div>
+              <div class="workspace-pages" id="workspacePages"></div>
+            </section>
+          </div>
         </main>
       </div>
       <div class="drawer-mask" id="drawerMask"></div>
       <div class="modal-mask" id="modalMask"></div>
+      <div class="tab-context-menu" id="tabContextMenu"></div>
       <div class="toast" id="toast"></div>
     `;
-    document.querySelectorAll("[data-route]").forEach(el => {
-      el.addEventListener("click", () => CRMRouter.goto(el.dataset.route));
-    });
+    this.restoreSidebarOpen(pageKey);
+    document.querySelectorAll("[data-route]").forEach(el => el.addEventListener("click", () => CRMRouter.goto(el.dataset.route)));
     document.querySelectorAll("[data-menu-parent]").forEach(el => {
       el.addEventListener("click", () => {
-        el.closest(".nav-section").classList.toggle("open");
+        const section = el.closest(".nav-section");
+        section.classList.toggle("open");
+        this.persistSidebarOpen();
       });
     });
-    document.getElementById("notifyBtn").addEventListener("click", () => {
-      CRMUI.toast("3 条待跟进提醒、1 条线索分配通知");
+    this.ensureNotifications();
+    this.renderNotificationBadge();
+    document.getElementById("notifyBtn").addEventListener("click", e => {
+      e.stopPropagation();
+      this.toggleNotificationPanel();
+    });
+    document.getElementById("globalSearchBtn").addEventListener("click", () => {
+      CRMUI.toast("搜索面板待接入");
     });
     this.bindUserMenu();
-    document.getElementById("globalSearch").addEventListener("keydown", e => {
-      if (e.key === "Enter" && e.target.value.trim()) {
-        CRMRouter.goto("leads", { q: e.target.value.trim() });
-      }
+    document.getElementById("notificationEntry").addEventListener("click", e => e.stopPropagation());
+    document.addEventListener("click", () => this.closeNotificationPanel());
+  },
+  ensureNotifications() {
+    const routeMap = {
+      "新线索分配": { route: "leads", params: { id: "l01" } },
+      "新客户分配": { route: "customers", params: { id: "c02" } },
+      "商机阶段变更": { route: "leads", params: { id: "l02" } },
+      "合同到期提醒": { route: "contracts", params: {} },
+      "线索状态变更": { route: "leads", params: { id: "l01" } },
+      "待跟进超时": { route: "leads", params: { status: "待跟进" } },
+      "客户转移": { route: "customers", params: { id: "c02" } },
+      "合同创建": { route: "contracts", params: {} },
+      "合同状态变更": { route: "contracts", params: {} },
+      "邮件未读数量提醒": { route: "email", params: {} },
+      "邮件未读超时提醒": { route: "email", params: {} }
+    };
+    const times = ["刚刚", "10 分钟前", "28 分钟前", "1 小时前", "2 小时前", "今天 09:40", "昨天 18:22", "昨天 15:08", "昨天 11:30", "2026-07-02 16:20", "2026-07-02 10:05"];
+    CRM_MOCK.notifications = Array.isArray(CRM_MOCK.notifications) ? CRM_MOCK.notifications : [];
+    (CRM_MOCK.notificationRules || []).forEach((rule, index) => {
+      const route = routeMap[rule.scene] || { route: "notificationCenter", params: {} };
+      const existing = CRM_MOCK.notifications.find(item => item.ruleId === rule.id);
+      const payload = {
+        ruleId: rule.id,
+        scene: rule.scene,
+        title: rule.title,
+        summary: this.notificationText(rule.body),
+        route: route.route,
+        params: route.params
+      };
+      if (existing) Object.assign(existing, payload);
+      else CRM_MOCK.notifications.push({
+        id: `notice-${rule.id}`,
+        ...payload,
+        receivedAt: times[index] || "刚刚",
+        read: index > 2 || rule.status === "关闭"
+      });
     });
-    return document.getElementById("page-root");
+  },
+  notificationText(html = "") {
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+    return (holder.textContent || holder.innerText || "").trim();
+  },
+  unreadNotifications() {
+    return (CRM_MOCK.notifications || []).filter(item => !item.read).length;
+  },
+  renderNotificationBadge() {
+    this.ensureNotifications();
+    const badge = document.getElementById("notifyBadge");
+    if (!badge) return;
+    const count = this.unreadNotifications();
+    badge.hidden = count === 0;
+    badge.textContent = count > 99 ? "99+" : String(count);
+  },
+  toggleNotificationPanel() {
+    const entry = document.getElementById("notificationEntry");
+    const trigger = document.getElementById("notifyBtn");
+    const isOpen = entry.classList.toggle("open");
+    trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    if (isOpen) this.renderNotificationPanel();
+  },
+  closeNotificationPanel() {
+    const entry = document.getElementById("notificationEntry");
+    const trigger = document.getElementById("notifyBtn");
+    if (!entry || !trigger) return;
+    entry.classList.remove("open");
+    trigger.setAttribute("aria-expanded", "false");
+  },
+  renderNotificationPanel() {
+    this.ensureNotifications();
+    const panel = document.getElementById("notificationPopover");
+    const notifications = CRM_MOCK.notifications || [];
+    panel.innerHTML = `
+      <div class="notification-head">
+        <strong>通知</strong>
+        <button class="link-btn" type="button" id="markAllNotificationsRead">标记全部已读</button>
+      </div>
+      <div class="notification-list">
+        ${notifications.length ? notifications.map(item => `
+          <button class="notification-item ${item.read ? "" : "unread"}" type="button" data-notification-id="${item.id}">
+            <span class="notification-main">
+              <span class="notification-title">${item.title}</span>
+              <span class="notification-summary">${item.summary}</span>
+              <span class="notification-meta"><span>通知场景：${item.scene}</span><span>接收时间：${item.receivedAt}</span></span>
+            </span>
+            <span class="notification-state">${item.read ? "已读" : "未读"}</span>
+          </button>
+        `).join("") : `<div class="notification-empty">暂无通知</div>`}
+      </div>
+      <div class="notification-foot"><button class="btn" type="button" id="viewAllNotifications">查看全部通知</button></div>
+    `;
+    document.getElementById("markAllNotificationsRead").addEventListener("click", () => {
+      notifications.forEach(item => item.read = true);
+      this.renderNotificationBadge();
+      this.renderNotificationPanel();
+    });
+    document.querySelectorAll("[data-notification-id]").forEach(item => item.addEventListener("click", () => this.openNotification(item.dataset.notificationId)));
+    document.getElementById("viewAllNotifications").addEventListener("click", () => {
+      this.closeNotificationPanel();
+      CRMRouter.goto("notificationCenter");
+    });
+  },
+  openNotification(notificationId) {
+    const notification = (CRM_MOCK.notifications || []).find(item => item.id === notificationId);
+    if (!notification) return;
+    notification.read = true;
+    this.renderNotificationBadge();
+    this.closeNotificationPanel();
+    CRMRouter.goto(notification.route, notification.params || {});
+  },
+  restoreSidebarOpen(pageKey) {
+    const saved = window.CRMTabStore?.load().sidebarOpen || {};
+    document.querySelectorAll(".nav-section").forEach(section => {
+      const key = section.dataset.menuSection;
+      if (saved[key] === true) section.classList.add("open");
+      if (saved[key] === false) section.classList.remove("open");
+      if (section.querySelector(`[data-route="${pageKey}"]`)) section.classList.add("open");
+    });
+  },
+  persistSidebarOpen() {
+    if (!window.CRMWorkspace?.state) return;
+    const sidebarOpen = {};
+    document.querySelectorAll(".nav-section").forEach(section => {
+      sidebarOpen[section.dataset.menuSection] = section.classList.contains("open");
+    });
+    CRMWorkspace.state.sidebarOpen = sidebarOpen;
+    CRMTabStore.save(CRMWorkspace.state);
+  },
+  updateSidebar(pageKey) {
+    document.querySelectorAll("[data-route]").forEach(item => item.classList.toggle("active", item.dataset.route === pageKey));
+    document.querySelectorAll(".nav-section").forEach(section => {
+      if (section.querySelector(`[data-route="${pageKey}"]`)) section.classList.add("open");
+    });
+    this.persistSidebarOpen();
   },
   bindUserMenu() {
     const menu = document.getElementById("userMenu");
@@ -280,7 +421,7 @@ window.CRMLayout = {
       </div>`;
     }
     const open = item.children.some(child => child.key === pageKey);
-    return `<div class="nav-section ${open ? "open" : ""}">
+    return `<div class="nav-section ${open ? "open" : ""}" data-menu-section="${item.label}">
       <div class="nav-parent" data-menu-parent>
         <span>${item.icon}</span><span class="nav-label">${item.label}</span><span class="nav-caret">⌄</span>
       </div>

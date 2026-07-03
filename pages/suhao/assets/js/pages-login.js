@@ -16,7 +16,11 @@ window.CRMLoginPage = {
         <section class="login-panel">
           <div class="login-title">
             <h2>登录系统</h2>
-            <p class="muted">请输入账号信息进入后台</p>
+            <p class="muted">请选择登录方式进入后台</p>
+          </div>
+          <div class="login-method-tabs">
+            <button class="active" type="button" data-login-method="password">账号密码登录</button>
+            <button type="button" data-login-method="dingtalk">钉钉扫码登录</button>
           </div>
           <form id="loginForm" class="login-form">
             <div class="form-field full"><label>用户名 / 邮箱</label><input name="account" autocomplete="username" placeholder="admin 或 demo@example.com"></div>
@@ -27,18 +31,37 @@ window.CRMLoginPage = {
             </div>
             <button class="btn primary login-submit" type="submit">登录</button>
           </form>
+          <div class="ding-login-panel" id="dingLoginPanel" hidden>
+            <div class="ding-qr-box"><span>钉</span></div>
+            <div class="ding-login-copy">
+              <strong>钉钉扫码登录</strong>
+              <p class="muted">使用钉钉扫描二维码完成授权登录，后续可接入 DingTalk OAuth / 扫码登录接口。</p>
+              <button class="btn" type="button" id="refreshDingQr">刷新二维码</button>
+            </div>
+          </div>
         </section>
       </main>
       <div class="toast" id="toast"></div>
     `;
     const form = document.getElementById("loginForm");
+    const dingPanel = document.getElementById("dingLoginPanel");
     const password = form.querySelector("input[name='password']");
+    document.querySelectorAll("[data-login-method]").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll("[data-login-method]").forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        const isDing = tab.dataset.loginMethod === "dingtalk";
+        form.hidden = isDing;
+        dingPanel.hidden = !isDing;
+      });
+    });
     document.getElementById("togglePassword").addEventListener("click", e => {
       const showing = password.type === "text";
       password.type = showing ? "password" : "text";
       e.currentTarget.textContent = showing ? "显示" : "隐藏";
     });
     document.getElementById("forgotPassword").addEventListener("click", () => CRMUI.toast("请联系系统管理员重置密码"));
+    document.getElementById("refreshDingQr").addEventListener("click", () => CRMUI.toast("钉钉二维码已刷新"));
     form.addEventListener("submit", async e => {
       e.preventDefault();
       const data = new FormData(form);

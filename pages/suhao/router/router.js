@@ -43,7 +43,33 @@ window.CRMRouter = {
     systemCommunicationConfig: "沟通服务协议配置",
     systemLogs: "系统日志"
   },
+  meta: {
+    workbench: { title: "工作台", page: "workbench", fixed: true, keepAlive: true },
+    leads: { title: "线索列表", page: "leads", parent: "线索中心", keepAlive: true },
+    publicPool: { title: "公海池", page: "leads", parent: "线索中心", keepAlive: true },
+    customers: { title: "客户列表", page: "customers", parent: "客户中心", keepAlive: true },
+    contracts: { title: "合同中心", page: "customers", parent: "客户中心", keepAlive: true },
+    email: { title: "邮件中心", page: "email", parent: "沟通中心", keepAlive: true },
+    whatsapp: { title: "WhatsApp", page: "whatsapp", parent: "沟通中心", keepAlive: true },
+    analyticsSales: { title: "销售经营", page: "analytics", parent: "分析中心", keepAlive: true },
+    analyticsAcquisition: { title: "获客分析", page: "analytics", parent: "分析中心", keepAlive: true },
+    analyticsCustomer: { title: "客户经营", page: "analytics", parent: "分析中心", keepAlive: true },
+    sites: { title: "站点管理", page: "ai", parent: "站点中心", keepAlive: true },
+    ai: { title: "AI 能力管理", page: "ai", keepAlive: true },
+    notificationCenter: { title: "通知中心", page: "ai", parent: "通知管理", keepAlive: true },
+    systemUsers: { title: "用户管理", page: "ai", parent: "系统管理", keepAlive: true },
+    systemRoles: { title: "角色管理", page: "ai", parent: "系统管理", keepAlive: true },
+    systemMenus: { title: "菜单管理", page: "ai", parent: "系统管理", keepAlive: true },
+    systemDicts: { title: "字典管理", page: "ai", parent: "系统管理", keepAlive: true },
+    systemParams: { title: "系统参数", page: "ai", parent: "系统管理", keepAlive: true },
+    systemCommunicationConfig: { title: "沟通服务协议配置", page: "ai", parent: "系统管理", keepAlive: true },
+    systemLogs: { title: "系统日志", page: "ai", parent: "系统管理", keepAlive: true }
+  },
   goto(name, params = {}) {
+    if (window.CRMWorkspace?.ready) {
+      window.CRMWorkspace.open(name, params);
+      return;
+    }
     const url = this.routes[name] || this.routes.workbench;
     const [path, existing = ""] = url.split("?");
     const query = new URLSearchParams(existing);
@@ -53,6 +79,46 @@ window.CRMRouter = {
   },
   query() {
     return Object.fromEntries(new URLSearchParams(window.location.search).entries());
+  },
+  routeUrl(name, params = {}) {
+    const url = this.routes[name] || this.routes.workbench;
+    const [path, existing = ""] = url.split("?");
+    const query = new URLSearchParams(existing);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") query.set(key, value);
+    });
+    const qs = query.toString();
+    return qs ? `${path}?${qs}` : path;
+  },
+  routeIdentity(name, params = {}) {
+    const url = this.routeUrl(name, params);
+    const [path, search = ""] = url.split("?");
+    const query = new URLSearchParams(search);
+    const view = query.get("view");
+    if (view) query.delete("view");
+    const suffix = query.toString();
+    return suffix ? `${name}?${suffix}` : name;
+  },
+  pageForKey(routeKey) {
+    return this.meta[routeKey]?.page || routeKey;
+  },
+  routeFromLocation(basePage = document.body.dataset.page || "workbench") {
+    const key = this.currentKey(basePage);
+    return this.createRoute(key, Object.fromEntries(new URLSearchParams(window.location.search).entries()));
+  },
+  createRoute(name, params = {}) {
+    const meta = this.meta[name] || { title: this.titles[name] || name, page: this.pageForKey(name), keepAlive: true };
+    const url = this.routeUrl(name, params);
+    return {
+      id: this.routeIdentity(name, params),
+      key: name,
+      page: meta.page || this.pageForKey(name),
+      title: meta.title || this.titles[name] || name,
+      parent: meta.parent || "",
+      fixed: Boolean(meta.fixed),
+      keepAlive: meta.keepAlive !== false,
+      url
+    };
   },
   currentKey(basePage) {
     const view = this.query().view;

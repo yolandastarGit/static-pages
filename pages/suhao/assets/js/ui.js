@@ -1,9 +1,14 @@
 window.CRMUI = {
   $(selector, root = document) {
-    return root.querySelector(selector);
+    if (root !== document) return root.querySelector(selector);
+    const activeRoot = window.CRMWorkspace?.activeRoot?.();
+    return activeRoot?.querySelector(selector) || document.querySelector(selector);
   },
   $$(selector, root = document) {
-    return Array.from(root.querySelectorAll(selector));
+    if (root !== document) return Array.from(root.querySelectorAll(selector));
+    const activeRoot = window.CRMWorkspace?.activeRoot?.();
+    const scoped = activeRoot ? Array.from(activeRoot.querySelectorAll(selector)) : [];
+    return scoped.length ? scoped : Array.from(document.querySelectorAll(selector));
   },
   siteName(id) {
     return CRM_MOCK.sites.find(s => s.id === id)?.name || "-";
@@ -78,7 +83,7 @@ window.CRMUI = {
     return items.map(item => `<option value="${item[valueKey]}">${item[labelKey]}</option>`).join("");
   },
   createChart(canvasId, type, data, options = {}) {
-    const canvas = document.getElementById(canvasId);
+    const canvas = this.$(`#${canvasId}`);
     if (!canvas) return;
     if (window.Chart) {
       return new Chart(canvas, { type, data, options: { maintainAspectRatio: false, responsive: true, ...options } });

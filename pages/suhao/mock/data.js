@@ -127,6 +127,129 @@ window.CRM_MOCK = {
       createdAt: "2026-06-22 14:35"
     }
   ],
+  companyProfiles: [
+    {
+      domain: "aeromex-parts.com",
+      company: "AeroMex Precision Parts S.A. de C.V.",
+      shortName: "AeroMex Precision",
+      basicInfo: "墨西哥航空与工业零部件采购商，长期服务北美装配工厂。",
+      registrationInfo: "墨西哥城工商注册，企业状态正常。",
+      industry: "航空零部件 / CNC 精密加工",
+      scale: "约 280 人",
+      foundedAt: "2014",
+      registeredCapital: "MXN 18,000,000",
+      legalRepresentative: "Elena Rodriguez",
+      mainBusiness: "航空铝件、工业壳体、定制 CNC 零部件采购与供应链集成。",
+      location: "Mexico City, Mexico",
+      intro: "企业具备稳定季度采购计划，关注质量体系、交期和批量供货能力，适合进入重点客户跟进池。",
+      exhibitions: [
+        { year: "2025", name: "Mexico Aerospace Fair" },
+        { year: "2024", name: "Expo Manufactura Monterrey" },
+        { year: "2023", name: "FABTECH Mexico" }
+      ],
+      exhibitionTrend: "近三年持续参加航空制造与工业加工展会，参展频率稳定，采购活跃度较高。",
+      risk: {
+        operation: "经营状态正常，订单集中在航空与工业制造客户。",
+        litigation: "暂无重大法律诉讼记录。",
+        administrativePenalty: "未发现近期行政处罚。",
+        abnormal: "未列入经营异常名录。",
+        dishonesty: "未发现失信记录。",
+        level: "低",
+        summary: "企业经营稳定，行业匹配度高，合作风险较低，建议重点关注交期与质量认证要求。"
+      },
+      aiRecommendation: "客户价值较高，应优先推进样品确认、认证资料同步和季度框架报价，建议由熟悉工业件的业务员当天跟进。"
+    },
+    {
+      domain: "playnorth.co",
+      company: "PlayNorth Retail Co.",
+      shortName: "PlayNorth",
+      basicInfo: "北美零售活动礼品采购商，主要面向连锁商超和节日活动渠道。",
+      registrationInfo: "加拿大安大略省注册，企业状态正常。",
+      industry: "玩具零售 / 私标礼品",
+      scale: "约 120 人",
+      foundedAt: "2017",
+      registeredCapital: "CAD 2,500,000",
+      legalRepresentative: "Sarah Jenkins",
+      mainBusiness: "毛绒玩具、私标包装、节日促销礼品采购与渠道分销。",
+      location: "Ontario, Canada",
+      intro: "企业采购节奏受活动节点驱动，关注认证、包装设计和交付稳定性，适合按季度活动计划推进。",
+      exhibitions: [
+        { year: "2025", name: "Toy Fair New York" },
+        { year: "2024", name: "ABC Kids Expo" }
+      ],
+      exhibitionTrend: "近两年持续参加玩具和儿童消费品展会，参展活跃度中高，具备渠道拓展需求。",
+      risk: {
+        operation: "经营状态稳定，采购受节日活动周期影响明显。",
+        litigation: "暂无重大法律诉讼记录。",
+        administrativePenalty: "未发现近期行政处罚。",
+        abnormal: "未列入经营异常名录。",
+        dishonesty: "未发现失信记录。",
+        level: "低",
+        summary: "企业渠道需求明确，风险较低，但需关注旺季交付压力与认证合规要求。"
+      },
+      aiRecommendation: "建议按 Q4 活动节点推进阶梯报价，优先确认 EN71 认证、私标包装和交付排期。"
+    },
+    {
+      company: "Gulf Retail Group",
+      shortName: "Gulf Retail",
+      basicInfo: "中东礼品与玩具渠道采购商，服务海湾地区零售门店及活动礼品项目。",
+      registrationInfo: "迪拜商业注册，企业状态正常。",
+      industry: "玩具礼品 / 活动零售",
+      scale: "约 90 人",
+      foundedAt: "2018",
+      registeredCapital: "AED 3,800,000",
+      legalRepresentative: "Ahmed Khan",
+      mainBusiness: "毛绒玩具、活动礼品、品牌定制周边的采购与区域分销。",
+      location: "Dubai, UAE",
+      intro: "企业通过 WhatsApp 明确提出 8000 件、25cm、10 月前交付需求，采购窗口清晰，适合快速报价并锁定样品方案。",
+      exhibitions: [
+        { year: "2025", name: "Middle East Toy Fair" },
+        { year: "2024", name: "Dubai Gifts & Lifestyle Expo" },
+        { year: "2023", name: "Gulf Retail Week" }
+      ],
+      exhibitionTrend: "近三年持续参加中东玩具礼品及零售展会，参展活跃度高，具备渠道扩张和旺季采购需求。",
+      risk: {
+        operation: "经营正常，采购项目受活动档期和进口交付周期影响较大。",
+        litigation: "未发现重大法律诉讼记录。",
+        administrativePenalty: "未发现近期行政处罚。",
+        abnormal: "未列入经营异常名录。",
+        dishonesty: "未发现失信记录。",
+        level: "中",
+        summary: "企业采购潜力较高，主要风险在于交付周期紧、定制规格确认不足，建议报价前锁定包装、认证和付款条件。"
+      },
+      aiRecommendation: "跟进优先级高。建议当天确认 LOGO 工艺、包装方式、样品费和 8000 件交期，并在报价中提供空运/海运两套交付方案。"
+    },
+    {
+      company: "Meyer Automation GmbH",
+      shortName: "Meyer Automation",
+      basicInfo: "德国自动化设备制造企业，长期采购机械五金支架及定制结构件。",
+      registrationInfo: "德国慕尼黑工商注册，企业状态正常。",
+      industry: "自动化设备 / 精密五金",
+      scale: "约 210 人",
+      foundedAt: "2011",
+      registeredCapital: "EUR 2,000,000",
+      legalRepresentative: "Lucas Meyer",
+      mainBusiness: "自动化产线设备、机械夹具、结构件采购与设备集成。",
+      location: "Munich, Germany",
+      intro: "企业已有合同记录，本次 WhatsApp 咨询为复购扩展，关注历史合同价格、批次一致性和 8 月交付排期。",
+      exhibitions: [
+        { year: "2025", name: "Automatica Munich" },
+        { year: "2024", name: "Hannover Messe" },
+        { year: "2022", name: "SPS Nuremberg" }
+      ],
+      exhibitionTrend: "近几年持续参加德国自动化和工业制造展会，参展频率稳定，技术采购活跃度高。",
+      risk: {
+        operation: "经营稳定，客户历史合作记录良好。",
+        litigation: "暂无重大法律诉讼记录。",
+        administrativePenalty: "未发现近期行政处罚。",
+        abnormal: "未列入经营异常名录。",
+        dishonesty: "未发现失信记录。",
+        level: "低",
+        summary: "复购客户风险较低，应重点控制历史价格延续、质量一致性和交付承诺。"
+      },
+      aiRecommendation: "建议由原负责人跟进，引用上一份合同的规格、价格区间和质检标准，优先给出 8 月批次交付计划。"
+    }
+  ],
   emails: [
     {
       id: "m01",
