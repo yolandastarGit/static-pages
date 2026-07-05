@@ -2,32 +2,138 @@ window.CRM_MOCK = {
   currentUser: {
     id: "u01",
     name: "管理员",
-    role: "销售主管",
+    role: "运营专员",
     roleCode: "supervisor",
     avatar: "AD",
     sites: ["s01", "s02"]
   },
   authUsers: [
-    { username: "admin", email: "demo@example.com", password: "123456", userId: "u01" }
+    { username: "admin", email: "demo@example.com", password: "123456", userId: "u01" },
+    { username: "chenhao", email: "chenhao@example.com", password: "123456", userId: "u02" },
+    { username: "mialiu", email: "mia@example.com", password: "123456", userId: "u03" },
+    { username: "alexxu", email: "alex@example.com", password: "123456", userId: "u04" }
   ],
   users: [
-    { id: "u01", name: "管理员", role: "销售主管", status: "启用", siteIds: ["s01", "s02"] },
-    { id: "u02", name: "Chen Hao", role: "业务员", status: "启用", siteIds: ["s01"] },
-    { id: "u03", name: "Mia Liu", role: "业务员", status: "启用", siteIds: ["s02"] },
-    { id: "u04", name: "Alex Xu", role: "区域负责人", status: "启用", siteIds: ["s01", "s02", "s03"] }
+    { id: "u01", name: "管理员", account: "admin", phone: "13800000001", email: "demo@example.com", role: "运营专员", status: "启用", siteIds: ["s01", "s02"], createdAt: "2026-06-01 09:00", dingTalkStatus: "已绑定", dingTalkAccount: "admin.dingtalk" },
+    { id: "u02", name: "Chen Hao", account: "chenhao", phone: "13800000002", email: "chenhao@example.com", role: "业务员", status: "启用", siteIds: ["s01"], createdAt: "2026-06-08 10:20", dingTalkStatus: "已绑定", dingTalkAccount: "chenhao.sales" },
+    { id: "u03", name: "Mia Liu", account: "mialiu", phone: "13800000003", email: "mia@example.com", role: "业务员", status: "启用", siteIds: ["s02"], createdAt: "2026-06-12 14:35", dingTalkStatus: "未绑定", dingTalkAccount: "" },
+    { id: "u04", name: "Alex Xu", account: "alexxu", phone: "13800000004", email: "alex@example.com", role: "协同人", status: "启用", siteIds: ["s01", "s02", "s03"], createdAt: "2026-06-20 16:10", dingTalkStatus: "未绑定", dingTalkAccount: "" }
   ],
+  dingTalkAccounts: ["admin.dingtalk", "chenhao.sales", "mia.sales", "alex.region"],
   sites: [
     { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
     { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
     { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ],
-  customerTags: ["北美零售", "私标客户", "德国客户", "复购", "重点客户", "长期跟进"],
-  leadTags: ["墨西哥市场", "北美零售", "德国客户", "手动录入", "大额采购", "样品优先"],
-  contactTags: ["采购经理", "决策人", "技术联系人", "财务联系人", "重点联系人"],
+  // 业务字典（MVP 简化版字典管理的数据源；标签/跟进阶段/跟进方式/行业/国家等业务下拉均从此读取）
+  // 初始字典项对齐 PRD §12.5.6
+  dictionaries: [
+    { id: "dict-follow-stage", code: "followStage", name: "跟进阶段", domain: "线索域", items: [
+      { id: "fs1", code: "待首响", name: "待首响", sort: 1, status: "启用", triggerHighIntent: false },
+      { id: "fs2", code: "已联系", name: "已联系", sort: 2, status: "启用", triggerHighIntent: false },
+      { id: "fs3", code: "需求确认", name: "需求确认", sort: 3, status: "启用", triggerHighIntent: false },
+      { id: "fs4", code: "样品阶段", name: "样品阶段", sort: 4, status: "启用", triggerHighIntent: false },
+      { id: "fs5", code: "报价阶段", name: "报价阶段", sort: 5, status: "启用", triggerHighIntent: false },
+      { id: "fs6", code: "高意向客户", name: "高意向客户", sort: 6, status: "启用", triggerHighIntent: true },
+      { id: "fs7", code: "合同已成交", name: "合同已成交", sort: 7, status: "启用", triggerHighIntent: false }
+    ]},
+    { id: "dict-follow-method", code: "followMethod", name: "跟进方式", domain: "线索域", items: [
+      { id: "fm1", code: "电话", name: "电话", sort: 1, status: "启用" },
+      { id: "fm2", code: "邮件", name: "邮件", sort: 2, status: "启用" },
+      { id: "fm3", code: "WhatsApp", name: "WhatsApp", sort: 3, status: "启用" },
+      { id: "fm4", code: "会议", name: "会议", sort: 4, status: "启用" },
+      { id: "fm5", code: "备注", name: "备注", sort: 5, status: "启用" }
+    ]},
+    { id: "dict-customer-level", code: "customerLevel", name: "客户潜质分级", domain: "客户域", items: [
+      { id: "cl1", code: "可跟", name: "可跟", sort: 1, status: "启用" },
+      { id: "cl2", code: "潜在", name: "潜在", sort: 2, status: "启用" },
+      { id: "cl3", code: "一般客户", name: "一般客户", sort: 3, status: "启用" }
+    ]},
+    { id: "dict-customer-tag", code: "customerTag", name: "客户标签", domain: "客户域", items: [
+      { id: "ct1", code: "重点客户", name: "重点客户", sort: 1, status: "启用" },
+      { id: "ct2", code: "高潜客户", name: "高潜客户", sort: 2, status: "启用" },
+      { id: "ct3", code: "复购客户", name: "复购客户", sort: 3, status: "启用" },
+      { id: "ct4", code: "长期合作客户", name: "长期合作客户", sort: 4, status: "启用" },
+      { id: "ct5", code: "待维护客户", name: "待维护客户", sort: 5, status: "启用" },
+      { id: "ct6", code: "价格敏感客户", name: "价格敏感客户", sort: 6, status: "启用" },
+      { id: "ct7", code: "新品客户", name: "新品客户", sort: 7, status: "启用" },
+      { id: "ct8", code: "已流失风险客户", name: "已流失风险客户", sort: 8, status: "启用" }
+    ]},
+    { id: "dict-lead-tag", code: "leadTag", name: "线索手动标签", domain: "线索域", items: [
+      { id: "lt1", code: "北美市场", name: "北美市场", sort: 1, status: "启用" },
+      { id: "lt2", code: "欧洲市场", name: "欧洲市场", sort: 2, status: "启用" },
+      { id: "lt3", code: "东南亚市场", name: "东南亚市场", sort: 3, status: "启用" },
+      { id: "lt4", code: "中东市场", name: "中东市场", sort: 4, status: "启用" },
+      { id: "lt5", code: "拉美市场", name: "拉美市场", sort: 5, status: "启用" },
+      { id: "lt6", code: "老客户介绍", name: "老客户介绍", sort: 6, status: "启用" },
+      { id: "lt7", code: "展会线索", name: "展会线索", sort: 7, status: "启用" },
+      { id: "lt8", code: "大额采购", name: "大额采购", sort: 8, status: "启用" },
+      { id: "lt9", code: "样品优先", name: "样品优先", sort: 9, status: "启用" },
+      { id: "lt10", code: "复购询盘", name: "复购询盘", sort: 10, status: "启用" },
+      { id: "lt11", code: "紧急订单", name: "紧急订单", sort: 11, status: "启用" },
+      { id: "lt12", code: "价格敏感", name: "价格敏感", sort: 12, status: "启用" }
+    ]},
+    { id: "dict-customer-focus", code: "customerFocus", name: "客户关注选项", domain: "客户域", items: [
+      { id: "cf1", code: "价格", name: "价格", sort: 1, status: "启用" },
+      { id: "cf2", code: "交期", name: "交期", sort: 2, status: "启用" },
+      { id: "cf3", code: "质量认证", name: "质量认证", sort: 3, status: "启用" },
+      { id: "cf4", code: "售后服务", name: "售后服务", sort: 4, status: "启用" }
+    ]},
+    { id: "dict-industry", code: "industry", name: "行业", domain: "客户域", items: [
+      { id: "ind1", code: "工业制造", name: "工业制造", sort: 1, status: "启用" },
+      { id: "ind2", code: "机械设备", name: "机械设备", sort: 2, status: "启用" },
+      { id: "ind3", code: "电子电器", name: "电子电器", sort: 3, status: "启用" },
+      { id: "ind4", code: "汽车配件", name: "汽车配件", sort: 4, status: "启用" },
+      { id: "ind5", code: "玩具礼品", name: "玩具礼品", sort: 5, status: "启用" },
+      { id: "ind6", code: "家居用品", name: "家居用品", sort: 6, status: "启用" },
+      { id: "ind7", code: "纺织服装", name: "纺织服装", sort: 7, status: "启用" },
+      { id: "ind8", code: "五金工具", name: "五金工具", sort: 8, status: "启用" },
+      { id: "ind9", code: "医疗器械", name: "医疗器械", sort: 9, status: "启用" },
+      { id: "ind10", code: "化工原料", name: "化工原料", sort: 10, status: "启用" },
+      { id: "ind11", code: "农副产品", name: "农副产品", sort: 11, status: "启用" },
+      { id: "ind12", code: "其他", name: "其他", sort: 12, status: "启用" }
+    ]},
+    { id: "dict-country", code: "country", name: "国家/地区", domain: "客户域", items: [
+      { id: "co1", code: "中国", name: "中国", sort: 1, status: "启用" },
+      { id: "co2", code: "美国", name: "美国", sort: 2, status: "启用" },
+      { id: "co3", code: "加拿大", name: "加拿大", sort: 3, status: "启用" },
+      { id: "co4", code: "墨西哥", name: "墨西哥", sort: 4, status: "启用" },
+      { id: "co5", code: "德国", name: "德国", sort: 5, status: "启用" },
+      { id: "co6", code: "英国", name: "英国", sort: 6, status: "启用" },
+      { id: "co7", code: "法国", name: "法国", sort: 7, status: "启用" },
+      { id: "co8", code: "意大利", name: "意大利", sort: 8, status: "启用" },
+      { id: "co9", code: "阿联酋", name: "阿联酋", sort: 9, status: "启用" },
+      { id: "co10", code: "日本", name: "日本", sort: 10, status: "启用" },
+      { id: "co11", code: "韩国", name: "韩国", sort: 11, status: "启用" },
+      { id: "co12", code: "印度", name: "印度", sort: 12, status: "启用" },
+      { id: "co13", code: "巴西", name: "巴西", sort: 13, status: "启用" },
+      { id: "co14", code: "澳大利亚", name: "澳大利亚", sort: 14, status: "启用" },
+      { id: "co15", code: "其他", name: "其他", sort: 15, status: "启用" }
+    ]},
+    { id: "dict-login-method", code: "loginMethod", name: "登录方式", domain: "系统域", items: [
+      { id: "lm1", code: "账号密码", name: "账号密码", sort: 1, status: "启用" },
+      { id: "lm2", code: "钉钉扫码", name: "钉钉扫码", sort: 2, status: "启用" },
+      { id: "lm3", code: "短信验证码", name: "短信验证码", sort: 3, status: "停用" }
+    ]}
+  ],
+  // 线索标记"丢失"时的结构化原因枚举（PRD §6.3.6，非字典管理项，系统内置）
+  lossReasonOptions: ["价格谈不拢", "客户选择竞品", "客户预算不足", "客户需求变更", "客户失联", "项目取消", "其他"],
+  // AI 服务商与模型枚举（PRD §10.3，模型随服务商联动）
+  aiProviderOptions: ["OpenAI", "Azure OpenAI", "阿里通义千问", "智谱 AI", "DeepSeek", "自定义"],
+  aiModelOptions: {
+    "OpenAI": ["gpt-4o", "gpt-4o-mini"],
+    "Azure OpenAI": ["gpt-4o", "gpt-4o-mini"],
+    "阿里通义千问": ["qwen-plus", "qwen-turbo"],
+    "智谱 AI": ["glm-4", "glm-4-flash"],
+    "DeepSeek": ["deepseek-chat", "deepseek-reasoner"],
+    "自定义": []
+  },
+  // 邮件认证模式枚举（PRD §12.8.2）
+  mailAuthModes: ["MASTER_PASSWORD（子邮箱授权码）", "OAUTH2", "XOAUTH2", "LOGIN", "PLAIN"],
   purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
   notificationChannels: ["站内信", "钉钉"],
   notificationTargetOptions: ["当前负责人", "创建人", "分配人", "部门负责人", "指定用户"],
-  notificationScenes: ["新线索分配", "新客户分配", "商机阶段变更", "合同到期提醒", "线索状态变更", "待跟进超时", "客户转移", "合同创建", "合同状态变更", "邮件未读数量提醒", "邮件未读超时提醒"],
+  notificationScenes: ["新线索分配", "新客户分配", "商机阶段变更", "合同到期提醒", "线索状态变更", "待跟进超时", "客户负责人转移", "合同创建", "合同状态变更", "邮件未读数量提醒", "邮件未读超时提醒"],
   notificationRules: [
     { id: "nr01", scene: "新线索分配", channels: ["站内信", "钉钉"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "新线索已分配", body: "您有一条新的线索需要跟进，请及时查看线索详情。", status: "开启" },
     { id: "nr02", scene: "新客户分配", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "新客户已分配", body: "系统已为您分配新客户，请完善客户信息并建立跟进计划。", status: "开启" },
@@ -35,7 +141,7 @@ window.CRM_MOCK = {
     { id: "nr04", scene: "合同到期提醒", channels: ["站内信"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "合同即将到期", body: "合同即将到期，请提前确认续约或关闭计划。", status: "关闭" },
     { id: "nr05", scene: "线索状态变更", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "线索状态变更", body: "线索状态已更新，请查看最新状态。", status: "开启" },
     { id: "nr06", scene: "待跟进超时", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "待跟进超时提醒", body: "存在超时未跟进线索，请尽快处理。", status: "开启" },
-    { id: "nr07", scene: "客户转移", channels: ["站内信"], targets: ["当前负责人", "分配人"], userIds: [], title: "客户已转移", body: "客户负责人发生变化，请关注客户交接信息。", status: "开启" },
+    { id: "nr07", scene: "客户负责人转移", channels: ["站内信"], targets: ["当前负责人", "分配人"], userIds: [], title: "客户负责人已转移", body: "客户负责人发生变化，请关注客户交接信息。", status: "开启" },
     { id: "nr08", scene: "合同创建", channels: ["站内信"], targets: ["创建人", "部门负责人"], userIds: [], title: "合同已创建", body: "新的合同记录已创建，请关注审批和履约进度。", status: "开启" },
     { id: "nr09", scene: "合同状态变更", channels: ["站内信"], targets: ["当前负责人", "创建人"], userIds: [], title: "合同状态变更", body: "合同状态已更新，请查看合同详情。", status: "开启" },
     { id: "nr10", scene: "邮件未读数量提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "邮件未读数量提醒", body: "当前存在较多未读邮件，请及时处理。", status: "开启" },
@@ -74,6 +180,43 @@ window.CRM_MOCK = {
   personalEmailAccounts: [
     { id: "pe01", userId: "u01", email: "demo@example.com", isDefault: true, status: "已验证", boundAt: "2026-06-30 10:12" },
     { id: "pe02", userId: "u01", email: "demo.work@example.com", isDefault: false, status: "已验证", boundAt: "2026-07-01 09:20" }
+  ],
+  dingTalkServiceConfig: {
+    appKey: "ding_********",
+    appSecret: "",
+    callbackUrl: "https://crm.example.com/callback/dingtalk",
+    corpId: "ding_corp_********",
+    enabled: true
+  },
+  pushServiceConfig: {
+    channels: ["站内信", "钉钉"],
+    dingTalkRobotWebhook: "https://oapi.dingtalk.com/robot/send?access_token=********",
+    inboxRetentionDays: 365
+  },
+  // 参数设置（系统通用业务参数；MVP 实现，对齐 PRD §12.6）
+  paramSettings: [
+    { id: "ps01", name: "登录超时时长", code: "session_timeout", value: "1440 分钟（24 小时）", desc: "用户无操作自动退出登录的时长", effect: "下次登录生效" },
+    { id: "ps02", name: "密码最小长度", code: "password_min_length", value: "8 位", desc: "密码长度最小值", effect: "立即生效" },
+    { id: "ps03", name: "密码复杂度", code: "password_complexity", value: "数字+大小写字母", desc: "密码字符类型要求", effect: "立即生效" },
+    { id: "ps04", name: "列表默认每页条数", code: "list_page_size", value: "20 条", desc: "列表页默认每页条数", effect: "立即生效" },
+    { id: "ps05", name: "单次导出上限", code: "export_max_rows", value: "10000 条", desc: "列表导出最大行数限制", effect: "立即生效" },
+    { id: "ps06", name: "首次登录强制改密", code: "first_login_change_password", value: "开启", desc: "新建/重置密码后首次登录是否强制改密", effect: "下次登录生效" },
+    { id: "ps07", name: "单端登录限制", code: "single_login", value: "关闭", desc: "是否限制同一账号同时只能在一处登录", effect: "立即生效" },
+    { id: "ps08", name: "会话刷新间隔", code: "session_refresh_interval", value: "5 分钟", desc: "Token 续期间隔", effect: "下次登录生效" },
+    { id: "ps09", name: "个人目标金额", code: "personal_target_amount", value: "0（无目标）", desc: "业务员的销售目标金额（系统级默认值，0 表示无目标）", effect: "立即生效" }
+  ],
+  // 系统配置（原"系统开关"，承载平台级全局开关项；MVP 实现，切换立即生效并记录系统日志）
+  systemConfig: [
+    { id: "sc01", name: "AI 能力总开关", code: "aiMaster", value: true, desc: "全局启用/停用 AI 能力。关闭后 AI 能力管理页仍可见，但所有 AI 业务场景不再调用 AI。" },
+    { id: "sc02", name: "AI 邮件意向分析", code: "aiEmailIntent", value: true, desc: "邮件 AI 智能分析。" },
+    { id: "sc03", name: "AI WhatsApp 意向分析", code: "aiWhatsappIntent", value: true, desc: "WhatsApp AI 智能分析。" },
+    { id: "sc04", name: "AI 自动提取企业信息", code: "aiExtractCompany", value: true, desc: "消息中自动识别企业名称/规模等。" },
+    { id: "sc05", name: "自动创建线索", code: "autoCreateLead", value: false, desc: "陌生发件人是否自动创建线索（与系统参数联动）。" },
+    { id: "sc06", name: "访客邮件采集", code: "visitorEmailCollect", value: true, desc: "接收访客邮件采集请求。" },
+    { id: "sc07", name: "WhatsApp 消息接收", code: "whatsappReceive", value: true, desc: "接收 WhatsApp 消息。" },
+    { id: "sc08", name: "钉钉扫码登录", code: "dingTalkLogin", value: true, desc: "是否允许钉钉扫码登录（依赖沟通服务协议配置 - 钉钉应用配置）。" },
+    { id: "sc09", name: "短信验证码登录", code: "smsLogin", value: false, desc: "二期功能，当前版本不开放；是否允许短信验证码登录。" },
+    { id: "sc10", name: "维护模式", code: "maintenance", value: false, desc: "开启后拒绝非系统管理员登录。" }
   ],
   personalWhatsappAccount: {
     id: "pwa01",
@@ -413,7 +556,7 @@ window.CRM_MOCK = {
       products: ["CNC 铝件", "工业壳体"],
       purchaseIntent: "明确采购",
       aiTags: ["高增长潜力", "批量采购"],
-      manualTags: ["墨西哥市场"],
+      manualTags: ["拉美市场"],
       createdAt: "2026-06-28 10:42",
       lastFollowAt: "2026-07-02 11:10",
       nextFollowAt: "2026-07-04 10:00",
@@ -431,15 +574,16 @@ window.CRM_MOCK = {
       channel: "邮件",
       ownerId: "u03",
       status: "高意向",
-      stage: "报价",
+      stage: "报价阶段",
       products: ["毛绒玩具", "私标包装"],
       purchaseIntent: "价格咨询",
       aiTags: ["节日订单", "认证关注"],
-      manualTags: ["北美零售"],
+      manualTags: ["北美市场"],
       createdAt: "2026-07-01 16:18",
       lastFollowAt: "2026-07-02 09:20",
       nextFollowAt: "2026-07-03 14:00",
       customerId: "",
+      convertFail: true,
       aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转高意向客户并录入报价跟进。"
     },
     {
@@ -462,9 +606,9 @@ window.CRM_MOCK = {
       lastFollowAt: "",
       nextFollowAt: "",
       customerId: "",
-      poolReason: "系统采集",
+      poolReason: "运营专员手动回收",
       poolEnteredAt: "2026-07-02 09:35",
-      aiSummary: "WhatsApp 会话显示客户有 8000 件订单需求，需要尽快分配负责人。"
+      aiSummary: "WhatsApp 会话显示客户有 8000 件订单需求，已回收至公海池等待重新分配负责人。"
     },
     {
       id: "l04",
@@ -481,7 +625,7 @@ window.CRM_MOCK = {
       products: ["五金支架"],
       purchaseIntent: "复购扩展",
       aiTags: ["复购询盘"],
-      manualTags: ["德国客户"],
+      manualTags: ["欧洲市场"],
       createdAt: "2026-05-18 13:22",
       lastFollowAt: "2026-06-20 10:10",
       nextFollowAt: "2026-07-08 10:00",
@@ -491,7 +635,7 @@ window.CRM_MOCK = {
   ],
   followLogs: [
     { id: "f01", leadId: "l01", userId: "u02", method: "邮件", stage: "需求确认", content: "已回复客户，确认图纸版本、材料牌号和认证要求。", nextFollowAt: "2026-07-04 10:00", createdAt: "2026-07-02 11:10" },
-    { id: "f02", leadId: "l02", userId: "u03", method: "电话", stage: "报价", content: "客户希望今天收到 5000/10000 件阶梯报价。", nextFollowAt: "2026-07-03 14:00", createdAt: "2026-07-02 09:20" },
+    { id: "f02", leadId: "l02", userId: "u03", method: "电话", stage: "报价阶段", content: "客户希望今天收到 5000/10000 件阶梯报价。", nextFollowAt: "2026-07-03 14:00", createdAt: "2026-07-02 09:20" },
     { id: "f03", leadId: "l04", userId: "u02", method: "备注", stage: "合同已成交", content: "录入合同 CON-2026-0081。", nextFollowAt: "2026-07-08 10:00", createdAt: "2026-06-20 10:10" }
   ],
   customers: [
@@ -500,13 +644,14 @@ window.CRM_MOCK = {
       no: "CUS-2026-0301",
       name: "Northwind Retail Inc.",
       siteId: "s02",
-      country: "United States",
-      industry: "Retail",
+      country: "美国",
+      industry: "玩具礼品",
       ownerId: "u03",
-      status: "跟进中",
-      tags: ["北美零售", "私标客户"],
+      potentialLevel: "潜在",
+      tags: ["重点客户", "新品客户"],
       leadIds: [],
       contractIds: [],
+      transferRecords: [],
       aiProfile: "手动创建客户，暂无 AI 画像数据。",
       createdAt: "2026-06-12"
     },
@@ -515,20 +660,23 @@ window.CRM_MOCK = {
       no: "CUS-2026-0268",
       name: "Meyer Automation GmbH",
       siteId: "s01",
-      country: "Germany",
-      industry: "Manufacturing",
+      country: "德国",
+      industry: "机械设备",
       ownerId: "u02",
-      status: "已成交",
-      tags: ["德国客户", "复购"],
+      potentialLevel: "可跟",
+      tags: ["复购客户", "长期合作客户"],
       leadIds: ["l04"],
       contractIds: ["ct01"],
+      transferRecords: [
+        { id: "tr01", fromOwnerId: "u03", toOwnerId: "u02", transferredAt: "2026-06-20 10:10", operatorId: "u01", reason: "老客户复购，转由工业事业部业务员继续跟进" }
+      ],
       aiProfile: "德国自动化设备制造企业，关注稳定供货、批次一致性和技术响应速度。",
       createdAt: "2026-05-20"
     }
   ],
   contacts: [
-    { id: "p01", customerId: "c02", name: "Lucas Meyer", title: "Procurement Manager", email: "lucas@meyer-auto.de", phone: "+49 151 2345 7788", whatsapp: "+49 151 2345 7788", role: "采购经理", primary: true, aiDetected: true, tags: ["采购经理", "重点联系人"] },
-    { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false, tags: ["采购经理"] }
+    { id: "p01", customerId: "c02", name: "Lucas Meyer", title: "Procurement Manager", email: "lucas@meyer-auto.de", phone: "+49 151 2345 7788", whatsapp: "+49 151 2345 7788", role: "采购经理", primary: true, aiDetected: true },
+    { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false }
   ],
   contracts: [
     { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", status: "执行中", ownerId: "u02", attachments: ["contract-0081.pdf"] }

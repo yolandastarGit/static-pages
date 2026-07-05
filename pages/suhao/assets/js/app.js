@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (!CRMAuth.requireAuth()) return;
+  CRMAuth.syncCurrentUser();
   const page = document.body.dataset.page || "workbench";
   const pageMap = {
     workbench: CRMWorkbenchPage,

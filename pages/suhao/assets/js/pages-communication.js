@@ -272,12 +272,15 @@ window.CRMCommunicationPage = {
     }));
   },
   openGenerateLeadModal(mail) {
+    // 业务规则 BR-024/BR-026：邮件生成线索天然归属当前绑定业务员，默认状态"待跟进"，不进入公海池
+    const me = CRM_MOCK.currentUser;
+    const defaultSiteId = (me.siteIds && me.siteIds[0]) || CRM_MOCK.sites[0]?.id || "";
     CRMUI.modal("确认生成线索", `
       <div class="form-grid">
         ${CRMUI.formInput("企业名称", "company", mail.senderName.includes("Unknown") ? "" : mail.senderName)}
         ${CRMUI.formInput("联系人", "contact", mail.senderName)}
         ${CRMUI.formInput("邮箱", "email", mail.from.match(/<(.+)>/)?.[1] || "")}
-        <div class="form-field"><label>来源站点</label><select name="siteId" required><option value="">请选择</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></div>
+        <div class="form-field"><label>来源站点</label><select name="siteId" required><option value="">请选择</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}" ${s.id === defaultSiteId ? "selected" : ""}>${s.name}</option>`).join("")}</select></div>
         ${CRMUI.formSelect("采购意向", "purchaseIntent", (CRM_MOCK.purchaseIntentOptions || []).map(v => ({ value: v, label: v })))}
       </div>`, form => {
       const lead = {
@@ -289,8 +292,8 @@ window.CRMCommunicationPage = {
         phone: "",
         siteId: form.get("siteId"),
         channel: "邮件",
-        ownerId: "",
-        status: "公海待分配",
+        ownerId: me.id,
+        status: "待跟进",
         stage: "待首响",
         products: ["待识别"],
         purchaseIntent: form.get("purchaseIntent"),
@@ -300,15 +303,13 @@ window.CRMCommunicationPage = {
         lastFollowAt: "",
         nextFollowAt: "",
         customerId: "",
-        poolReason: "系统采集",
-        poolEnteredAt: "2026-07-02 12:00",
         aiSummary: mail.aiSummary
       };
       CRM_MOCK.leads.unshift(lead);
       mail.leadId = lead.id;
       mail.siteId = form.get("siteId");
       CRMUI.closeModal();
-      CRMUI.toast("线索已生成并进入公海池");
+      CRMUI.toast("线索已生成并归属当前业务员");
       this.renderMailDetail();
     });
   },

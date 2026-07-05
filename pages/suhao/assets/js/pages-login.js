@@ -23,13 +23,14 @@ window.CRMLoginPage = {
             <button type="button" data-login-method="dingtalk">钉钉扫码登录</button>
           </div>
           <form id="loginForm" class="login-form">
-            <div class="form-field full"><label>用户名 / 邮箱</label><input name="account" autocomplete="username" placeholder="admin 或 demo@example.com"></div>
+            <div class="form-field full"><label>用户名 / 邮箱</label><input name="account" autocomplete="username" placeholder="admin / chenhao / mialiu / alexxu"></div>
             <div class="form-field full login-password"><label>密码</label><input name="password" type="password" autocomplete="current-password" placeholder="请输入密码"><button class="btn" type="button" id="togglePassword">显示</button></div>
             <div class="login-options">
               <label class="login-check"><input type="checkbox" name="remember"> 记住登录</label>
               <button class="link-btn" type="button" id="forgotPassword">忘记密码</button>
             </div>
             <button class="btn primary login-submit" type="submit">登录</button>
+            <p class="muted small" style="margin-top:8px">演示账号统一密码 <code>123456</code>：admin（运营专员）/ chenhao（业务员）/ mialiu（业务员）/ alexxu（协同人）</p>
           </form>
           <div class="ding-login-panel" id="dingLoginPanel" hidden>
             <div class="ding-qr-box"><span>钉</span></div>

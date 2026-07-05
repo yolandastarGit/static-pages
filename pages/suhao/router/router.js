@@ -17,8 +17,10 @@ window.CRMRouter = {
     systemRoles: "ai.html?view=system-roles",
     systemMenus: "ai.html?view=system-menus",
     systemDicts: "ai.html?view=system-dicts",
+    paramSettings: "ai.html?view=param-settings",
     systemParams: "ai.html?view=system-params",
     systemCommunicationConfig: "ai.html?view=system-communication-config",
+    systemConfig: "ai.html?view=system-config",
     systemLogs: "ai.html?view=system-logs"
   },
   titles: {
@@ -39,8 +41,10 @@ window.CRMRouter = {
     systemRoles: "角色管理",
     systemMenus: "菜单管理",
     systemDicts: "字典管理",
+    paramSettings: "参数设置",
     systemParams: "系统参数",
     systemCommunicationConfig: "沟通服务协议配置",
+    systemConfig: "系统配置",
     systemLogs: "系统日志"
   },
   meta: {
@@ -61,8 +65,10 @@ window.CRMRouter = {
     systemRoles: { title: "角色管理", page: "ai", parent: "系统管理", keepAlive: true },
     systemMenus: { title: "菜单管理", page: "ai", parent: "系统管理", keepAlive: true },
     systemDicts: { title: "字典管理", page: "ai", parent: "系统管理", keepAlive: true },
+    paramSettings: { title: "参数设置", page: "ai", parent: "系统管理", keepAlive: true },
     systemParams: { title: "系统参数", page: "ai", parent: "系统管理", keepAlive: true },
     systemCommunicationConfig: { title: "沟通服务协议配置", page: "ai", parent: "系统管理", keepAlive: true },
+    systemConfig: { title: "系统配置", page: "ai", parent: "系统管理", keepAlive: true },
     systemLogs: { title: "系统日志", page: "ai", parent: "系统管理", keepAlive: true }
   },
   goto(name, params = {}) {
@@ -134,8 +140,10 @@ window.CRMRouter = {
         "system-roles": "systemRoles",
         "system-menus": "systemMenus",
         "system-dicts": "systemDicts",
+        "param-settings": "paramSettings",
         "system-params": "systemParams",
         "system-communication-config": "systemCommunicationConfig",
+        "system-config": "systemConfig",
         "system-logs": "systemLogs"
       }
     };

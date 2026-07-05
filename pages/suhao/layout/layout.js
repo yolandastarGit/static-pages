@@ -13,8 +13,10 @@ window.CRMLayout = {
       { key: "systemRoles", label: "角色管理" },
       { key: "systemMenus", label: "菜单管理" },
       { key: "systemDicts", label: "字典管理" },
+      { key: "paramSettings", label: "参数设置" },
       { key: "systemParams", label: "系统参数" },
       { key: "systemCommunicationConfig", label: "沟通服务协议配置" },
+      { key: "systemConfig", label: "系统配置" },
       { key: "systemLogs", label: "系统日志" }
     ] }
   ],
@@ -44,6 +46,7 @@ window.CRMLayout = {
                 </button>
                 <div class="user-dropdown" id="userDropdown">
                   <button type="button" data-user-action="profile">我的资料</button>
+                  <button type="button" data-user-action="password">修改密码</button>
                   <button type="button" data-user-action="bind">绑定账号</button>
                   <button type="button" data-user-action="logout">退出登录</button>
                 </div>
@@ -96,7 +99,7 @@ window.CRMLayout = {
       "合同到期提醒": { route: "contracts", params: {} },
       "线索状态变更": { route: "leads", params: { id: "l01" } },
       "待跟进超时": { route: "leads", params: { status: "待跟进" } },
-      "客户转移": { route: "customers", params: { id: "c02" } },
+      "客户负责人转移": { route: "customers", params: { id: "c02" } },
       "合同创建": { route: "contracts", params: {} },
       "合同状态变更": { route: "contracts", params: {} },
       "邮件未读数量提醒": { route: "email", params: {} },
@@ -240,6 +243,7 @@ window.CRMLayout = {
         close();
         const action = item.dataset.userAction;
         if (action === "profile") this.openProfileModal();
+        if (action === "password") this.openChangePasswordModal();
         if (action === "bind") this.openBindAccountModal();
         if (action === "logout") CRMAuth.logout();
       });
@@ -251,7 +255,29 @@ window.CRMLayout = {
         <div class="form-field"><label>姓名</label><input value="${CRM_MOCK.currentUser.name}" disabled></div>
         <div class="form-field"><label>角色</label><input value="${CRM_MOCK.currentUser.role}" disabled></div>
         <div class="form-field full"><label>管理站点</label><input value="${CRM_MOCK.currentUser.sites.map(CRMUI.siteName).join("、")}" disabled></div>
+        <div class="form-field full"><small class="muted">个人中心完整页化（资料可编辑、头像上传等）二期开放；如需修改基本信息，请联系系统管理员在用户管理中维护。</small></div>
       </div>`, () => CRMUI.closeModal());
+  },
+  // 修改密码（MVP 最小补丁：弹窗形态，校验旧密码 + 新密码二次确认）
+  openChangePasswordModal() {
+    CRMUI.modal("修改密码", `
+      <div class="form-grid">
+        <div class="form-field full"><label>当前密码</label><input type="password" name="oldPassword" required placeholder="请输入当前登录密码"></div>
+        <div class="form-field full"><label>新密码</label><input type="password" name="newPassword" required placeholder="请输入新密码（不少于 6 位）"></div>
+        <div class="form-field full"><label>确认新密码</label><input type="password" name="confirmPassword" required placeholder="请再次输入新密码"></div>
+      </div>`, form => {
+      const oldPwd = form.get("oldPassword") || "";
+      const newPwd = form.get("newPassword") || "";
+      const confirmPwd = form.get("confirmPassword") || "";
+      if (!oldPwd) return CRMUI.toast("请输入当前密码");
+      if (newPwd.length < 6) return CRMUI.toast("新密码不少于 6 位");
+      if (newPwd !== confirmPwd) return CRMUI.toast("两次输入的新密码不一致");
+      if (newPwd === oldPwd) return CRMUI.toast("新密码不能与当前密码相同");
+      // mock：仅记录变更，不持久化（MVP 无真实鉴权后端）
+      CRM_MOCK.currentUser.passwordUpdatedAt = "2026-07-05 22:00";
+      CRMUI.closeModal();
+      CRMUI.toast("密码已修改，下次登录请使用新密码");
+    });
   },
   openBindAccountModal() {
     CRMUI.modal("绑定账号", `

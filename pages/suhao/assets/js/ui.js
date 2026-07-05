@@ -21,10 +21,10 @@ window.CRMUI = {
   },
   badge(text) {
     const color = {
-      "启用": "green", "停用": "gray", "待跟进": "cyan", "跟进中": "blue", "已分配": "cyan", "高意向": "violet",
+      "启用": "green", "停用": "gray", "禁用": "gray", "待跟进": "cyan", "跟进中": "blue", "高意向": "violet",
       "已成交": "green", "公海待分配": "amber", "无效": "gray", "丢失": "red",
       "执行中": "blue", "已签约": "green", "已完成": "green", "已终止": "red", "已作废": "gray",
-      "开启": "green", "关闭": "gray"
+      "开启": "green", "关闭": "gray", "已绑定": "green", "未绑定": "gray"
     }[text] || "gray";
     return `<span class="badge ${color}">${text}</span>`;
   },

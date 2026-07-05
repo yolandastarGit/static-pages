@@ -36,14 +36,19 @@ window.CRMAdminPage = {
   openAiConfigModal(provider) {
     const isEdit = Boolean(provider);
     const config = provider?.config || this.aiConfigTemplate();
+    const providerOpts = (CRM_MOCK.aiProviderOptions || []).map(v => ({ value: v, label: v }));
+    const currentProvider = provider?.name || "";
+    const modelOpts = (CRM_MOCK.aiModelOptions?.[currentProvider] || []).map(v => ({ value: v, label: v }));
+    const isCustomProvider = currentProvider === "自定义";
     CRMUI.modal(isEdit ? `${provider.name} 配置` : "新增 AI 配置", `
       <div class="form-grid">
-        ${CRMUI.formInput("服务商名称", "name", provider?.name || "")}
+        ${CRMUI.formSelect("AI 服务商", "name", providerOpts, currentProvider)}
         ${CRMUI.formInput("服务类型", "type", provider?.type || "大语言模型")}
         ${CRMUI.formSelect("状态", "status", ["启用", "停用"].map(value => ({ value, label: value })), provider?.status || "启用")}
         ${CRMUI.formInput("API Key", "apiKey", config.api.apiKey)}
         ${CRMUI.formInput("Base URL", "baseUrl", config.api.baseUrl)}
-        ${CRMUI.formInput("Model", "model", config.api.model)}
+        <div class="form-field" id="modelSelectWrap"><label>AI 模型</label><select name="model">${modelOpts.map(o => `<option value="${o.value}" ${o.value === config.api.model ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>
+        <div class="form-field" id="modelInputWrap" style="display:${isCustomProvider ? "" : "none"}"><label>AI 模型（自定义）</label><input name="modelCustom" type="text" value="${isCustomProvider ? config.api.model : ""}" placeholder="自定义模型名"></div>
         ${CRMUI.formInput("Secret", "secret", config.api.secret)}
         ${CRMUI.formInput("Timeout（秒）", "timeout", config.api.timeout, "number")}
         ${CRMUI.formInput("Temperature", "temperature", config.api.temperature, "number")}
@@ -52,12 +57,14 @@ window.CRMAdminPage = {
         ${CRMUI.formSelect("WhatsApp 会话分析", "whatsappAnalysis", ["开启", "关闭"].map(value => ({ value, label: value })), config.features.whatsappAnalysis)}
         ${CRMUI.formSelect("线索摘要生成", "leadSummary", ["开启", "关闭"].map(value => ({ value, label: value })), config.features.leadSummary)}
       </div>`, form => {
-      if (!form.get("name") || !form.get("apiKey") || !form.get("baseUrl") || !form.get("model")) return CRMUI.toast("请完善服务商名称、API Key、Base URL 和 Model");
+      const providerName = form.get("name");
+      const model = providerName === "自定义" ? (form.get("modelCustom") || "").trim() : form.get("model");
+      if (!providerName || !form.get("apiKey") || !form.get("baseUrl") || !model) return CRMUI.toast("请完善 AI 服务商、API Key、Base URL 和 AI 模型");
       const nextConfig = {
         api: {
           apiKey: form.get("apiKey"),
           baseUrl: form.get("baseUrl"),
-          model: form.get("model"),
+          model,
           secret: form.get("secret"),
           timeout: Number(form.get("timeout") || 30),
           temperature: Number(form.get("temperature") || 0.2),
@@ -70,9 +77,9 @@ window.CRMAdminPage = {
         }
       };
       const nextProvider = provider || { id: `aip${Date.now()}` };
-      nextProvider.name = form.get("name");
+      nextProvider.name = providerName;
       nextProvider.type = form.get("type");
-      nextProvider.defaultModel = nextConfig.api.model;
+      nextProvider.defaultModel = model;
       nextProvider.status = form.get("status");
       nextProvider.updatedAt = "2026-07-03 17:40";
       nextProvider.config = nextConfig;
@@ -81,6 +88,24 @@ window.CRMAdminPage = {
       CRMUI.toast(isEdit ? "AI 配置已保存" : "AI 配置已新增");
       this.renderAiProviderTable();
     });
+    // AI 服务商与模型联动：切换服务商时刷新模型下拉；选"自定义"时降级为文本输入
+    const providerSel = CRMUI.$('select[name="name"]');
+    const modelSelectWrap = CRMUI.$("#modelSelectWrap");
+    const modelInputWrap = CRMUI.$("#modelInputWrap");
+    if (providerSel && modelSelectWrap && modelInputWrap) {
+      providerSel.addEventListener("change", e => {
+        const val = e.target.value;
+        const opts = CRM_MOCK.aiModelOptions?.[val] || [];
+        modelSelectWrap.querySelector("select").innerHTML = opts.map(m => `<option value="${m}">${m}</option>`).join("");
+        if (val === "自定义") {
+          modelSelectWrap.style.display = "none";
+          modelInputWrap.style.display = "";
+        } else {
+          modelSelectWrap.style.display = "";
+          modelInputWrap.style.display = "none";
+        }
+      });
+    }
   },
   openAiProviderDeleteModal(providerId) {
     const provider = CRM_MOCK.aiProviders.find(item => item.id === providerId);
@@ -269,11 +294,14 @@ window.CRMAdminPage = {
   },
   renderCommunicationConfig(root) {
     const q = CRMRouter.query();
-    this.communicationState = { tab: q.tab === "whatsapp" ? "whatsapp" : "mail" };
+    const validTabs = ["mail", "whatsapp", "dingtalk", "push"];
+    this.communicationState = { tab: validTabs.includes(q.tab) ? q.tab : "mail" };
     root.innerHTML = `
       <div class="tabs" id="communicationTabs">
         <div class="tab ${this.communicationState.tab === "mail" ? "active" : ""}" data-tab="mail">邮件服务配置</div>
         <div class="tab ${this.communicationState.tab === "whatsapp" ? "active" : ""}" data-tab="whatsapp">WhatsApp 服务配置</div>
+        <div class="tab ${this.communicationState.tab === "dingtalk" ? "active" : ""}" data-tab="dingtalk">钉钉应用配置</div>
+        <div class="tab ${this.communicationState.tab === "push" ? "active" : ""}" data-tab="push">消息推送配置</div>
       </div>
       <div id="communicationTable"></div>
     `;
@@ -286,8 +314,11 @@ window.CRMAdminPage = {
     this.renderCommunicationTable();
   },
   renderCommunicationTable() {
-    const isMail = this.communicationState.tab === "mail";
-    isMail ? this.renderMailServiceConfig() : this.renderWhatsappServiceConfig();
+    const tab = this.communicationState.tab;
+    if (tab === "mail") return this.renderMailServiceConfig();
+    if (tab === "whatsapp") return this.renderWhatsappServiceConfig();
+    if (tab === "dingtalk") return this.renderDingTalkServiceConfig();
+    if (tab === "push") return this.renderPushServiceConfig();
   },
   mailNumberStepper(name, value) {
     return `<div class="mail-stepper" data-stepper="${name}">
@@ -337,7 +368,7 @@ window.CRMAdminPage = {
           <div class="mail-config-row">
             <label>认证模式</label>
             <select name="authMode">
-              ${["MASTER_PASSWORD（子邮箱授权码）"].map(item => `<option value="${item}" ${item === config.authMode ? "selected" : ""}>${item}</option>`).join("")}
+              ${(CRM_MOCK.mailAuthModes || ["MASTER_PASSWORD（子邮箱授权码）"]).map(item => `<option value="${item}" ${item === config.authMode ? "selected" : ""}>${item}</option>`).join("")}
             </select>
           </div>
           <div class="mail-config-row compact with-help">
@@ -498,6 +529,104 @@ window.CRMAdminPage = {
       CRMUI.toast("WhatsApp 服务配置同步完成");
     }, 700);
   },
+  renderDingTalkServiceConfig() {
+    const config = CRM_MOCK.dingTalkServiceConfig;
+    CRMUI.$("#communicationTable").innerHTML = `
+      <form class="mail-config-form" id="dingTalkServiceForm">
+        <section class="mail-config-section">
+          <div class="mail-section-title"><span>钉钉应用凭证</span></div>
+          <div class="mail-config-row">
+            <label>钉钉应用 AppKey</label>
+            <input name="appKey" value="${config.appKey}">
+          </div>
+          <div class="mail-config-row">
+            <label>钉钉应用 AppSecret</label>
+            <input name="appSecret" type="password" placeholder="已配置，留空则不修改">
+          </div>
+          <div class="mail-config-row">
+            <label>扫码回调地址</label>
+            <input name="callbackUrl" value="${config.callbackUrl}">
+          </div>
+          <div class="mail-config-row">
+            <label>钉钉企业 CorpId</label>
+            <input name="corpId" value="${config.corpId || ""}" placeholder="不填则不限定企业">
+          </div>
+          <div class="mail-config-row compact">
+            <label class="mail-check"><input type="checkbox" name="enabled" ${config.enabled ? "checked" : ""}> 启用钉钉扫码登录</label>
+          </div>
+        </section>
+        <div class="mail-config-actions">
+          <button class="btn primary" id="saveDingTalkService" type="submit">保存</button>
+          <button class="btn" id="syncDingTalkEmployees" type="button">同步钉钉员工</button>
+          <button class="btn" id="testDingTalkScan" type="button">测试扫码</button>
+        </div>
+      </form>
+    `;
+    CRMUI.$("#dingTalkServiceForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      if (!form.get("appKey") || !form.get("callbackUrl")) return CRMUI.toast("请完善钉钉应用配置必填项");
+      Object.assign(config, {
+        appKey: form.get("appKey"),
+        callbackUrl: form.get("callbackUrl"),
+        corpId: form.get("corpId"),
+        enabled: form.get("enabled") === "on"
+      });
+      if (form.get("appSecret")) config.appSecret = form.get("appSecret");
+      CRMUI.toast("钉钉应用配置已保存");
+    });
+    CRMUI.$("#syncDingTalkEmployees").addEventListener("click", () => CRMUI.toast("钉钉员工同步完成"));
+    CRMUI.$("#testDingTalkScan").addEventListener("click", () => CRMUI.toast("钉钉扫码测试通过，应用凭证配置有效"));
+  },
+  renderPushServiceConfig() {
+    const config = CRM_MOCK.pushServiceConfig;
+    const channelOptions = ["站内信", "钉钉"].map(value => {
+      const checked = config.channels.includes(value) ? "checked" : "";
+      return `<label class="mail-check"><input type="checkbox" name="channels" value="${value}" ${checked}> ${value}</label>`;
+    }).join(" ");
+    CRMUI.$("#communicationTable").innerHTML = `
+      <form class="mail-config-form" id="pushServiceForm">
+        <section class="mail-config-section">
+          <div class="mail-section-title"><span>推送通道</span></div>
+          <div class="mail-config-row">
+            <label>推送渠道</label>
+            <div>${channelOptions}</div>
+          </div>
+          <div class="mail-config-row">
+            <label>钉钉机器人 Webhook</label>
+            <input name="dingTalkRobotWebhook" value="${config.dingTalkRobotWebhook || ""}" placeholder="复用钉钉应用凭证">
+          </div>
+          <div class="mail-config-row compact with-help">
+            <label>站内信保留天数</label>
+            ${this.mailNumberStepper("inboxRetentionDays", config.inboxRetentionDays)}
+            <small>站内信消息保留时长</small>
+          </div>
+        </section>
+        <div class="mail-config-actions">
+          <button class="btn primary" id="savePushService" type="submit">保存</button>
+          <button class="btn" id="testPushService" type="button">测试推送</button>
+        </div>
+      </form>
+    `;
+    CRMUI.$$("[data-step]").forEach(btn => btn.addEventListener("click", () => {
+      const input = CRMUI.$(`input[name='${btn.dataset.step}']`);
+      const next = Math.max(0, Number(input.value || 0) + Number(btn.dataset.delta));
+      input.value = next;
+    }));
+    CRMUI.$("#pushServiceForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const channels = form.getAll("channels");
+      if (!channels.length) return CRMUI.toast("请至少选择一个推送渠道");
+      Object.assign(config, {
+        channels,
+        dingTalkRobotWebhook: form.get("dingTalkRobotWebhook"),
+        inboxRetentionDays: Number(form.get("inboxRetentionDays"))
+      });
+      CRMUI.toast("消息推送配置已保存");
+    });
+    CRMUI.$("#testPushService").addEventListener("click", () => CRMUI.toast("测试推送成功，请到目标账号确认"));
+  },
   renderEmailAccountTable() {
     const keyword = this.communicationState.query;
     const rows = (CRM_MOCK.emailAccounts || []).filter(account => `${account.email} ${account.provider} ${account.status} ${account.displayName}`.toLowerCase().includes(keyword));
@@ -620,14 +749,186 @@ window.CRMAdminPage = {
       this.renderCommunicationTable();
     });
   },
+  renderSystemUsers(root) {
+    this.userState = { query: "", role: "", status: "", page: 1, pageSize: 5 };
+    root.innerHTML = `
+      <div class="toolbar">
+        <button class="btn primary" id="newSystemUser">新增用户</button>
+      </div>
+      <div class="filters card pad">
+        <input id="systemSearch" placeholder="搜索用户姓名、登录账号、手机号、邮箱">
+        <select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select>
+        <select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select>
+      </div>
+      <div id="systemTable"></div>
+    `;
+    CRMUI.$("#systemSearch").addEventListener("input", e => {
+      this.userState.query = e.target.value.toLowerCase();
+      this.userState.page = 1;
+      this.renderSystemUserTable();
+    });
+    CRMUI.$("#systemRole").addEventListener("change", e => {
+      this.userState.role = e.target.value;
+      this.userState.page = 1;
+      this.renderSystemUserTable();
+    });
+    CRMUI.$("#systemStatus").addEventListener("change", e => {
+      this.userState.status = e.target.value;
+      this.userState.page = 1;
+      this.renderSystemUserTable();
+    });
+    CRMUI.$("#newSystemUser").addEventListener("click", () => this.openSystemUserModal());
+    this.renderSystemUserTable();
+  },
+  systemUserRoles() {
+    return Array.from(new Set(CRM_MOCK.users.map(user => user.role).filter(Boolean)));
+  },
+  systemUserRows() {
+    const keyword = this.userState.query;
+    return CRM_MOCK.users.filter(user => {
+      const text = `${user.name} ${user.account || ""} ${user.phone || ""} ${user.email || ""} ${user.role} ${user.status}`.toLowerCase();
+      return text.includes(keyword) && (!this.userState.role || user.role === this.userState.role) && (!this.userState.status || user.status === this.userState.status);
+    });
+  },
+  renderSystemUserTable() {
+    const rows = this.systemUserRows();
+    const totalPages = Math.max(1, Math.ceil(rows.length / this.userState.pageSize));
+    this.userState.page = Math.min(Math.max(1, this.userState.page), totalPages);
+    const start = (this.userState.page - 1) * this.userState.pageSize;
+    const pageRows = rows.slice(start, start + this.userState.pageSize);
+    CRMUI.$("#systemTable").innerHTML = CRMUI.table([
+      { title: "用户姓名", render: user => user.name },
+      { title: "登录账号", render: user => user.account || "-" },
+      { title: "手机号", render: user => user.phone || "-" },
+      { title: "邮箱", render: user => user.email || "-" },
+      { title: "所属角色", render: user => user.role },
+      { title: "状态", render: user => CRMUI.badge(user.status) },
+      { title: "创建时间", render: user => user.createdAt || "-" },
+      { title: "操作", render: user => `<button class="btn" data-system-user-edit="${user.id}">编辑</button> <button class="btn danger" data-system-user-delete="${user.id}">删除</button> <button class="btn" data-system-user-more="${user.id}">更多</button>` }
+    ], pageRows, "暂无用户") + `
+      <div class="toolbar" style="justify-content:flex-end;margin-top:12px">
+        <span class="muted">第 ${this.userState.page} / ${totalPages} 页，共 ${rows.length} 条</span>
+        <button class="btn" id="systemUserPrev" ${this.userState.page <= 1 ? "disabled" : ""}>上一页</button>
+        <button class="btn" id="systemUserNext" ${this.userState.page >= totalPages ? "disabled" : ""}>下一页</button>
+      </div>
+    `;
+    CRMUI.$$("[data-system-user-edit]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserModal(CRM_MOCK.users.find(user => user.id === btn.dataset.systemUserEdit))));
+    CRMUI.$$("[data-system-user-delete]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserDeleteModal(btn.dataset.systemUserDelete)));
+    CRMUI.$$("[data-system-user-more]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserDetailModal(btn.dataset.systemUserMore)));
+    CRMUI.$("#systemUserPrev")?.addEventListener("click", () => {
+      this.userState.page -= 1;
+      this.renderSystemUserTable();
+    });
+    CRMUI.$("#systemUserNext")?.addEventListener("click", () => {
+      this.userState.page += 1;
+      this.renderSystemUserTable();
+    });
+  },
+  systemUserSiteOptions(values = []) {
+    const selected = new Set(values);
+    return CRM_MOCK.sites.map(site => `<option value="${site.id}" ${selected.has(site.id) ? "selected" : ""}>${site.name}</option>`).join("");
+  },
+  systemDingTalkAccountOptions(user = {}) {
+    const accounts = Array.from(new Set([...(CRM_MOCK.dingTalkAccounts || []), ...CRM_MOCK.users.map(item => item.dingTalkAccount).filter(Boolean)]));
+    return [
+      `<option value="">未关联 / 解除关联</option>`,
+      ...accounts.map(account => {
+        const owner = CRM_MOCK.users.find(item => item.dingTalkAccount === account && item.id !== user.id);
+        const disabled = owner ? "disabled" : "";
+        const label = owner ? `${account}（已关联：${owner.name}）` : account;
+        return `<option value="${account}" ${user.dingTalkAccount === account ? "selected" : ""} ${disabled}>${label}</option>`;
+      })
+    ].join("");
+  },
+  openSystemUserModal(user) {
+    const isEdit = Boolean(user);
+    const roleOptions = this.systemUserRoles().map(role => ({ value: role, label: role }));
+    CRMUI.modal(isEdit ? "编辑用户" : "新增用户", `
+      <div class="form-grid">
+        ${CRMUI.formInput("用户姓名", "name", user?.name || "")}
+        ${CRMUI.formInput("登录账号", "account", user?.account || "")}
+        ${CRMUI.formInput("手机号", "phone", user?.phone || "")}
+        ${CRMUI.formInput("邮箱", "email", user?.email || "")}
+        <div class="form-field"><label>绑定钉钉员工</label><select name="dingTalkAccount">${this.systemDingTalkAccountOptions(user || {})}</select></div>
+        ${CRMUI.formSelect("所属角色", "role", roleOptions, user?.role || roleOptions[0]?.value || "")}
+        ${CRMUI.formSelect("状态", "status", ["启用", "禁用"].map(value => ({ value, label: value })), user?.status || "启用")}
+        <div class="form-field"><label>管理站点</label><select name="siteIds" multiple>${this.systemUserSiteOptions(user?.siteIds || [])}</select><small class="muted">按住 Command/Ctrl 可选择多个站点</small></div>
+      </div>`, form => {
+      const name = form.get("name").trim();
+      const account = form.get("account").trim();
+      const dingTalkAccount = form.get("dingTalkAccount");
+      if (!name || !account) return CRMUI.toast("请填写用户姓名和登录账号");
+      const duplicated = CRM_MOCK.users.find(item => item.account === account && item.id !== user?.id);
+      if (duplicated) return CRMUI.toast("登录账号已存在");
+      const duplicatedDingTalk = dingTalkAccount && CRM_MOCK.users.find(item => item.dingTalkAccount === dingTalkAccount && item.id !== user?.id);
+      if (duplicatedDingTalk) return CRMUI.toast("该钉钉账号已关联其他用户");
+      const target = user || { id: `u${Date.now()}`, dingTalkStatus: "未绑定", dingTalkAccount: "", createdAt: "2026-07-05 10:30" };
+      Object.assign(target, {
+        name,
+        account,
+        phone: form.get("phone").trim(),
+        email: form.get("email").trim(),
+        dingTalkAccount,
+        dingTalkStatus: dingTalkAccount ? "已绑定" : "未绑定",
+        role: form.get("role"),
+        status: form.get("status"),
+        siteIds: form.getAll("siteIds")
+      });
+      if (!isEdit) CRM_MOCK.users.unshift(target);
+      this.syncAuthUser(target, !isEdit);
+      CRMUI.closeModal();
+      CRMUI.toast(isEdit ? "用户已更新" : "用户已新增");
+      this.renderSystemUserTable();
+    });
+  },
+  syncAuthUser(user, isNew) {
+    CRM_MOCK.authUsers = CRM_MOCK.authUsers || [];
+    const authUser = CRM_MOCK.authUsers.find(item => item.userId === user.id);
+    if (authUser) {
+      authUser.username = user.account;
+      authUser.email = user.email;
+    } else if (isNew) {
+      CRM_MOCK.authUsers.push({ username: user.account, email: user.email, password: "123456", userId: user.id });
+    }
+  },
+  openSystemUserDeleteModal(userId) {
+    const user = CRM_MOCK.users.find(item => item.id === userId);
+    if (!user) return CRMUI.toast("未找到用户");
+    if (user.id === CRM_MOCK.currentUser.id) return CRMUI.toast("当前登录用户不可删除");
+    CRMUI.modal("删除用户", `<p>确定删除用户「${user.name}」吗？删除后不可恢复。</p>`, () => {
+      CRM_MOCK.users = CRM_MOCK.users.filter(item => item.id !== userId);
+      CRM_MOCK.authUsers = (CRM_MOCK.authUsers || []).filter(item => item.userId !== userId);
+      CRMUI.closeModal();
+      CRMUI.toast("用户已删除");
+      this.renderSystemUserTable();
+    });
+    CRMUI.$("#modalForm button[type='submit']").textContent = "确认删除";
+  },
+  openSystemUserDetailModal(userId) {
+    const user = CRM_MOCK.users.find(item => item.id === userId);
+    CRMUI.modal("用户详情", `
+      <div class="grid cols-2">
+        <div><div class="muted">用户姓名</div><strong>${user.name}</strong></div>
+        <div><div class="muted">登录账号</div><strong>${user.account || "-"}</strong></div>
+        <div><div class="muted">手机号</div><strong>${user.phone || "-"}</strong></div>
+        <div><div class="muted">邮箱</div><strong>${user.email || "-"}</strong></div>
+        <div><div class="muted">所属角色</div><strong>${user.role}</strong></div>
+        <div><div class="muted">管理站点</div><strong>${(user.siteIds || []).map(CRMUI.siteName).join("、") || "-"}</strong></div>
+        <div><div class="muted">状态</div><strong>${user.status}</strong></div>
+      </div>
+    `, () => CRMUI.closeModal());
+    CRMUI.$("#modalForm button[type='submit']").textContent = "关闭";
+  },
   renderSystemPage(root, routeKey) {
+    if (routeKey === "systemUsers") return this.renderSystemUsers(root);
+    if (routeKey === "systemDicts") return this.renderSystemDicts(root);
+    if (routeKey === "systemConfig") return this.renderSystemConfig(root);
+    if (routeKey === "paramSettings") return this.renderParamSettings(root);
     const title = CRMRouter.titles[routeKey];
     const rows = {
-      systemUsers: CRM_MOCK.users.map(u => ({ a: u.name, b: u.role, c: u.status, d: u.siteIds.map(CRMUI.siteName).join("、") })),
-      systemRoles: [{ a: "业务员", b: "sales", c: "仅本人", d: "启用" }, { a: "销售主管", b: "supervisor", c: "本团队", d: "启用" }, { a: "管理员", b: "admin", c: "全部", d: "启用" }],
+      systemRoles: [{ a: "业务员", b: "sales", c: "仅本人", d: "启用" }, { a: "运营专员", b: "supervisor", c: "本团队", d: "启用" }, { a: "系统管理员", b: "admin", c: "全部", d: "启用" }, { a: "协同人", b: "regional", c: "本区域", d: "启用" }],
       systemMenus: this.flattenMenuRows(),
-      systemDicts: [{ a: "线索状态", b: "高意向", c: "启用", d: "线索域" }, { a: "合同状态", b: "执行中", c: "启用", d: "合同域" }],
-      systemParams: [{ a: "有效询盘自动入池", b: "开启", c: "业务规则", d: "立即生效" }, { a: "未跟进自动回收天数", b: "14 天", c: "业务规则", d: "立即生效" }],
+      systemParams: [{ a: "采集邮箱来件自动创建线索", b: "开启", c: "业务规则", d: "立即生效" }, { a: "未跟进自动回收天数", b: "14 天", c: "业务规则", d: "立即生效" }],
       systemLogs: [{ a: "2026-07-02 10:12:09", b: "管理员", c: "配置", d: "更新站点规则" }, { a: "2026-07-02 09:20:11", b: "Chen Hao", c: "新增", d: "录入跟进记录" }]
     }[routeKey] || [];
     root.innerHTML = `
@@ -649,6 +950,164 @@ window.CRMAdminPage = {
     };
     CRMUI.$("#systemSearch").addEventListener("input", draw);
     CRMUI.$("#systemEdit").addEventListener("click", () => CRMUI.toast(`${title}已进入编辑状态`));
+    draw();
+  },
+  // 字典管理（MVP 简化版）：左侧业务字典分类 + 右侧字典项列表，支持字典项新增/编辑/启停/删除
+  // 不提供字典分类 CRUD、层级、按站点覆盖等高级能力（二期）
+  renderSystemDicts(root) {
+    this.dictState = this.dictState || { activeDictCode: "followStage" };
+    this.dictState.root = root;
+    const dicts = CRM_MOCK.dictionaries || [];
+    if (!dicts.find(d => d.code === this.dictState.activeDictCode) && dicts.length) this.dictState.activeDictCode = dicts[0].code;
+    root.innerHTML = `
+      <div class="card pad" style="margin-bottom:12px"><small class="muted">MVP 简化版：仅支持业务字典项（跟进阶段/跟进方式/客户标签/线索手动标签/客户潜质分级/客户关注选项/行业/国家地区/登录方式等）的增删改启停；字典分类、层级、按站点覆盖等高级能力二期开放。初始字典项清单详见 PRD §12.5.6。</small></div>
+      <div class="grid" style="grid-template-columns:220px 1fr;gap:12px;align-items:start">
+        <div class="card pad">
+          <div class="section-title">字典分类</div>
+          <div id="dictCategoryList"></div>
+        </div>
+        <div class="card pad">
+          <div class="toolbar" style="margin-bottom:8px">
+            <strong id="dictActiveTitle"></strong>
+            <button class="btn primary" id="dictItemAdd" style="margin-left:auto">新增字典项</button>
+          </div>
+          <div id="dictItemTable"></div>
+        </div>
+      </div>
+    `;
+    const drawCategories = () => {
+      CRMUI.$("#dictCategoryList").innerHTML = dicts.map(d => `
+        <div class="metric ${d.code === this.dictState.activeDictCode ? "active" : ""}" data-dict-code="${d.code}" style="cursor:pointer;padding:8px 10px;border-radius:6px;${d.code === this.dictState.activeDictCode ? "background:var(--blue-weak)" : ""}">
+          <div class="metric-label">${d.name}</div>
+          <div class="muted" style="font-size:12px">${d.domain} · ${d.items.length} 项</div>
+        </div>
+      `).join("");
+      CRMUI.$$("[data-dict-code]").forEach(el => el.addEventListener("click", () => {
+        this.dictState.activeDictCode = el.dataset.dictCode;
+        this.renderSystemDicts(root);
+      }));
+    };
+    const drawItems = () => {
+      const dict = dicts.find(d => d.code === this.dictState.activeDictCode);
+      if (!dict) { CRMUI.$("#dictItemTable").innerHTML = '<p class="muted">暂无字典</p>'; return; }
+      CRMUI.$("#dictActiveTitle").textContent = `${dict.name}（${dict.domain}）`;
+      const isFollowStage = dict.code === "followStage";
+      const columns = [
+        { title: "字典名称", render: item => item.name },
+        { title: "字典编码", render: item => item.code },
+        { title: "排序", render: item => item.sort },
+        ...(isFollowStage ? [{ title: "触发高意向", render: item => item.triggerHighIntent ? '<span class="badge blue">是</span>' : "否" }] : []),
+        { title: "状态", render: item => CRMUI.badge(item.status) },
+        { title: "操作", render: item => `<button class="btn" data-dict-item-edit="${item.id}">编辑</button> <button class="btn" data-dict-item-toggle="${item.id}">${item.status === "启用" ? "停用" : "启用"}</button> <button class="btn" data-dict-item-del="${item.id}">删除</button>` }
+      ];
+      const sortedItems = [...dict.items].sort((a, b) => (a.sort || 0) - (b.sort || 0));
+      CRMUI.$("#dictItemTable").innerHTML = CRMUI.table(columns, sortedItems, "暂无字典项");
+      CRMUI.$$("[data-dict-item-edit]").forEach(el => el.addEventListener("click", () => this.openDictItemModal(dict, el.dataset.dictItemEdit)));
+      CRMUI.$$("[data-dict-item-toggle]").forEach(el => el.addEventListener("click", () => {
+        const item = dict.items.find(i => i.id === el.dataset.dictItemToggle);
+        if (item) { item.status = item.status === "启用" ? "停用" : "启用"; CRMUI.toast(`已${item.status}字典项「${item.name}」`); drawItems(); }
+      }));
+      CRMUI.$$("[data-dict-item-del]").forEach(el => el.addEventListener("click", () => {
+        const idx = dict.items.findIndex(i => i.id === el.dataset.dictItemDel);
+        if (idx >= 0) { const removed = dict.items.splice(idx, 1)[0]; CRMUI.toast(`已删除字典项「${removed.name}」`); drawItems(); drawCategories(); }
+      }));
+    };
+    CRMUI.$("#dictItemAdd").addEventListener("click", () => this.openDictItemModal(dicts.find(d => d.code === this.dictState.activeDictCode)));
+    drawCategories();
+    drawItems();
+  },
+  openDictItemModal(dict, itemId) {
+    const isEdit = Boolean(itemId);
+    const item = isEdit ? dict.items.find(i => i.id === itemId) : { name: "", code: "", sort: dict.items.length + 1, status: "启用", triggerHighIntent: false };
+    const isFollowStage = dict.code === "followStage";
+    CRMUI.modal(isEdit ? "编辑字典项" : "新增字典项", `
+      <div class="form-grid">
+        ${CRMUI.formInput("字典名称", "name", item.name)}
+        ${CRMUI.formInput("字典编码", "code", item.code)}
+        ${CRMUI.formInput("排序", "sort", String(item.sort))}
+        ${CRMUI.formSelect("状态", "status", ["启用", "停用"].map(v => ({ value: v, label: v })), item.status)}
+        ${isFollowStage ? `<div class="form-field"><label>触发高意向</label><select name="triggerHighIntent"><option value="false" ${!item.triggerHighIntent ? "selected" : ""}>否</option><option value="true" ${item.triggerHighIntent ? "selected" : ""}>是</option></select></div>` : ""}
+      </div>`, form => {
+      const name = (form.get("name") || "").trim();
+      if (!name) return CRMUI.toast("请填写字典名称");
+      const code = (form.get("code") || "").trim() || name;
+      const sort = Number(form.get("sort")) || (dict.items.length + 1);
+      if (isEdit) {
+        item.name = name; item.code = code; item.sort = sort; item.status = form.get("status");
+        if (isFollowStage) item.triggerHighIntent = form.get("triggerHighIntent") === "true";
+      } else {
+        const newItem = { id: `${dict.code}${Date.now()}`, name, code, sort, status: form.get("status") };
+        if (isFollowStage) newItem.triggerHighIntent = form.get("triggerHighIntent") === "true";
+        dict.items.push(newItem);
+      }
+      CRMUI.closeModal();
+      CRMUI.toast(isEdit ? "字典项已更新" : "字典项已新增");
+      this.renderSystemDicts(this.dictState.root);
+    });
+  },
+  // 参数设置（系统通用业务参数，对齐 PRD §12.6）：列表 + 编辑弹窗，保存立即/下次登录生效
+  renderParamSettings(root) {
+    root.innerHTML = `
+      <div class="card pad" style="margin-bottom:12px"><small class="muted">维护系统通用业务参数，配置影响全局行为的参数项。仅系统管理员可修改，变更记录到系统日志。</small></div>
+      <div id="paramSettingsTable"></div>
+    `;
+    const draw = () => {
+      const items = CRM_MOCK.paramSettings || [];
+      CRMUI.$("#paramSettingsTable").innerHTML = CRMUI.table([
+        { title: "参数名称", render: item => `<strong>${item.name}</strong>` },
+        { title: "参数键", render: item => `<code>${item.code}</code>` },
+        { title: "当前值", render: item => item.value },
+        { title: "说明", render: item => `<span class="muted">${item.desc}</span>` },
+        { title: "生效时间", render: item => item.effect },
+        { title: "操作", render: item => `<button class="btn" data-param-edit="${item.id}">编辑</button>` }
+      ], items, "暂无参数");
+      CRMUI.$$("[data-param-edit]").forEach(el => el.addEventListener("click", () => this.openParamSettingModal(el.dataset.paramEdit, draw)));
+    };
+    draw();
+  },
+  openParamSettingModal(itemId, redraw) {
+    const item = (CRM_MOCK.paramSettings || []).find(i => i.id === itemId);
+    if (!item) return;
+    CRMUI.modal(`编辑参数 - ${item.name}`, `
+      <div class="form-grid">
+        <div class="form-field full"><label>参数键</label><input value="${item.code}" disabled></div>
+        <div class="form-field full"><label>参数值</label><input name="value" value="${item.value}" required></div>
+        <div class="form-field full"><label>说明</label><input value="${item.desc}" disabled></div>
+        <div class="form-field full"><small class="muted">生效时间：${item.effect}</small></div>
+      </div>`, form => {
+      const value = (form.get("value") || "").trim();
+      if (!value) return CRMUI.toast("请填写参数值");
+      item.value = value;
+      CRMUI.closeModal();
+      CRMUI.toast(`参数「${item.name}」已保存，${item.effect}`);
+      redraw();
+    });
+  },
+  // 系统配置（原系统开关）：承载平台级全局开关项，切换立即生效并记录系统日志
+  renderSystemConfig(root) {
+    root.innerHTML = `
+      <div class="card pad" style="margin-bottom:12px"><small class="muted">系统配置控制平台级功能的全局启停，影响所有用户。点击开关立即生效（无二次确认），状态变更记录到系统日志。</small></div>
+      <div id="systemConfigTable"></div>
+    `;
+    const draw = () => {
+      const items = CRM_MOCK.systemConfig || [];
+      CRMUI.$("#systemConfigTable").innerHTML = CRMUI.table([
+        { title: "配置项", render: item => `<strong>${item.name}</strong>` },
+        { title: "编码", render: item => `<code>${item.code}</code>` },
+        { title: "说明", render: item => `<span class="muted">${item.desc}</span>` },
+        { title: "状态", render: item => item.value ? '<span class="badge green">开启</span>' : '<span class="badge gray">关闭</span>' },
+        { title: "操作", render: item => `<button class="btn" data-config-toggle="${item.id}">${item.value ? "关闭" : "开启"}</button>` }
+      ], items, "暂无配置项");
+      CRMUI.$$("[data-config-toggle]").forEach(el => el.addEventListener("click", () => {
+        const item = items.find(i => i.id === el.dataset.configToggle);
+        if (!item) return;
+        item.value = !item.value;
+        // 维护模式开启：提示非系统管理员将被强制下线（MVP 仅提示）
+        if (item.code === "maintenance" && item.value) CRMUI.toast("维护模式已开启，非系统管理员将被拒绝登录");
+        CRMUI.toast(`「${item.name}」已${item.value ? "开启" : "关闭"}`);
+        draw();
+      }));
+    };
     draw();
   },
   flattenMenuRows() {

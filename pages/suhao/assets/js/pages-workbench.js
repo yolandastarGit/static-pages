@@ -1,19 +1,29 @@
 window.CRMWorkbenchPage = {
   render(root) {
+    const role = this.workbenchRole();
     root.innerHTML = `
       <div class="filters">
         <select id="timeRange"><option>本月</option><option>本周</option><option>本季度</option></select>
         <select id="siteFilter"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <button class="btn" id="refreshWorkbench">刷新数据</button>
+        <span class="muted" style="margin-left:auto">${this.roleLabel(role)}视图${this.isFallbackRole(role) ? "（二期前按运营专员视图渲染）" : ""}</span>
       </div>
       <div class="grid metric-grid-6" id="metricGrid"></div>
+      <div class="card pad" style="margin-top:16px">
+        <div class="card-title">今日待办</div>
+        <div class="grid cols-4" id="todoGrid"></div>
+      </div>
+      <div class="card pad" style="margin-top:12px">
+        <div class="card-title">风险预警</div>
+        <div class="grid cols-4" id="alertGrid"></div>
+      </div>
       <div class="grid cols-2" style="margin-top:16px">
         <div class="card pad"><div class="card-title">销售漏斗</div><div class="chart-box"><canvas id="funnelChart"></canvas></div></div>
         <div class="card pad"><div class="card-title">成交额趋势</div><div class="chart-box"><canvas id="amountChart"></canvas></div></div>
       </div>
       <div class="grid cols-4" style="margin-top:16px">
         ${[
-          ["公海池", "待分配线索", "publicPool", ""],
+          ["公海池", "回收线索再分配", "publicPool", ""],
           ["线索列表", "跟进、打标、转高意向客户", "leads", ""],
           ["客户列表", "客户资产沉淀", "customers", ""],
           ["合同中心", "成交合同与追溯", "contracts", ""]
@@ -21,10 +31,12 @@ window.CRMWorkbenchPage = {
       </div>
     `;
     this.renderMetrics();
+    this.renderTodoAndAlerts(role);
     this.renderCharts();
     CRMUI.$$("#timeRange,#siteFilter").forEach(el => el.addEventListener("change", () => {
       CRMUI.toast("工作台数据已按筛选条件刷新");
       this.renderMetrics();
+      this.renderTodoAndAlerts(role);
     }));
     CRMUI.$("#refreshWorkbench").addEventListener("click", () => CRMUI.toast("工作台数据已刷新"));
     CRMUI.$$("[data-quick]").forEach(el => {
@@ -33,11 +45,79 @@ window.CRMWorkbenchPage = {
         CRMRouter.goto(el.dataset.quick, params);
       });
     });
+    CRMUI.$$("[data-todo-route]").forEach(el => el.addEventListener("click", () => CRMRouter.goto(el.dataset.todoRoute, this.parseQuery(el.dataset.todoQuery))));
+    CRMUI.$$("[data-alert-route]").forEach(el => el.addEventListener("click", () => CRMRouter.goto(el.dataset.alertRoute, this.parseQuery(el.dataset.alertQuery))));
+  },
+  // MVP 仅实现业务员/运营专员视图；协同人/系统管理员按运营专员视图兜底（PRD §4.12）
+  workbenchRole() {
+    const role = CRM_MOCK.currentUser?.role;
+    return role === "业务员" ? "业务员" : "运营专员";
+  },
+  roleLabel(role) { return role; },
+  isFallbackRole(role) { return CRM_MOCK.currentUser?.role !== "业务员" && CRM_MOCK.currentUser?.role !== "运营专员"; },
+  parseQuery(q) { return Object.fromEntries(new URLSearchParams(q || "").entries()); },
+  siteScope() {
+    const siteId = CRMUI.$("#siteFilter")?.value || "";
+    return siteId;
+  },
+  myLeads() {
+    const siteId = this.siteScope();
+    return CRM_MOCK.leads.filter(l => l.ownerId === CRM_MOCK.currentUser.id && (!siteId || l.siteId === siteId));
+  },
+  teamLeads() {
+    const siteId = this.siteScope();
+    // 运营专员本团队：简化为同站点线索（MVP 无团队结构，按站点收敛）
+    return CRM_MOCK.leads.filter(l => (!siteId || l.siteId === siteId));
+  },
+  unreadEmails() {
+    return (CRM_MOCK.emails || []).filter(m => m.folder === "inbox" && m.read === false).length;
+  },
+  renderTodoAndAlerts(role) {
+    const isSales = role === "业务员";
+    const scopeLeads = isSales ? this.myLeads() : this.teamLeads();
+    const todoCards = isSales ? [
+      { label: "待跟进（今日）", value: scopeLeads.filter(l => l.status === "待跟进").length, route: "leads", query: "status=待跟进", foot: "本人线索" },
+      { label: "邮件未读", value: this.unreadEmails(), route: "email", query: "", foot: "本人邮箱" },
+      { label: "跟进超时", value: scopeLeads.filter(l => l.nextFollowAt && l.status !== "已成交" && l.status !== "无效" && l.status !== "丢失").length, route: "leads", query: "overdue=1", foot: "本人线索" },
+      { label: "高意向线索", value: scopeLeads.filter(l => l.status === "高意向").length, route: "leads", query: "status=高意向", foot: "可转高意向客户" }
+    ] : [
+      { label: "待跟进（今日）", value: scopeLeads.filter(l => l.status === "待跟进").length, route: "leads", query: "status=待跟进", foot: "本团队" },
+      { label: "公海待分配", value: CRM_MOCK.leads.filter(l => l.status === "公海待分配" && (!this.siteScope() || l.siteId === this.siteScope())).length, route: "publicPool", query: "", foot: "负责站点" },
+      { label: "邮件未读", value: this.unreadEmails(), route: "email", query: "", foot: "本人邮箱" },
+      { label: "跟进超时", value: scopeLeads.filter(l => l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status)).length, route: "leads", query: "overdue=1", foot: "本团队" }
+    ];
+    const alertCards = isSales ? [
+      { label: "转高意向客户失败线索", value: scopeLeads.filter(l => l.convertFail).length, route: "leads", query: "convertFail=1", foot: "仅本人" },
+      { label: "无效·丢失线索", value: scopeLeads.filter(l => l.status === "无效" || l.status === "丢失").length, route: "leads", query: "status=无效", foot: "仅本人" },
+      { label: "高意向待转化", value: scopeLeads.filter(l => l.status === "高意向").length, route: "leads", query: "status=高意向", foot: "仅本人" },
+      { label: "无异常", value: "--", route: "", query: "", foot: "其它预警项二期开放" }
+    ] : [
+      { label: "转高意向客户失败线索", value: scopeLeads.filter(l => l.convertFail).length, route: "leads", query: "convertFail=1", foot: "本团队" },
+      { label: "无效·丢失线索", value: scopeLeads.filter(l => l.status === "无效" || l.status === "丢失").length, route: "leads", query: "status=无效", foot: "本团队" },
+      { label: "超期回收线索", value: CRM_MOCK.leads.filter(l => l.status === "公海待分配" && l.poolReason === "超期回收").length, route: "publicPool", query: "", foot: "负责站点" },
+      { label: "异常站点", value: CRM_MOCK.sites.filter(s => s.status === "停用" && (!this.siteScope() || s.id === this.siteScope())).length, route: "sites", query: "", foot: "负责站点" }
+    ];
+    const renderCards = cards => cards.map(c => `
+      <div class="card metric" ${c.route ? `data-todo-route="${c.route}" data-todo-query="${c.query}"` : ""} style="${c.route ? "cursor:pointer" : ""}">
+        <div class="metric-label">${c.label}</div>
+        <div class="metric-value">${c.value}</div>
+        <div class="metric-foot">${c.foot}</div>
+      </div>
+    `).join("");
+    CRMUI.$("#todoGrid").innerHTML = renderCards(todoCards);
+    const renderAlertCards = cards => cards.map(c => `
+      <div class="card metric" ${c.route ? `data-alert-route="${c.route}" data-alert-query="${c.query}"` : ""} style="${c.route ? "cursor:pointer" : ""}">
+        <div class="metric-label">${c.label}</div>
+        <div class="metric-value">${c.value}</div>
+        <div class="metric-foot">${c.foot}</div>
+      </div>
+    `).join("");
+    CRMUI.$("#alertGrid").innerHTML = renderAlertCards(alertCards);
   },
   renderMetrics() {
     const leads = CRM_MOCK.leads;
     const contracts = CRM_MOCK.contracts;
-    const activeCustomers = CRM_MOCK.customers.filter(c => c.status !== "流失").length;
+    const activeCustomers = CRM_MOCK.customers.length;
     const metrics = [
       { label: "新增线索", value: leads.length, foot: "邮件 2 / WhatsApp 2", route: "leads" },
       { label: "今日待跟进", value: leads.filter(l => l.nextFollowAt && l.nextFollowAt.includes("2026-07")).length, foot: "点击查看线索", route: "leads" },

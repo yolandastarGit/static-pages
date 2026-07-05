@@ -54,7 +54,25 @@ window.CRMAuth = {
     };
     this.clearSession();
     (remember ? localStorage : sessionStorage).setItem(this.storageKey, JSON.stringify(session));
+    this.syncCurrentUser();
     return session;
+  },
+  // 根据会话 userId 同步 CRM_MOCK.currentUser，使各页面读取到的是当前登录用户而非 mock 默认值
+  syncCurrentUser() {
+    const session = this.readSession();
+    if (!session || !window.CRM_MOCK) return;
+    const user = (CRM_MOCK.users || []).find(item => item.id === session.userId);
+    if (!user) return;
+    const roleCodeMap = { "运营专员": "supervisor", "业务员": "sales", "协同人": "regional", "系统管理员": "admin" };
+    const avatar = (user.name || user.account || "?").trim().slice(0, 2).toUpperCase();
+    CRM_MOCK.currentUser = {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      roleCode: roleCodeMap[user.role] || user.role,
+      avatar,
+      sites: user.siteIds || []
+    };
   },
   logout() {
     this.clearSession();
