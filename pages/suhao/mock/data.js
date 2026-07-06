@@ -583,7 +583,6 @@ window.CRM_MOCK = {
       lastFollowAt: "2026-07-02 09:20",
       nextFollowAt: "2026-07-03 14:00",
       customerId: "",
-      convertFail: true,
       aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转高意向客户并录入报价跟进。"
     },
     {

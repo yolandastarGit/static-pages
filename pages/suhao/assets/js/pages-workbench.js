@@ -87,12 +87,10 @@ window.CRMWorkbenchPage = {
       { label: "跟进超时", value: scopeLeads.filter(l => l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status)).length, route: "leads", query: "overdue=1", foot: "本团队" }
     ];
     const alertCards = isSales ? [
-      { label: "转高意向客户失败线索", value: scopeLeads.filter(l => l.convertFail).length, route: "leads", query: "convertFail=1", foot: "仅本人" },
       { label: "无效·丢失线索", value: scopeLeads.filter(l => l.status === "无效" || l.status === "丢失").length, route: "leads", query: "status=无效", foot: "仅本人" },
       { label: "高意向待转化", value: scopeLeads.filter(l => l.status === "高意向").length, route: "leads", query: "status=高意向", foot: "仅本人" },
       { label: "无异常", value: "--", route: "", query: "", foot: "其它预警项二期开放" }
     ] : [
-      { label: "转高意向客户失败线索", value: scopeLeads.filter(l => l.convertFail).length, route: "leads", query: "convertFail=1", foot: "本团队" },
       { label: "无效·丢失线索", value: scopeLeads.filter(l => l.status === "无效" || l.status === "丢失").length, route: "leads", query: "status=无效", foot: "本团队" },
       { label: "超期回收线索", value: CRM_MOCK.leads.filter(l => l.status === "公海待分配" && l.poolReason === "超期回收").length, route: "publicPool", query: "", foot: "负责站点" },
       { label: "异常站点", value: CRM_MOCK.sites.filter(s => s.status === "停用" && (!this.siteScope() || s.id === this.siteScope())).length, route: "sites", query: "", foot: "负责站点" }

@@ -124,7 +124,7 @@ window.CRMCrmPage = {
       { title: "来源", render: l => `${l.channel} · ${CRMUI.siteName(l.siteId)}` },
       { title: "采购意向", render: l => l.purchaseIntent || "-" },
       { title: "负责人", render: l => CRMUI.userName(l.ownerId) },
-      { title: "状态", render: l => `${CRMUI.badge(l.status)}${l.convertFail ? ' <span class="badge red">转高意向客户失败</span>' : ""}` },
+      { title: "状态", render: l => CRMUI.badge(l.status) },
       { title: "阶段", render: l => l.stage },
       { title: "标签", render: l => [...l.aiTags, ...l.manualTags].slice(0, 3).map(t => `<span class="badge gray">${t}</span>`).join(" ") },
       { title: "操作", render: l => `<button class="btn" data-follow="${l.id}">跟进</button> <button class="btn" data-lead-tag="${l.id}">打标签</button> ${this.canRecycle() && ["待跟进", "跟进中"].includes(l.status) ? `<button class="btn" data-recycle="${l.id}">回收至公海</button>` : ""} <button class="btn" data-lead="${l.id}">详情</button>` }
@@ -308,8 +308,7 @@ window.CRMCrmPage = {
   openLeadDrawer(lead) {
     const current = CRM_MOCK.leads.find(l => l.id === lead.id) || lead;
     const isTerminal = ["已成交", "无效", "丢失"].includes(current.status);
-    const convertBtnLabel = current.convertFail ? "重试" : "转高意向客户";
-    const failBadge = current.convertFail ? ` <span class="badge red">转高意向客户失败</span>` : "";
+    const convertBtnLabel = "转高意向客户";
     // 关联客户：仅已成交线索展示客户名称 + 客户潜质分级（PRD §6.3.5 关联对象区）
     const linkedCustomer = current.customerId ? CRM_MOCK.customers.find(c => c.id === current.customerId) : null;
     const linkedCustomerHtml = (current.status === "已成交" && linkedCustomer) ? `
@@ -319,7 +318,7 @@ window.CRMCrmPage = {
         <div><div class="muted">客户潜质分级</div><strong>${linkedCustomer.potentialLevel ? CRMUI.badge(linkedCustomer.potentialLevel) : '<span class="muted">-</span>'}</strong></div>
       </div>` : "";
     CRMUI.drawer(`线索详情 ${current.no}`, `
-      <p>${CRMUI.badge(current.status)} <span class="badge blue">${current.stage}</span>${failBadge}</p>
+      <p>${CRMUI.badge(current.status)} <span class="badge blue">${current.stage}</span></p>
       <div class="grid cols-2">
         <div><div class="muted">企业名称</div><strong>${current.company}</strong></div>
         <div><div class="muted">联系人</div><strong>${current.contact}</strong></div>
@@ -520,7 +519,7 @@ window.CRMCrmPage = {
     return lead.status === "已成交";
   },
   // 转高意向客户：客户匹配（企业名称 + 来源站点精确匹配）→ 关联已有客户或新建客户 → 同步 AI 信息
-  // 终态线索（已成交/无效/丢失）不可转化；失败时停留原状态并标记 convertFail，详情页按钮变【重试】
+  // 终态线索（已成交/无效/丢失）不可转化；转高意向客户为必然成功的业务动作，异常按系统异常处理
   convertLead(lead) {
     const terminalStatuses = ["已成交", "无效", "丢失"];
     if (terminalStatuses.includes(lead.status)) {
@@ -546,12 +545,11 @@ window.CRMCrmPage = {
     }
     lead.customerId = customer.id;
     lead.status = "已成交";
-    lead.convertFail = false;
     // 自动生成跟进记录（跟进方式=备注，内容为转高意向客户说明）
     CRM_MOCK.followLogs.unshift({ id: `f${Date.now()}`, leadId: lead.id, userId: CRM_MOCK.currentUser.id, method: "备注", stage: lead.stage, content: `转高意向客户：${action}`, nextFollowAt: lead.nextFollowAt, createdAt: "2026-07-02 12:50" });
     return true;
   },
-  // 详情页/重试入口：点击【转高意向客户】或【重试】
+  // 详情页入口：点击【转高意向客户】
   convertLeadFromDetail(leadId) {
     const lead = CRM_MOCK.leads.find(l => l.id === leadId);
     if (!lead) return;
