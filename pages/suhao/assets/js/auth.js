@@ -46,6 +46,7 @@ window.CRMAuth = {
     const authUser = (CRM_MOCK.authUsers || []).find(user => (user.username.toLowerCase() === username || user.email.toLowerCase() === username) && user.password === password);
     if (!authUser) throw new Error("用户名或密码错误");
     const user = CRM_MOCK.users.find(item => item.id === authUser.userId) || CRM_MOCK.currentUser;
+    if (user.status === "禁用") throw new Error("当前账号已禁用，请联系系统管理员");
     const session = {
       token: `mock-token-${Date.now()}`,
       userId: user.id,

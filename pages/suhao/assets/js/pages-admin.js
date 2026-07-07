@@ -750,7 +750,7 @@ window.CRMAdminPage = {
     });
   },
   renderSystemUsers(root) {
-    this.userState = { query: "", role: "", status: "", page: 1, pageSize: 5 };
+    this.userState = { query: "", role: "", status: "", siteId: "", page: 1, pageSize: 5 };
     root.innerHTML = `
       <div class="toolbar">
         <button class="btn primary" id="newSystemUser">新增用户</button>
@@ -758,7 +758,10 @@ window.CRMAdminPage = {
       <div class="filters card pad">
         <input id="systemSearch" placeholder="搜索用户姓名、登录账号、手机号、邮箱">
         <select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select>
+        <select id="systemSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select>
+        <button class="btn" id="systemQuery">查询</button>
+        <button class="btn" id="systemReset">重置</button>
       </div>
       <div id="systemTable"></div>
     `;
@@ -777,6 +780,16 @@ window.CRMAdminPage = {
       this.userState.page = 1;
       this.renderSystemUserTable();
     });
+    CRMUI.$("#systemSite").addEventListener("change", e => {
+      this.userState.siteId = e.target.value;
+      this.userState.page = 1;
+      this.renderSystemUserTable();
+    });
+    CRMUI.$("#systemQuery").addEventListener("click", () => this.renderSystemUserTable());
+    CRMUI.$("#systemReset").addEventListener("click", () => {
+      this.userState = { query: "", role: "", status: "", siteId: "", page: 1, pageSize: this.userState.pageSize };
+      this.renderSystemUsers(root);
+    });
     CRMUI.$("#newSystemUser").addEventListener("click", () => this.openSystemUserModal());
     this.renderSystemUserTable();
   },
@@ -787,7 +800,8 @@ window.CRMAdminPage = {
     const keyword = this.userState.query;
     return CRM_MOCK.users.filter(user => {
       const text = `${user.name} ${user.account || ""} ${user.phone || ""} ${user.email || ""} ${user.role} ${user.status}`.toLowerCase();
-      return text.includes(keyword) && (!this.userState.role || user.role === this.userState.role) && (!this.userState.status || user.status === this.userState.status);
+      const bySite = !this.userState.siteId || (user.siteIds || []).includes(this.userState.siteId);
+      return text.includes(keyword) && (!this.userState.role || user.role === this.userState.role) && (!this.userState.status || user.status === this.userState.status) && bySite;
     });
   },
   renderSystemUserTable() {
@@ -802,9 +816,10 @@ window.CRMAdminPage = {
       { title: "手机号", render: user => user.phone || "-" },
       { title: "邮箱", render: user => user.email || "-" },
       { title: "所属角色", render: user => user.role },
+      { title: "所属站点", render: user => (user.siteIds || []).map(CRMUI.siteName).join("、") || "-" },
       { title: "状态", render: user => CRMUI.badge(user.status) },
       { title: "创建时间", render: user => user.createdAt || "-" },
-      { title: "操作", render: user => `<button class="btn" data-system-user-edit="${user.id}">编辑</button> <button class="btn danger" data-system-user-delete="${user.id}">删除</button> <button class="btn" data-system-user-more="${user.id}">更多</button>` }
+      { title: "操作", render: user => `<button class="btn" data-system-user-edit="${user.id}">编辑</button> <button class="btn ${user.status === "启用" ? "danger" : ""}" data-system-user-toggle="${user.id}">${user.status === "启用" ? "禁用" : "启用"}</button> <button class="btn" data-system-user-reset="${user.id}">重置密码</button> <button class="btn" data-system-user-more="${user.id}">更多</button>` }
     ], pageRows, "暂无用户") + `
       <div class="toolbar" style="justify-content:flex-end;margin-top:12px">
         <span class="muted">第 ${this.userState.page} / ${totalPages} 页，共 ${rows.length} 条</span>
@@ -813,7 +828,8 @@ window.CRMAdminPage = {
       </div>
     `;
     CRMUI.$$("[data-system-user-edit]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserModal(CRM_MOCK.users.find(user => user.id === btn.dataset.systemUserEdit))));
-    CRMUI.$$("[data-system-user-delete]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserDeleteModal(btn.dataset.systemUserDelete)));
+    CRMUI.$$("[data-system-user-toggle]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserToggleModal(btn.dataset.systemUserToggle)));
+    CRMUI.$$("[data-system-user-reset]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserResetPasswordModal(btn.dataset.systemUserReset)));
     CRMUI.$$("[data-system-user-more]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserDetailModal(btn.dataset.systemUserMore)));
     CRMUI.$("#systemUserPrev")?.addEventListener("click", () => {
       this.userState.page -= 1;
@@ -846,7 +862,7 @@ window.CRMAdminPage = {
     CRMUI.modal(isEdit ? "编辑用户" : "新增用户", `
       <div class="form-grid">
         ${CRMUI.formInput("用户姓名", "name", user?.name || "")}
-        ${CRMUI.formInput("登录账号", "account", user?.account || "")}
+        <div class="form-field"><label>登录账号</label><input name="account" value="${user?.account || ""}" ${isEdit ? "disabled" : ""}></div>
         ${CRMUI.formInput("手机号", "phone", user?.phone || "")}
         ${CRMUI.formInput("邮箱", "email", user?.email || "")}
         <div class="form-field"><label>绑定钉钉员工</label><select name="dingTalkAccount">${this.systemDingTalkAccountOptions(user || {})}</select></div>
@@ -855,9 +871,15 @@ window.CRMAdminPage = {
         <div class="form-field"><label>管理站点</label><select name="siteIds" multiple>${this.systemUserSiteOptions(user?.siteIds || [])}</select><small class="muted">按住 Command/Ctrl 可选择多个站点</small></div>
       </div>`, form => {
       const name = form.get("name").trim();
-      const account = form.get("account").trim();
+      const account = isEdit ? user.account : form.get("account").trim();
       const dingTalkAccount = form.get("dingTalkAccount");
       if (!name || !account) return CRMUI.toast("请填写用户姓名和登录账号");
+      const phone = form.get("phone").trim();
+      const email = form.get("email").trim();
+      if (phone && !/^1\d{10}$/.test(phone)) return CRMUI.toast("请输入正确的手机号");
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return CRMUI.toast("请输入正确的邮箱");
+      const siteIds = form.getAll("siteIds");
+      if (!siteIds.length) return CRMUI.toast("请至少选择一个站点");
       const duplicated = CRM_MOCK.users.find(item => item.account === account && item.id !== user?.id);
       if (duplicated) return CRMUI.toast("登录账号已存在");
       const duplicatedDingTalk = dingTalkAccount && CRM_MOCK.users.find(item => item.dingTalkAccount === dingTalkAccount && item.id !== user?.id);
@@ -866,13 +888,13 @@ window.CRMAdminPage = {
       Object.assign(target, {
         name,
         account,
-        phone: form.get("phone").trim(),
-        email: form.get("email").trim(),
+        phone,
+        email,
         dingTalkAccount,
         dingTalkStatus: dingTalkAccount ? "已绑定" : "未绑定",
         role: form.get("role"),
         status: form.get("status"),
-        siteIds: form.getAll("siteIds")
+        siteIds
       });
       if (!isEdit) CRM_MOCK.users.unshift(target);
       this.syncAuthUser(target, !isEdit);
@@ -891,18 +913,37 @@ window.CRMAdminPage = {
       CRM_MOCK.authUsers.push({ username: user.account, email: user.email, password: "123456", userId: user.id });
     }
   },
-  openSystemUserDeleteModal(userId) {
+  openSystemUserResetPasswordModal(userId) {
     const user = CRM_MOCK.users.find(item => item.id === userId);
     if (!user) return CRMUI.toast("未找到用户");
-    if (user.id === CRM_MOCK.currentUser.id) return CRMUI.toast("当前登录用户不可删除");
-    CRMUI.modal("删除用户", `<p>确定删除用户「${user.name}」吗？删除后不可恢复。</p>`, () => {
-      CRM_MOCK.users = CRM_MOCK.users.filter(item => item.id !== userId);
-      CRM_MOCK.authUsers = (CRM_MOCK.authUsers || []).filter(item => item.userId !== userId);
+    CRMUI.modal("重置密码", `<p>重置后用户「${user.name}」密码将恢复为初始密码（123456）。确定重置吗？</p>`, () => {
+      const authUser = (CRM_MOCK.authUsers || []).find(item => item.userId === user.id);
+      if (authUser) authUser.password = "123456";
       CRMUI.closeModal();
-      CRMUI.toast("用户已删除");
+      CRMUI.toast("密码已重置");
+    });
+    CRMUI.$("#modalForm button[type='submit']").textContent = "确认重置";
+  },
+  openSystemUserToggleModal(userId) {
+    const user = CRM_MOCK.users.find(item => item.id === userId);
+    if (!user) return CRMUI.toast("未找到用户");
+    if (user.id === CRM_MOCK.currentUser.id && user.status === "启用") return CRMUI.toast("当前登录用户不可禁用");
+    const nextStatus = user.status === "启用" ? "禁用" : "启用";
+    if (nextStatus === "禁用" && user.role === "系统管理员") return CRMUI.toast("系统管理员不可禁用");
+    if (nextStatus === "启用") {
+      user.status = "启用";
+      CRMUI.toast("用户已启用");
+      this.renderSystemUserTable();
+      return;
+    }
+    const message = `禁用后「${user.name}」无法登录系统，名下数据保持原状态。确定禁用该用户吗？`;
+    CRMUI.modal(`${nextStatus}用户`, `<p>${message}</p>`, () => {
+      user.status = nextStatus;
+      CRMUI.closeModal();
+      CRMUI.toast(`用户已${nextStatus}`);
       this.renderSystemUserTable();
     });
-    CRMUI.$("#modalForm button[type='submit']").textContent = "确认删除";
+    CRMUI.$("#modalForm button[type='submit']").textContent = "确认禁用";
   },
   openSystemUserDetailModal(userId) {
     const user = CRM_MOCK.users.find(item => item.id === userId);

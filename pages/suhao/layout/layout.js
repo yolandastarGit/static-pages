@@ -13,7 +13,6 @@ window.CRMLayout = {
       { key: "systemRoles", label: "角色管理" },
       { key: "systemMenus", label: "菜单管理" },
       { key: "systemDicts", label: "字典管理" },
-      { key: "paramSettings", label: "参数设置" },
       { key: "systemParams", label: "系统参数" },
       { key: "systemCommunicationConfig", label: "沟通服务协议配置" },
       { key: "systemConfig", label: "系统配置" },

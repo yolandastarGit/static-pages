@@ -7,11 +7,11 @@ window.CRMCrmPage = {
   renderLeads(root) {
     const q = CRMRouter.query();
     const tabs = ["全部", "待跟进", "跟进中", "高意向", "已成交", "无效", "丢失"];
-    this.leadState = { status: tabs.includes(q.status) ? q.status : "全部", query: q.q || "", siteId: "", purchaseIntent: "", selected: new Set() };
+    this.leadState = { status: tabs.includes(q.status) ? q.status : "全部", statusGroup: q.statusGroup || "", query: q.q || "", siteId: "", purchaseIntent: "", overdue: q.overdue || "", reply: q.reply || "", created: q.created || "", selected: new Set() };
     root.innerHTML = `
       <div class="toolbar">
-        <button class="btn primary" id="newLead">新增线索</button>
-        <button class="btn" id="bulkConvert">转高意向客户</button>
+        ${this.canEditLead() ? `<button class="btn primary" id="newLead">新增线索</button>` : ""}
+        ${this.canBulkConvert() ? `<button class="btn" id="bulkConvert">转高意向客户</button>` : ""}
         ${this.canRecycle() ? `<button class="btn" id="bulkRecycle">批量回收至公海</button>` : ""}
         <button class="btn" id="globalFollowLogs">跟进日志</button>
       </div>
@@ -35,9 +35,9 @@ window.CRMCrmPage = {
     CRMUI.$("#leadSearch").addEventListener("input", e => { this.leadState.query = e.target.value.toLowerCase(); this.renderLeadTable(); });
     CRMUI.$("#leadSite").addEventListener("change", e => { this.leadState.siteId = e.target.value; this.renderLeadTable(); });
     CRMUI.$("#leadIntent").addEventListener("change", e => { this.leadState.purchaseIntent = e.target.value; this.renderLeadTable(); });
-    CRMUI.$("#leadReset").addEventListener("click", () => { this.leadState = { status: "全部", query: "", siteId: "", purchaseIntent: "", selected: new Set() }; this.renderLeads(root); });
-    CRMUI.$("#newLead").addEventListener("click", () => this.openLeadModal());
-    CRMUI.$("#bulkConvert").addEventListener("click", () => this.convertSelectedLeads());
+    CRMUI.$("#leadReset").addEventListener("click", () => { this.leadState = { status: "全部", statusGroup: "", query: "", siteId: "", purchaseIntent: "", overdue: "", reply: "", created: "", selected: new Set() }; this.renderLeads(root); });
+    CRMUI.$("#newLead")?.addEventListener("click", () => this.openLeadModal());
+    CRMUI.$("#bulkConvert")?.addEventListener("click", () => this.convertSelectedLeads());
     CRMUI.$("#globalFollowLogs").addEventListener("click", () => this.openGlobalFollowLogModal());
     const bulkRecycleBtn = CRMUI.$("#bulkRecycle");
     if (bulkRecycleBtn) bulkRecycleBtn.addEventListener("click", () => this.recycleSelectedLeads());
@@ -50,7 +50,7 @@ window.CRMCrmPage = {
   renderPublicPool(root) {
     root.innerHTML = `
       <div class="toolbar">
-        <button class="btn primary" id="poolAssign">批量分配</button>
+        ${this.canRecycle() ? `<button class="btn primary" id="poolAssign">批量分配</button>` : ""}
         <button class="btn" id="poolRefresh">刷新</button>
       </div>
       <div class="filters card pad">
@@ -75,28 +75,31 @@ window.CRMCrmPage = {
         { title: "入池时间", render: l => l.poolEnteredAt || l.createdAt },
         { title: "入池原因", render: l => l.poolReason || "运营专员手动回收" },
         { title: "意向产品", render: l => l.products.join("、") },
-        { title: "操作", render: l => `<button class="btn" data-pool-assign="${l.id}">分配</button> <button class="btn" data-pool-detail="${l.id}">查看详情</button>` }
+        { title: "操作", render: l => `${this.canRecycle() ? `<button class="btn" data-pool-assign="${l.id}">分配</button>` : ""} <button class="btn" data-pool-detail="${l.id}">查看详情</button>` }
       ], rows, "公海池暂无线索");
       CRMUI.$$("[data-pool-check]").forEach(el => el.addEventListener("change", () => el.checked ? this.poolSelected.add(el.dataset.poolCheck) : this.poolSelected.delete(el.dataset.poolCheck)));
       CRMUI.$$("[data-pool-assign]").forEach(btn => btn.addEventListener("click", () => this.assignPoolLeads([btn.dataset.poolAssign], draw)));
       CRMUI.$$("[data-pool-detail]").forEach(btn => btn.addEventListener("click", () => this.openLeadDrawer(CRM_MOCK.leads.find(l => l.id === btn.dataset.poolDetail))));
     };
     CRMUI.$$("#poolSearch,#poolSite,#poolChannel").forEach(el => el.addEventListener("input", draw));
-    CRMUI.$("#poolAssign").addEventListener("click", () => this.assignPoolLeads(Array.from(this.poolSelected), draw));
+    CRMUI.$("#poolAssign")?.addEventListener("click", () => this.assignPoolLeads(Array.from(this.poolSelected), draw));
     CRMUI.$("#poolRefresh").addEventListener("click", () => { CRMUI.toast("公海池数据已刷新"); draw(); });
     draw();
   },
   assignPoolLeads(ids, after) {
+    if (!this.canRecycle()) return CRMUI.toast("当前角色无公海分配权限");
     if (!ids.length) return CRMUI.toast("请先选择公海线索");
     CRMUI.modal("分配线索", `
       <p>已选 ${ids.length} 条线索。</p>
       <div class="form-grid">
-        <div class="form-field"><label>目标负责人</label><select name="ownerId">${CRMUI.optionList(CRM_MOCK.users.filter(u => u.role === "业务员"))}</select></div>
+        <div class="form-field"><label>目标负责人</label><select name="ownerId">${CRMUI.optionList(CRM_MOCK.users.filter(u => u.role === "业务员" && u.status !== "禁用"))}</select></div>
         <div class="form-field full"><label>分配备注</label><textarea name="note"></textarea></div>
       </div>`, form => {
+      const ownerId = form.get("ownerId");
+      if (!ownerId) return CRMUI.toast("该负责人已不可用，请重新选择");
       ids.forEach(id => {
         const lead = CRM_MOCK.leads.find(l => l.id === id);
-        lead.ownerId = form.get("ownerId");
+        lead.ownerId = ownerId;
         lead.status = "待跟进";
       });
       CRMUI.closeModal();
@@ -107,12 +110,23 @@ window.CRMCrmPage = {
   leadRows() {
     const keyword = this.leadState.query;
     return CRM_MOCK.leads.filter(l => {
-      const byStatus = this.leadState.status === "全部" || (this.leadState.status === "待跟进" ? l.status === "待跟进" || (Boolean(l.nextFollowAt) && ["跟进中", "高意向"].includes(l.status)) : l.status === this.leadState.status);
+      const byStatus = this.leadState.status === "全部" || l.status === this.leadState.status;
+      const byStatusGroup = this.leadState.statusGroup !== "invalidLost" || ["无效", "丢失"].includes(l.status);
       const bySite = !this.leadState.siteId || l.siteId === this.leadState.siteId;
       const byIntent = !this.leadState.purchaseIntent || l.purchaseIntent === this.leadState.purchaseIntent;
+      const byOverdue = !this.leadState.overdue || (l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status));
+      const byReply = this.leadState.reply !== "pending" || this.hasPendingReply(l);
+      const today = new Date().toISOString().slice(0, 10);
+      const byCreated = this.leadState.created !== "today" || String(l.createdAt || "").startsWith(today);
       const text = `${l.no} ${l.company} ${l.contact} ${l.email} ${l.purchaseIntent || ""}`.toLowerCase();
-      return byStatus && bySite && byIntent && text.includes(keyword);
+      return byStatus && byStatusGroup && bySite && byIntent && byOverdue && byReply && byCreated && text.includes(keyword);
     });
+  },
+  hasPendingReply(lead) {
+    if (["已成交", "无效", "丢失"].includes(lead.status)) return false;
+    const hasUnreadMail = (CRM_MOCK.emails || []).some(mail => mail.folder === "inbox" && mail.leadId === lead.id && mail.read === false);
+    const hasUnreadWhatsapp = (CRM_MOCK.whatsappConversations || []).some(conversation => conversation.leadId === lead.id && Number(conversation.unreadCount || 0) > 0);
+    return hasUnreadMail || hasUnreadWhatsapp;
   },
   renderLeadTable() {
     const rows = this.leadRows();
@@ -127,7 +141,7 @@ window.CRMCrmPage = {
       { title: "状态", render: l => CRMUI.badge(l.status) },
       { title: "阶段", render: l => l.stage },
       { title: "标签", render: l => [...l.aiTags, ...l.manualTags].slice(0, 3).map(t => `<span class="badge gray">${t}</span>`).join(" ") },
-      { title: "操作", render: l => `<button class="btn" data-follow="${l.id}">跟进</button> <button class="btn" data-lead-tag="${l.id}">打标签</button> ${this.canRecycle() && ["待跟进", "跟进中"].includes(l.status) ? `<button class="btn" data-recycle="${l.id}">回收至公海</button>` : ""} <button class="btn" data-lead="${l.id}">详情</button>` }
+      { title: "操作", render: l => `<button class="btn" data-follow="${l.id}">跟进</button> ${this.canEditLead() ? `<button class="btn" data-lead-tag="${l.id}">打标签</button>` : ""} ${this.canRecycle() && ["待跟进", "跟进中"].includes(l.status) ? `<button class="btn" data-recycle="${l.id}">回收至公海</button>` : ""} <button class="btn" data-lead="${l.id}">详情</button>` }
     ], rows, "暂无线索");
     CRMUI.$$("[data-lead]").forEach(el => el.addEventListener("click", e => {
       e.preventDefault();
@@ -307,7 +321,9 @@ window.CRMCrmPage = {
   },
   openLeadDrawer(lead) {
     const current = CRM_MOCK.leads.find(l => l.id === lead.id) || lead;
-    const isTerminal = ["已成交", "无效", "丢失"].includes(current.status);
+    const isClosed = ["已成交", "无效", "丢失"].includes(current.status);
+    const isConverted = current.status === "已成交";
+    const canConvert = this.canConvertLead(current);
     const convertBtnLabel = "转高意向客户";
     // 关联客户：仅已成交线索展示客户名称 + 客户潜质分级（PRD §6.3.5 关联对象区）
     const linkedCustomer = current.customerId ? CRM_MOCK.customers.find(c => c.id === current.customerId) : null;
@@ -334,8 +350,8 @@ window.CRMCrmPage = {
       ${this.renderLeadFollowLogTable(current.id)}
       <div class="toolbar" style="margin-top:16px">
         <button class="btn primary" id="drawerFollow">录入跟进</button>
-        <button class="btn" id="drawerStatus">修改状态</button>
-        <button class="btn" id="drawerConvert" ${isTerminal ? "disabled title=\"终态线索不可转高意向客户\"" : ""}>${isTerminal ? "转高意向客户" : convertBtnLabel}</button>
+        <button class="btn" id="drawerStatus" ${isClosed || !this.canEditLead() ? `disabled title="${isClosed ? "终态线索不可手动修改状态" : "当前角色无修改状态权限"}"` : ""}>修改状态</button>
+        <button class="btn" id="drawerConvert" ${isConverted || !canConvert ? `disabled title="${isConverted ? "已成交线索不可重复转高意向客户" : "当前角色无转高意向客户权限"}"` : ""}>${convertBtnLabel}</button>
         ${this.canRecycle() && ["待跟进", "跟进中"].includes(current.status) ? `<button class="btn" id="drawerRecycle">回收至公海</button>` : ""}
         <button class="btn" id="drawerEmail">查看邮件</button>
       </div>
@@ -408,10 +424,16 @@ window.CRMCrmPage = {
       // 阶段触发高意向：读取跟进阶段字典项的"是否触发高意向"标记位（BR-038b）
       const stageItem = (CRM_MOCK.dictionaries || []).find(d => d.code === "followStage")?.items.find(item => item.name === stage);
       const triggerHighIntent = stageItem?.triggerHighIntent === true || stage === "高意向客户";
-      if (triggerHighIntent) lead.status = "高意向";
-      if (lead.status === "待跟进") lead.status = "跟进中";
+      const originalStatus = lead.status;
+      const closedStatus = ["已成交", "无效", "丢失"].includes(originalStatus);
+      const shouldAutoConvert = triggerHighIntent && ["待跟进", "跟进中"].includes(originalStatus);
+      if (!closedStatus && originalStatus === "待跟进") lead.status = "跟进中";
+      if (shouldAutoConvert) {
+        lead.status = "高意向";
+        this.convertLead(lead);
+      }
       CRMUI.closeModal();
-      CRMUI.toast(triggerHighIntent ? "已进入高意向，系统将触发转高意向客户提醒" : "跟进记录已保存");
+      CRMUI.toast(shouldAutoConvert ? "已触发高意向并转高意向客户" : "跟进记录已保存");
       this.renderLeadTable();
     });
   },
@@ -449,6 +471,17 @@ window.CRMCrmPage = {
   canRecycle() {
     const role = CRM_MOCK.currentUser?.role;
     return role === "运营专员" || role === "系统管理员";
+  },
+  canEditLead() {
+    return CRM_MOCK.currentUser?.role !== "协同人";
+  },
+  canBulkConvert() {
+    return this.canRecycle();
+  },
+  canConvertLead(lead) {
+    if (CRM_MOCK.currentUser?.role === "协同人") return false;
+    if (lead?.status === "公海待分配") return this.canRecycle();
+    return true;
   },
   openRecycleModal(leadId) {
     const lead = CRM_MOCK.leads.find(l => l.id === leadId);
@@ -497,19 +530,19 @@ window.CRMCrmPage = {
     });
   },
   convertSelectedLeads() {
+    if (!this.canBulkConvert()) return CRMUI.toast("当前角色无批量转高意向客户权限");
     const ids = Array.from(this.leadState.selected);
     if (!ids.length) return CRMUI.toast("请先选择线索");
     const leads = ids.map(id => CRM_MOCK.leads.find(l => l.id === id)).filter(Boolean);
-    // 终态线索（已成交/无效/丢失）自动排除并单独标注
-    const terminal = leads.filter(lead => ["已成交", "无效", "丢失"].includes(lead.status));
-    const actionable = leads.filter(lead => !["已成交", "无效", "丢失"].includes(lead.status));
+    const terminal = leads.filter(lead => lead.status === "已成交");
+    const actionable = leads.filter(lead => lead.status !== "已成交");
     let success = 0;
     actionable.forEach(lead => { if (this.convertLead(lead)) success += 1; });
     this.leadState.selected.clear();
     if (terminal.length && !actionable.length) {
-      CRMUI.toast(`所选 ${terminal.length} 条为终态线索，已跳过`);
+      CRMUI.toast(`所选 ${terminal.length} 条为已成交线索，已跳过`);
     } else if (terminal.length) {
-      CRMUI.toast(`成功转高意向客户 ${success} 条；${terminal.length} 条终态线索已跳过`);
+      CRMUI.toast(`成功转高意向客户 ${success} 条；${terminal.length} 条已成交线索已跳过`);
     } else {
       CRMUI.toast(`成功转高意向客户 ${success} 条`);
     }
@@ -519,11 +552,10 @@ window.CRMCrmPage = {
     return lead.status === "已成交";
   },
   // 转高意向客户：客户匹配（企业名称 + 来源站点精确匹配）→ 关联已有客户或新建客户 → 同步 AI 信息
-  // 终态线索（已成交/无效/丢失）不可转化；转高意向客户为必然成功的业务动作，异常按系统异常处理
+  // 仅已成交线索不可重复转化；无效/丢失允许按手动路径转高意向客户
   convertLead(lead) {
-    const terminalStatuses = ["已成交", "无效", "丢失"];
-    if (terminalStatuses.includes(lead.status)) {
-      CRMUI.toast(`线索 ${lead.no} 处于终态（${lead.status}），不可转高意向客户`);
+    if (lead.status === "已成交") {
+      CRMUI.toast(`线索 ${lead.no} 已成交，不可重复转高意向客户`);
       return false;
     }
     const existing = CRM_MOCK.customers.find(c => c.name === lead.company && c.siteId === lead.siteId);
@@ -553,6 +585,7 @@ window.CRMCrmPage = {
   convertLeadFromDetail(leadId) {
     const lead = CRM_MOCK.leads.find(l => l.id === leadId);
     if (!lead) return;
+    if (!this.canConvertLead(lead)) return CRMUI.toast("当前角色无转高意向客户权限");
     const ok = this.convertLead(lead);
     if (ok) {
       CRMUI.closeModal();
@@ -645,12 +678,12 @@ window.CRMCrmPage = {
   },
   contractOwnerOptions(value = "") {
     return CRM_MOCK.users
-      .filter(user => user.role === "业务员")
+      .filter(user => user.role === "业务员" && (user.status !== "禁用" || user.id === value))
       .map(user => `<option value="${user.id}" ${user.id === value ? "selected" : ""}>${user.name}</option>`)
       .join("");
   },
   contractFormFields(contract = {}) {
-    const salesUsers = CRM_MOCK.users.filter(user => user.role === "业务员");
+    const salesUsers = CRM_MOCK.users.filter(user => user.role === "业务员" && user.status !== "禁用");
     const ownerId = contract.ownerId || salesUsers[0]?.id || CRM_MOCK.currentUser.id;
     return `
       ${contract.no ? `<div class="form-field"><label>合同编号</label><input value="${contract.no}" disabled></div>` : CRMUI.formInput("合同编号", "no")}
