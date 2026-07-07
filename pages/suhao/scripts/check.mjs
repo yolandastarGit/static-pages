@@ -4,6 +4,10 @@ import path from "node:path";
 
 const root = process.cwd();
 
+function normalizeStaticRef(ref) {
+  return ref.split(/[?#]/)[0];
+}
+
 const requiredFiles = [
   "index.html",
   "pages/workbench.html",
@@ -33,7 +37,7 @@ async function assertNoBrokenStaticReferences() {
   const pageFiles = (await readdir(pagesDir)).filter((file) => file.endsWith(".html"));
   for (const file of pageFiles) {
     const html = await readFile(path.join(pagesDir, file), "utf8");
-    const refs = [...html.matchAll(/(?:href|src)="\.\.\/([^"]+)"/g)].map((match) => match[1]);
+    const refs = [...html.matchAll(/(?:href|src)="\.\.\/([^"]+)"/g)].map((match) => normalizeStaticRef(match[1]));
     for (const ref of refs) {
       if (ref.startsWith("http")) continue;
       await assertFile(ref);
