@@ -24,20 +24,19 @@ window.CRMLoginPage = {
               <button type="button" data-login-method="dingtalk">钉钉扫码登录</button>
             </div>
             <form id="loginForm" class="login-form">
-              <div class="form-field full"><label>登录账号</label><input name="account" autocomplete="username" placeholder="admin / chenhao / mialiu / alexxu"></div>
+              <div class="form-field full"><label>登录账号</label><input name="account" autocomplete="username" placeholder="请输入登录账号"></div>
               <div class="form-field full login-password"><label>登录密码</label><input name="password" type="password" autocomplete="current-password" placeholder="请输入密码"><button class="btn" type="button" id="togglePassword">显示</button></div>
               <div class="login-options">
                 <label class="login-check"><input type="checkbox" name="remember"> 记住账号</label>
                 <button class="link-btn" type="button" id="forgotPassword">忘记密码</button>
               </div>
               <button class="btn primary login-submit" type="submit">登录</button>
-              <p class="muted small" style="margin-top:8px">演示账号统一密码 <code>123456</code>：admin（运营专员）/ chenhao（业务员）/ mialiu（业务员）/ alexxu（协同人）</p>
             </form>
             <div class="ding-login-panel" id="dingLoginPanel" hidden>
               <div class="ding-qr-box"><span>钉</span></div>
               <div class="ding-login-copy">
                 <strong>钉钉扫码登录</strong>
-                <p class="muted">使用钉钉扫描二维码完成授权登录，后续可接入 DingTalk OAuth / 扫码登录接口。</p>
+                <p class="muted">使用钉钉扫描二维码登录系统。</p>
                 <button class="btn" type="button" id="refreshDingQr">刷新二维码</button>
               </div>
             </div>

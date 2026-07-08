@@ -6,7 +6,7 @@ window.CRMWorkbenchPage = {
         <select id="timeRange"><option>当天</option><option>本周</option><option>本月</option><option>自定义</option></select>
         <select id="siteFilter"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <button class="btn" id="refreshWorkbench">刷新数据</button>
-        <span class="muted" style="margin-left:auto">${this.roleLabel(role)}视图${this.isFallbackRole(role) ? "（二期前按运营专员视图渲染）" : ""}</span>
+        <span class="muted" style="margin-left:auto">${this.roleLabel(role)}视图</span>
       </div>
       <div class="grid metric-grid-6" id="metricGrid"></div>
       <div class="card pad" style="margin-top:16px">
@@ -43,7 +43,6 @@ window.CRMWorkbenchPage = {
     });
     this.bindCardRoutes();
   },
-  // MVP 仅实现业务员/运营专员视图；协同人/系统管理员按运营专员视图兜底（PRD §4.12）
   workbenchRole() {
     const role = CRM_MOCK.currentUser?.role;
     return role === "业务员" ? "业务员" : "运营专员";
@@ -65,7 +64,6 @@ window.CRMWorkbenchPage = {
   },
   teamLeads() {
     const siteId = this.siteScope();
-    // 运营专员本团队：简化为同站点线索（MVP 无团队结构，按站点收敛）
     return CRM_MOCK.leads.filter(l => (!siteId || l.siteId === siteId));
   },
   unreadEmails() {

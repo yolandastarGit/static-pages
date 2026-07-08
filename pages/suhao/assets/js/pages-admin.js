@@ -3,6 +3,7 @@ window.CRMAdminPage = {
     if (routeKey === "sites") return this.renderSites(root);
     if (routeKey === "notificationCenter") return this.renderNotificationCenter(root);
     if (routeKey === "systemCommunicationConfig") return this.renderCommunicationConfig(root);
+    if (routeKey === "systemLogs") return this.renderSystemLogs(root);
     if (routeKey && routeKey.startsWith("system")) return this.renderSystemPage(root, routeKey);
     return this.renderAi(root);
   },
@@ -131,26 +132,42 @@ window.CRMAdminPage = {
     });
   },
   renderSites(root) {
+    this.siteState = { query: "", createTimeStart: "", createTimeEnd: "" };
     root.innerHTML = `
       <div class="toolbar">
         <button class="btn primary" id="newSite">新增站点</button>
         <button class="btn" id="refreshSites">刷新</button>
       </div>
-      <div class="filters card pad"><input id="siteSearch" placeholder="搜索站点名称或编码"></div>
+      <div class="filters card pad">
+        <input id="siteSearch" placeholder="搜索站点名称或编码">
+        <span class="muted">创建时间</span>
+        <input type="date" id="siteCreateTimeStart" value="${this.siteState.createTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="siteCreateTimeEnd" value="${this.siteState.createTimeEnd}">
+        <button class="btn" id="siteReset">重置</button>
+      </div>
       <div id="siteTable"></div>
       <div class="section-title">消息拉取状态</div>
       <div id="sitePullStatusTable"></div>
     `;
     const draw = () => {
       const keyword = CRMUI.$("#siteSearch").value.toLowerCase();
-      const rows = CRM_MOCK.sites.filter(s => `${s.name} ${s.code}`.toLowerCase().includes(keyword));
+      const start = CRMUI.$("#siteCreateTimeStart").value;
+      const end = CRMUI.$("#siteCreateTimeEnd").value;
+      const rows = CRM_MOCK.sites.filter(s => {
+        const text = `${s.name} ${s.code}`.toLowerCase();
+        const created = String(s.createdAt || "").slice(0, 10);
+        const byStart = !start || (created && created >= start);
+        const byEnd = !end || (created && created <= end);
+        return text.includes(keyword) && byStart && byEnd;
+      });
       CRMUI.$("#siteTable").innerHTML = CRMUI.table([
         { title: "站点名称", render: s => s.name },
         { title: "站点编码", render: s => s.code },
         { title: "域名", render: s => s.domain },
-        { title: "创建时间", render: s => s.createdAt || "2026-06-01 09:00" },
+        { title: "创建时间", render: s => s.createdAt || "-" },
         { title: "操作", render: s => `<button class="btn" data-site-edit="${s.id}">编辑</button> <button class="btn" data-site-config="${s.id}">配置</button> <button class="btn" data-site-toggle="${s.id}">${s.status === "启用" ? "停用" : "启用"}</button>` }
-      ], rows);
+      ], rows, "暂无站点");
       CRMUI.$("#sitePullStatusTable").innerHTML = CRMUI.table([
         { title: "站点名称", render: s => s.name },
         { title: "接口状态", render: s => s.status === "启用" ? '<span class="badge green">● 正常</span>' : '<span class="badge red">● 异常</span>' },
@@ -174,7 +191,16 @@ window.CRMAdminPage = {
         }
       }));
     };
-    CRMUI.$("#siteSearch").addEventListener("input", draw);
+    // 时间筛选 change 用 input 事件统一触发重绘（绑定一次，避免重复绑定）
+    CRMUI.$$("#siteSearch,#siteCreateTimeStart,#siteCreateTimeEnd").forEach(el => el.addEventListener("input", draw));
+    // 重置恢复默认（创建时间=不限制）
+    CRMUI.$("#siteReset").addEventListener("click", () => {
+      this.siteState = { query: "", createTimeStart: "", createTimeEnd: "" };
+      CRMUI.$("#siteSearch").value = "";
+      CRMUI.$("#siteCreateTimeStart").value = "";
+      CRMUI.$("#siteCreateTimeEnd").value = "";
+      draw();
+    });
     CRMUI.$("#newSite").addEventListener("click", () => this.openSiteModal(null, draw));
     CRMUI.$("#refreshSites").addEventListener("click", () => { CRMUI.toast("站点列表已刷新"); draw(); });
     draw();
@@ -279,11 +305,8 @@ window.CRMAdminPage = {
         ${CRMUI.formMultiSelect("通知对象", "targets", targetOptions.map(item => ({ value: item, label: CRM_MOCK.notificationTargetOptions.includes(item) ? item : `${item}（已失效）` })), rule.targets)}
         ${CRMUI.formMultiSelect("指定用户", "userIds", userOptions, rule.userIds || [])}
         <div class="form-field full"><label>标题</label><input name="title" value="${rule.title}" required></div>
-        <div class="form-field full"><label>正文</label><div class="rich-editor" contenteditable="true" data-field="body">${rule.body}</div><small class="muted">用于后续维护通知模板，支持富文本内容扩展。</small></div>
-        <div class="form-field full"><label>状态</label><div class="radio-group">
-          <label class="radio-card"><input type="radio" name="status" value="开启" ${rule.status === "开启" ? "checked" : ""}>开启</label>
-          <label class="radio-card"><input type="radio" name="status" value="关闭" ${rule.status === "关闭" ? "checked" : ""}>关闭</label>
-        </div></div>
+        <div class="form-field full"><label>正文</label><div class="rich-editor" contenteditable="true" data-field="body">${rule.body}</div></div>
+        ${CRMUI.formSelect("状态", "status", ["开启", "关闭"].map(value => ({ value, label: value })), rule.status)}
       </div>
       <div class="notice-confirm" id="disableNotificationConfirm" hidden>
         <strong>确认停用该通知规则？</strong>
@@ -614,17 +637,14 @@ window.CRMAdminPage = {
   },
   renderPushServiceConfig() {
     const config = CRM_MOCK.pushServiceConfig;
-    const channelOptions = ["站内信", "钉钉"].map(value => {
-      const checked = config.channels.includes(value) ? "checked" : "";
-      return `<label class="mail-check"><input type="checkbox" name="channels" value="${value}" ${checked}> ${value}</label>`;
-    }).join(" ");
+    const channelOptions = ["站内信", "钉钉"].map(value => ({ value, label: value }));
     CRMUI.$("#communicationTable").innerHTML = `
       <form class="mail-config-form" id="pushServiceForm">
         <section class="mail-config-section">
           <div class="mail-section-title"><span>推送通道</span></div>
           <div class="mail-config-row">
             <label>推送渠道</label>
-            <div>${channelOptions}</div>
+            ${CRMUI.multiSelect("channels", channelOptions, config.channels)}
           </div>
           <div class="mail-config-row">
             <label>钉钉机器人 Webhook</label>
@@ -671,7 +691,11 @@ window.CRMAdminPage = {
       { title: "默认账号", render: row => row.isDefault ? CRMUI.badge("开启") : `<span class="badge gray">否</span>` },
       { title: "状态", render: row => CRMUI.badge(row.status) },
       { title: "创建时间", render: row => row.createdAt },
-      { title: "操作", render: row => `<button class="btn" data-mail-edit="${row.id}">编辑</button> <button class="btn" data-mail-verify="${row.id}">重新验证</button> <button class="btn" data-mail-toggle="${row.id}">${row.status === "启用" ? "停用" : "启用"}</button> ${row.isDefault ? "" : `<button class="btn" data-mail-default="${row.id}">设为默认</button>`} <button class="btn" data-mail-delete="${row.id}">删除</button>` }
+      { title: "操作", render: row => `<button class="btn" data-mail-edit="${row.id}">编辑</button> <button class="btn" data-mail-verify="${row.id}">重新验证</button> ${CRMUI.actionMore([
+        `<button type="button" data-mail-toggle="${row.id}">${row.status === "启用" ? "停用" : "启用"}</button>`,
+        row.isDefault ? "" : `<button type="button" data-mail-default="${row.id}">设为默认</button>`,
+        `<button type="button" class="danger" data-mail-delete="${row.id}">删除</button>`
+      ].filter(Boolean))}` }
     ], rows, "暂无邮箱账号");
     CRMUI.$$("[data-mail-edit]").forEach(btn => btn.addEventListener("click", () => this.openEmailAccountModal(CRM_MOCK.emailAccounts.find(item => item.id === btn.dataset.mailEdit))));
     CRMUI.$$("[data-mail-verify]").forEach(btn => btn.addEventListener("click", () => this.verifyEmailAccount(btn.dataset.mailVerify)));
@@ -784,7 +808,7 @@ window.CRMAdminPage = {
     });
   },
   renderSystemUsers(root) {
-    this.userState = { query: "", role: "", status: "", siteId: "", page: 1, pageSize: 5 };
+    this.userState = { query: "", role: "", status: "", siteId: "", createTimeStart: "", createTimeEnd: "", page: 1, pageSize: 5 };
     root.innerHTML = `
       <div class="toolbar">
         <button class="btn primary" id="newSystemUser">新增用户</button>
@@ -794,6 +818,10 @@ window.CRMAdminPage = {
         <select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select>
         <select id="systemSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select>
+        <span class="muted">创建时间</span>
+        <input type="date" id="systemCreateTimeStart" value="${this.userState.createTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="systemCreateTimeEnd" value="${this.userState.createTimeEnd}">
         <button class="btn" id="systemQuery">查询</button>
         <button class="btn" id="systemReset">重置</button>
       </div>
@@ -819,9 +847,16 @@ window.CRMAdminPage = {
       this.userState.page = 1;
       this.renderSystemUserTable();
     });
+    CRMUI.$$("#systemCreateTimeStart,#systemCreateTimeEnd").forEach(el => el.addEventListener("change", e => {
+      const suffix = el.id.endsWith("Start") ? "Start" : "End";
+      this.userState[`createTime${suffix}`] = e.target.value;
+      this.userState.page = 1;
+      this.renderSystemUserTable();
+    }));
     CRMUI.$("#systemQuery").addEventListener("click", () => this.renderSystemUserTable());
+    // 重置恢复默认（创建时间=不限制）
     CRMUI.$("#systemReset").addEventListener("click", () => {
-      this.userState = { query: "", role: "", status: "", siteId: "", page: 1, pageSize: this.userState.pageSize };
+      this.userState = { query: "", role: "", status: "", siteId: "", createTimeStart: "", createTimeEnd: "", page: 1, pageSize: this.userState.pageSize };
       this.renderSystemUsers(root);
     });
     CRMUI.$("#newSystemUser").addEventListener("click", () => this.openSystemUserModal());
@@ -835,7 +870,11 @@ window.CRMAdminPage = {
     return CRM_MOCK.users.filter(user => {
       const text = `${user.name} ${user.account || ""} ${user.phone || ""} ${user.email || ""} ${user.role} ${user.status}`.toLowerCase();
       const bySite = !this.userState.siteId || (user.siteIds || []).includes(this.userState.siteId);
-      return text.includes(keyword) && (!this.userState.role || user.role === this.userState.role) && (!this.userState.status || user.status === this.userState.status) && bySite;
+      // 创建时间筛选（按日期粒度，空值不限制）
+      const created = String(user.createdAt || "").slice(0, 10);
+      const byStart = !this.userState.createTimeStart || (created && created >= this.userState.createTimeStart);
+      const byEnd = !this.userState.createTimeEnd || (created && created <= this.userState.createTimeEnd);
+      return text.includes(keyword) && (!this.userState.role || user.role === this.userState.role) && (!this.userState.status || user.status === this.userState.status) && bySite && byStart && byEnd;
     });
   },
   renderSystemUserTable() {
@@ -853,7 +892,7 @@ window.CRMAdminPage = {
       { title: "授权站点", render: user => (user.siteIds || []).map(CRMUI.siteName).slice(0, 2).join("、") + ((user.siteIds || []).length > 2 ? ` 等 ${(user.siteIds || []).length} 个` : "") || "-" },
       { title: "状态", render: user => CRMUI.badge(user.status) },
       { title: "创建时间", render: user => user.createdAt || "-" },
-      { title: "操作", render: user => `<button class="btn" data-system-user-edit="${user.id}">编辑</button> <button class="btn ${user.status === "启用" ? "danger" : ""}" data-system-user-toggle="${user.id}">${user.status === "启用" ? "禁用" : "启用"}</button> <button class="btn" data-system-user-reset="${user.id}">重置密码</button> <button class="btn" data-system-user-more="${user.id}">更多</button>` }
+      { title: "操作", render: user => `<button class="btn" data-system-user-edit="${user.id}">编辑</button> <button class="btn ${user.status === "启用" ? "danger" : ""}" data-system-user-toggle="${user.id}">${user.status === "启用" ? "禁用" : "启用"}</button> <button class="btn" data-system-user-reset="${user.id}">重置密码</button> ${CRMUI.actionMore([`<button type="button" data-system-user-detail="${user.id}">详情</button>`])}` }
     ], pageRows, "暂无用户") + `
       <div class="toolbar" style="justify-content:flex-end;margin-top:12px">
         <span class="muted">第 ${this.userState.page} / ${totalPages} 页，共 ${rows.length} 条</span>
@@ -864,7 +903,7 @@ window.CRMAdminPage = {
     CRMUI.$$("[data-system-user-edit]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserModal(CRM_MOCK.users.find(user => user.id === btn.dataset.systemUserEdit))));
     CRMUI.$$("[data-system-user-toggle]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserToggleModal(btn.dataset.systemUserToggle)));
     CRMUI.$$("[data-system-user-reset]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserResetPasswordModal(btn.dataset.systemUserReset)));
-    CRMUI.$$("[data-system-user-more]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserDetailModal(btn.dataset.systemUserMore)));
+    CRMUI.$$("[data-system-user-detail]").forEach(btn => btn.addEventListener("click", () => this.openSystemUserDetailModal(btn.dataset.systemUserDetail)));
     CRMUI.$("#systemUserPrev")?.addEventListener("click", () => {
       this.userState.page -= 1;
       this.renderSystemUserTable();
@@ -903,7 +942,7 @@ window.CRMAdminPage = {
         ${CRMUI.formSelect("所属角色", "role", roleOptions, user?.role || roleOptions[0]?.value || "")}
         ${CRMUI.formSelect("所属团队", "team", ["销售一组", "销售二组", "区域协同组"].map(value => ({ value, label: value })), user?.team || "")}
         ${CRMUI.formSelect("状态", "status", ["启用", "禁用"].map(value => ({ value, label: value })), user?.status || "启用")}
-        <div class="form-field"><label>授权站点</label><select name="siteIds" multiple>${this.systemUserSiteOptions(user?.siteIds || [])}</select><small class="muted">业务员仅单站点，运营专员/协同人/系统管理员可多站点</small></div>
+        ${CRMUI.formMultiSelect("授权站点", "siteIds", CRM_MOCK.sites.map(site => ({ value: site.id, label: site.name })), user?.siteIds || [])}
       </div>`, form => {
       const name = form.get("name").trim();
       const account = isEdit ? user.account : form.get("account").trim();
@@ -1029,55 +1068,107 @@ window.CRMAdminPage = {
     CRMUI.$("#systemEdit").addEventListener("click", () => CRMUI.toast(`${title}已进入编辑状态`));
     draw();
   },
-  // 字典管理（MVP 简化版）：左侧业务字典分类 + 右侧字典项列表，支持字典项新增/编辑/启停/删除
-  // 不提供字典分类 CRUD、层级、按站点覆盖等高级能力（二期）
   renderSystemDicts(root) {
-    this.dictState = this.dictState || { activeDictCode: "followStage" };
+    this.dictState = this.dictState || { activeDictCode: "followStage", keyword: "", status: "", expandedDomains: {} };
     this.dictState.root = root;
     const dicts = CRM_MOCK.dictionaries || [];
     if (!dicts.find(d => d.code === this.dictState.activeDictCode) && dicts.length) this.dictState.activeDictCode = dicts[0].code;
+    dicts.forEach(dict => {
+      const domain = dict.domain || "默认分类";
+      if (this.dictState.expandedDomains[domain] === undefined) this.dictState.expandedDomains[domain] = true;
+    });
     root.innerHTML = `
-      <div class="card pad" style="margin-bottom:12px"><small class="muted">MVP 简化版：仅支持业务字典项（跟进阶段/跟进方式/客户标签/线索手动标签/客户潜质分级/客户关注选项/行业/国家地区/登录方式等）的增删改启停；字典分类、层级、按站点覆盖等高级能力二期开放。初始字典项清单详见 PRD §12.5.6。</small></div>
-      <div class="grid" style="grid-template-columns:220px 1fr;gap:12px;align-items:start">
-        <div class="card pad">
-          <div class="section-title">字典分类</div>
+      <div class="dict-management-layout">
+        <aside class="dict-tree-panel">
+          <div class="dict-panel-head">
+            <strong>字典分类</strong>
+          </div>
           <div id="dictCategoryList"></div>
-        </div>
-        <div class="card pad">
-          <div class="toolbar" style="margin-bottom:8px">
+        </aside>
+        <section class="dict-list-panel">
+          <div class="dict-list-head">
             <strong id="dictActiveTitle"></strong>
-            <button class="btn primary" id="dictItemAdd" style="margin-left:auto">新增字典项</button>
+          </div>
+          <div class="dict-filter-bar">
+            <input id="dictItemSearch" placeholder="字典名称 / 字典编码">
+            <select id="dictItemStatus">
+              <option value="">全部状态</option>
+              <option value="启用">启用</option>
+              <option value="停用">停用</option>
+            </select>
+            <button class="btn primary" id="dictItemSearchBtn">搜索</button>
+            <button class="btn" id="dictItemSearchReset">重置</button>
+          </div>
+          <div class="dict-toolbar">
+            <button class="btn primary" id="dictItemAdd">新增</button>
           </div>
           <div id="dictItemTable"></div>
-        </div>
+        </section>
       </div>
     `;
+    const groupedDicts = dicts.reduce((groups, dict) => {
+      const domain = dict.domain || "默认分类";
+      if (!groups[domain]) groups[domain] = [];
+      groups[domain].push(dict);
+      return groups;
+    }, {});
     const drawCategories = () => {
-      CRMUI.$("#dictCategoryList").innerHTML = dicts.map(d => `
-        <div class="metric ${d.code === this.dictState.activeDictCode ? "active" : ""}" data-dict-code="${d.code}" style="cursor:pointer;padding:8px 10px;border-radius:6px;${d.code === this.dictState.activeDictCode ? "background:var(--blue-weak)" : ""}">
-          <div class="metric-label">${d.name}</div>
-          <div class="muted" style="font-size:12px">${d.domain} · ${d.items.length} 项</div>
-        </div>
-      `).join("");
+      CRMUI.$("#dictCategoryList").innerHTML = Object.entries(groupedDicts).map(([domain, items]) => {
+        const expanded = this.dictState.expandedDomains[domain] !== false;
+        return `
+          <div class="dict-tree-group">
+            <button class="dict-tree-domain" data-dict-domain="${domain}" type="button">
+              <span class="dict-tree-caret">${expanded ? "▾" : "▸"}</span>
+              <span>${domain}</span>
+            </button>
+            <div class="dict-tree-children" ${expanded ? "" : "hidden"}>
+              ${items.map(d => `
+                <button class="dict-tree-node ${d.code === this.dictState.activeDictCode ? "active" : ""}" data-dict-code="${d.code}" type="button">
+                  <span class="dict-tree-branch"></span>
+                  <span class="dict-tree-main">${d.name}</span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+      CRMUI.$$("[data-dict-domain]").forEach(el => el.addEventListener("click", () => {
+        this.dictState.expandedDomains[el.dataset.dictDomain] = this.dictState.expandedDomains[el.dataset.dictDomain] === false;
+        drawCategories();
+      }));
       CRMUI.$$("[data-dict-code]").forEach(el => el.addEventListener("click", () => {
+        const treePanel = CRMUI.$(".dict-tree-panel");
+        const treeScrollTop = treePanel ? treePanel.scrollTop : 0;
         this.dictState.activeDictCode = el.dataset.dictCode;
-        this.renderSystemDicts(root);
+        this.dictState.keyword = "";
+        this.dictState.status = "";
+        CRMUI.$("#dictItemSearch").value = "";
+        CRMUI.$("#dictItemStatus").value = "";
+        drawCategories();
+        drawItems();
+        if (treePanel) requestAnimationFrame(() => { treePanel.scrollTop = treeScrollTop; });
       }));
     };
     const drawItems = () => {
       const dict = dicts.find(d => d.code === this.dictState.activeDictCode);
       if (!dict) { CRMUI.$("#dictItemTable").innerHTML = '<p class="muted">暂无字典</p>'; return; }
-      CRMUI.$("#dictActiveTitle").textContent = `${dict.name}（${dict.domain}）`;
-      const isFollowStage = dict.code === "followStage";
+      CRMUI.$("#dictActiveTitle").textContent = dict.name;
+      const extension = this.dictExtensionConfig(dict);
       const columns = [
         { title: "字典名称", render: item => item.name },
         { title: "字典编码", render: item => item.code },
         { title: "排序", render: item => item.sort },
-        ...(isFollowStage ? [{ title: "是否允许转高意向客户", render: item => item.allowHighIntent ? '<span class="badge blue">是</span>' : "否" }] : []),
+        { title: extension.title, render: item => extension.render(item) },
         { title: "状态", render: item => CRMUI.badge(item.status) },
+        { title: "创建时间", render: item => item.createdAt || item.updatedAt || "-" },
         { title: "操作", render: item => `<button class="btn" data-dict-item-edit="${item.id}">编辑</button> <button class="btn" data-dict-item-toggle="${item.id}">${item.status === "启用" ? "停用" : "启用"}</button> <button class="btn" data-dict-item-del="${item.id}">删除</button>` }
       ];
-      const sortedItems = [...dict.items].sort((a, b) => (a.sort || 0) - (b.sort || 0));
+      const keyword = (this.dictState.keyword || "").toLowerCase();
+      const status = this.dictState.status || "";
+      const sortedItems = [...dict.items]
+        .filter(item => `${item.name} ${item.code} ${item.status} ${item.remark || ""}`.toLowerCase().includes(keyword))
+        .filter(item => !status || item.status === status)
+        .sort((a, b) => (a.sort || 0) - (b.sort || 0));
       CRMUI.$("#dictItemTable").innerHTML = CRMUI.table(columns, sortedItems, "暂无字典项");
       CRMUI.$$("[data-dict-item-edit]").forEach(el => el.addEventListener("click", () => this.openDictItemModal(dict, el.dataset.dictItemEdit)));
       CRMUI.$$("[data-dict-item-toggle]").forEach(el => el.addEventListener("click", () => {
@@ -1085,36 +1176,91 @@ window.CRMAdminPage = {
         if (item) { item.status = item.status === "启用" ? "停用" : "启用"; CRMUI.toast(`已${item.status}字典项「${item.name}」`); drawItems(); }
       }));
       CRMUI.$$("[data-dict-item-del]").forEach(el => el.addEventListener("click", () => {
-        const idx = dict.items.findIndex(i => i.id === el.dataset.dictItemDel);
-        if (idx >= 0) { const removed = dict.items.splice(idx, 1)[0]; CRMUI.toast(`已删除字典项「${removed.name}」`); drawItems(); drawCategories(); }
+        const item = dict.items.find(i => i.id === el.dataset.dictItemDel);
+        if (!item) return;
+        CRMUI.modal("删除字典项", `
+          <p>确定删除字典项「<strong>${item.name}</strong>」吗？</p>
+          <p class="muted">删除后不可恢复。</p>
+        `, () => {
+          const idx = dict.items.findIndex(i => i.id === item.id);
+          if (idx >= 0) {
+            const removed = dict.items.splice(idx, 1)[0];
+            CRMUI.closeModal();
+            CRMUI.toast(`已删除字典项「${removed.name}」`);
+            drawItems();
+            drawCategories();
+          }
+        });
       }));
     };
     CRMUI.$("#dictItemAdd").addEventListener("click", () => this.openDictItemModal(dicts.find(d => d.code === this.dictState.activeDictCode)));
+    CRMUI.$("#dictItemSearch").value = this.dictState.keyword || "";
+    CRMUI.$("#dictItemStatus").value = this.dictState.status || "";
+    CRMUI.$("#dictItemSearchBtn").addEventListener("click", () => {
+      this.dictState.keyword = CRMUI.$("#dictItemSearch").value;
+      this.dictState.status = CRMUI.$("#dictItemStatus").value;
+      drawItems();
+    });
+    CRMUI.$("#dictItemSearchReset").addEventListener("click", () => {
+      this.dictState.keyword = "";
+      this.dictState.status = "";
+      CRMUI.$("#dictItemSearch").value = "";
+      CRMUI.$("#dictItemStatus").value = "";
+      drawItems();
+    });
     drawCategories();
     drawItems();
+  },
+  dictExtensionConfig(dict) {
+    if (dict.code === "followStage") return {
+      title: "是否允许转客户",
+      render: item => item.allowHighIntent ? '<span class="badge blue">是</span>' : "否"
+    };
+    if (dict.code === "customerLevel") return {
+      title: "分级颜色",
+      render: item => item.color ? `<span class="dict-color-dot" style="background:${item.color}"></span>${item.color}` : "-"
+    };
+    if (dict.code === "customerTag" || dict.code === "leadTag") return {
+      title: "标签颜色",
+      render: item => item.color ? `<span class="dict-color-dot" style="background:${item.color}"></span>${item.color}` : "-"
+    };
+    if (dict.code === "country") return {
+      title: "国家编码",
+      render: item => item.countryCode || item.isoCode || "-"
+    };
+    return {
+      title: "扩展属性",
+      render: () => "-"
+    };
   },
   openDictItemModal(dict, itemId) {
     const isEdit = Boolean(itemId);
     const item = isEdit ? dict.items.find(i => i.id === itemId) : { name: "", code: "", sort: dict.items.length + 1, status: "启用", allowHighIntent: false };
     const isFollowStage = dict.code === "followStage";
+    const hasColor = dict.code === "customerLevel" || dict.code === "customerTag" || dict.code === "leadTag";
     CRMUI.modal(isEdit ? "编辑字典项" : "新增字典项", `
       <div class="form-grid">
+        <div class="form-field"><label>所属分类</label><input value="${dict.name}" readonly></div>
         ${CRMUI.formInput("字典名称", "name", item.name)}
         ${CRMUI.formInput("字典编码", "code", item.code)}
-        ${CRMUI.formInput("排序", "sort", String(item.sort))}
+        ${CRMUI.formInput("排序", "sort", String(item.sort), "number")}
         ${CRMUI.formSelect("状态", "status", ["启用", "停用"].map(v => ({ value: v, label: v })), item.status)}
-        ${isFollowStage ? `<div class="form-field"><label>是否允许转高意向客户</label><select name="allowHighIntent"><option value="false" ${!item.allowHighIntent ? "selected" : ""}>否</option><option value="true" ${item.allowHighIntent ? "selected" : ""}>是</option></select></div>` : ""}
+        ${isFollowStage ? `<div class="form-field"><label>是否允许转客户</label><select name="allowHighIntent"><option value="false" ${!item.allowHighIntent ? "selected" : ""}>否</option><option value="true" ${item.allowHighIntent ? "selected" : ""}>是</option></select></div>` : ""}
+        ${hasColor ? `<div class="form-field"><label>${dict.code === "customerLevel" ? "分级颜色" : "标签颜色"}</label><input name="color" value="${item.color || ""}" placeholder="#2563eb"></div>` : ""}
       </div>`, form => {
       const name = (form.get("name") || "").trim();
       if (!name) return CRMUI.toast("请填写字典名称");
+      if (!(form.get("code") || "").trim()) return CRMUI.toast("请填写字典编码");
       const code = (form.get("code") || "").trim() || name;
       const sort = Number(form.get("sort")) || (dict.items.length + 1);
       if (isEdit) {
         item.name = name; item.code = code; item.sort = sort; item.status = form.get("status");
         if (isFollowStage) item.allowHighIntent = form.get("allowHighIntent") === "true";
+        if (hasColor) item.color = (form.get("color") || "").trim();
       } else {
         const newItem = { id: `${dict.code}${Date.now()}`, name, code, sort, status: form.get("status") };
         if (isFollowStage) newItem.allowHighIntent = form.get("allowHighIntent") === "true";
+        if (hasColor) newItem.color = (form.get("color") || "").trim();
         dict.items.push(newItem);
       }
       CRMUI.closeModal();
@@ -1122,10 +1268,120 @@ window.CRMAdminPage = {
       this.renderSystemDicts(this.dictState.root);
     });
   },
-  // 参数设置（系统通用业务参数，对齐 PRD §12.6）：列表 + 编辑弹窗，保存立即/下次登录生效
+  // 系统日志：登录日志 / 操作日志 / 配置变更 三 Tab，分别使用登录时间 / 操作时间 / 变更时间筛选，默认近 7 天
+  renderSystemLogs(root) {
+    // 默认时间范围近 7 天
+    const last7Days = this.last7DaysRange();
+    this.logState = this.logState || { tab: "login", login: { query: "", loginTimeStart: last7Days.start, loginTimeEnd: last7Days.end }, operate: { query: "", operateTimeStart: last7Days.start, operateTimeEnd: last7Days.end }, change: { query: "", changeTimeStart: last7Days.start, changeTimeEnd: last7Days.end } };
+    const tabs = [["login", "登录日志"], ["operate", "操作日志"], ["change", "配置变更"]];
+    root.innerHTML = `
+      <div class="tabs" id="systemLogTabs">${tabs.map(t => `<div class="tab ${t[0] === this.logState.tab ? "active" : ""}" data-logtab="${t[0]}">${t[1]}</div>`).join("")}</div>
+      <div id="systemLogBody"></div>
+    `;
+    CRMUI.$$("#systemLogTabs .tab").forEach(tab => tab.addEventListener("click", () => {
+      CRMUI.$$("#systemLogTabs .tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      this.logState.tab = tab.dataset.logtab;
+      this.renderSystemLogBody();
+    }));
+    this.renderSystemLogBody();
+  },
+  // 近 7 天日期范围（YYYY-MM-DD），用于系统日志默认时间范围
+  last7DaysRange() {
+    const end = new Date().toISOString().slice(0, 10);
+    const start = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+    return { start, end };
+  },
+  logDateInRange(value, start, end) {
+    if (!start && !end) return true;
+    const date = String(value || "").slice(0, 10);
+    if (!date) return false;
+    if (start && date < start) return false;
+    if (end && date > end) return false;
+    return true;
+  },
+  renderSystemLogBody() {
+    const tab = this.logState.tab;
+    const state = this.logState[tab];
+    // 时间字段名按 Tab 区分：login→loginTime / operate→operateTime / change→changeTime
+    const timeKey = tab === "login" ? "loginTime" : tab === "operate" ? "operateTime" : "changeTime";
+    const timeLabel = tab === "login" ? "登录时间" : tab === "operate" ? "操作时间" : "变更时间";
+    CRMUI.$("#systemLogBody").innerHTML = `
+      <div class="filters card pad">
+        <input id="logQuery" value="${state.query}" placeholder="搜索关键词">
+        <span class="muted">${timeLabel}</span>
+        <input type="date" id="logTimeStart" value="${state[`${timeKey}Start`] || ""}">
+        <span class="muted">至</span>
+        <input type="date" id="logTimeEnd" value="${state[`${timeKey}End`] || ""}">
+        <button class="btn" id="logReset">重置</button>
+      </div>
+      <div id="systemLogTable"></div>
+    `;
+    CRMUI.$("#logQuery").addEventListener("input", e => { state.query = e.target.value.toLowerCase(); this.renderSystemLogTable(tab); });
+    CRMUI.$("#logTimeStart").addEventListener("change", e => { state[`${timeKey}Start`] = e.target.value; this.renderSystemLogTable(tab); });
+    CRMUI.$("#logTimeEnd").addEventListener("change", e => { state[`${timeKey}End`] = e.target.value; this.renderSystemLogTable(tab); });
+    // 重置恢复该 Tab 默认时间范围（近 7 天），不改变当前 Tab
+    CRMUI.$("#logReset").addEventListener("click", () => {
+      const range = this.last7DaysRange();
+      state.query = "";
+      state[`${timeKey}Start`] = range.start;
+      state[`${timeKey}End`] = range.end;
+      this.renderSystemLogBody();
+    });
+    this.renderSystemLogTable(tab);
+  },
+  renderSystemLogTable(tab) {
+    const state = this.logState[tab];
+    const timeKey = tab === "login" ? "loginTime" : tab === "operate" ? "operateTime" : "changeTime";
+    let columns, rows;
+    if (tab === "login") {
+      rows = (CRM_MOCK.loginLogs || []).filter(log => {
+        const text = `${log.account} ${log.name} ${log.ip} ${log.method} ${log.result} ${log.browser} ${log.os}`.toLowerCase();
+        return text.includes(state.query) && this.logDateInRange(log.loginTime, state.loginTimeStart, state.loginTimeEnd);
+      });
+      columns = [
+        { title: "登录时间", render: log => log.loginTime },
+        { title: "账号", render: log => log.account },
+        { title: "姓名", render: log => log.name },
+        { title: "IP", render: log => log.ip },
+        { title: "方式", render: log => log.method },
+        { title: "结果", render: log => log.result === "成功" ? '<span class="badge green">成功</span>' : '<span class="badge red">失败</span>' },
+        { title: "浏览器", render: log => log.browser },
+        { title: "操作系统", render: log => log.os }
+      ];
+    } else if (tab === "operate") {
+      rows = (CRM_MOCK.operateLogs || []).filter(log => {
+        const text = `${log.user} ${log.type} ${log.object} ${log.objectName} ${log.content} ${log.ip}`.toLowerCase();
+        return text.includes(state.query) && this.logDateInRange(log.operateTime, state.operateTimeStart, state.operateTimeEnd);
+      });
+      columns = [
+        { title: "操作时间", render: log => log.operateTime },
+        { title: "操作人", render: log => log.user },
+        { title: "操作类型", render: log => log.type },
+        { title: "业务对象", render: log => log.object },
+        { title: "对象名称", render: log => log.objectName },
+        { title: "操作内容", render: log => log.content },
+        { title: "IP", render: log => log.ip }
+      ];
+    } else {
+      rows = (CRM_MOCK.configChangeLogs || []).filter(log => {
+        const text = `${log.user} ${log.type} ${log.item} ${log.before} ${log.after} ${log.ip}`.toLowerCase();
+        return text.includes(state.query) && this.logDateInRange(log.changeTime, state.changeTimeStart, state.changeTimeEnd);
+      });
+      columns = [
+        { title: "变更时间", render: log => log.changeTime },
+        { title: "操作人", render: log => log.user },
+        { title: "变更类型", render: log => log.type },
+        { title: "配置项", render: log => log.item },
+        { title: "变更前", render: log => log.before },
+        { title: "变更后", render: log => log.after },
+        { title: "IP", render: log => log.ip }
+      ];
+    }
+    CRMUI.$("#systemLogTable").innerHTML = CRMUI.table(columns, rows, "暂无日志记录");
+  },
   renderParamSettings(root) {
     root.innerHTML = `
-      <div class="card pad" style="margin-bottom:12px"><small class="muted">系统参数包含通用参数与业务规则配置，变更记录到系统日志。</small></div>
       <div class="section-title">通用参数</div>
       <div id="paramSettingsTable"></div>
       <div class="section-title">业务规则配置</div>
@@ -1145,7 +1401,7 @@ window.CRMAdminPage = {
         { id: "br01", name: "采集邮箱来件自动创建线索", value: "开启", desc: "运营邮箱来件按解析规则生成线索", effect: "立即生效" },
         { id: "br02", name: "陌生发件人自动创建线索", value: "关闭", desc: "发件人未匹配现有客户/联系人时是否自动创建线索", effect: "立即生效" },
         { id: "br03", name: "未跟进自动回收天数", value: "14 天", desc: "待跟进/跟进中超时自动回收公海", effect: "立即生效" },
-        { id: "br04", name: "客户负责人变更是否同步线索负责人", value: "是", desc: "控制客户后续新生成线索是否归新负责人，历史线索不变", effect: "立即生效" },
+        { id: "br04", name: "客户负责人变更是否同步线索负责人", value: "是", desc: "控制客户新生成线索是否归新负责人，历史线索不变", effect: "立即生效" },
         { id: "br05", name: "新增合同自动归属客户负责人", value: "是", desc: "录入/关联合同默认合同业务员=客户当前负责人", effect: "立即生效" },
         { id: "br06", name: "渠道定义规则", value: "系统默认", desc: "获客分析渠道分类映射（邮件/WhatsApp）", effect: "立即生效" }
       ];
@@ -1157,7 +1413,7 @@ window.CRMAdminPage = {
         { title: "操作", render: item => `<button class="btn" data-business-rule-edit="${item.id}">编辑</button>` }
       ], rules, "暂无业务规则");
       CRMUI.$$("[data-param-edit]").forEach(el => el.addEventListener("click", () => this.openParamSettingModal(el.dataset.paramEdit, draw)));
-      CRMUI.$$("[data-business-rule-edit]").forEach(el => el.addEventListener("click", () => CRMUI.toast("业务规则编辑弹窗已打开，原型按 PRD 展示字段")));
+      CRMUI.$$("[data-business-rule-edit]").forEach(el => el.addEventListener("click", () => CRMUI.toast("业务规则编辑弹窗已打开")));
     };
     draw();
   },
@@ -1179,10 +1435,8 @@ window.CRMAdminPage = {
       redraw();
     });
   },
-  // 系统配置（原系统开关）：承载平台级全局开关项，切换立即生效并记录系统日志
   renderSystemConfig(root) {
     root.innerHTML = `
-      <div class="card pad" style="margin-bottom:12px"><small class="muted">系统配置控制平台级功能的全局启停，影响所有用户。点击开关立即生效（无二次确认），状态变更记录到系统日志。</small></div>
       <div id="systemConfigTable"></div>
     `;
     const draw = () => {
@@ -1198,7 +1452,6 @@ window.CRMAdminPage = {
         const item = items.find(i => i.id === el.dataset.configToggle);
         if (!item) return;
         item.value = !item.value;
-        // 维护模式开启：提示非系统管理员将被强制下线（MVP 仅提示）
         if (item.code === "maintenance" && item.value) CRMUI.toast("维护模式已开启，非系统管理员将被拒绝登录");
         CRMUI.toast(`「${item.name}」已${item.value ? "开启" : "关闭"}`);
         draw();

@@ -4,7 +4,7 @@ window.CRMCommunicationPage = {
   },
   renderEmail(root) {
     this.mailRoot = root;
-    this.mailState = { folder: "inbox", selected: CRM_MOCK.emails[0].id, query: "", batchSelected: new Set() };
+    this.mailState = { folder: "inbox", selected: CRM_MOCK.emails[0].id, query: "", mailTimeStart: "", mailTimeEnd: "", batchSelected: new Set() };
     root.innerHTML = `
       <div class="filters">
         <select id="mailbox">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select>
@@ -16,6 +16,13 @@ window.CRMCommunicationPage = {
       </div>
       <div class="tabs" id="mailTabs">
         ${[["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map(t => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
+      </div>
+      <div class="filters" id="mailTimeFilters">
+        <span class="muted">邮件时间</span>
+        <input type="date" id="mailTimeStart" value="${this.mailState.mailTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="mailTimeEnd" value="${this.mailState.mailTimeEnd}">
+        <button class="btn" id="mailTimeReset">重置</button>
       </div>
       <div class="split">
         <div class="card" id="mailList"></div>
@@ -33,6 +40,16 @@ window.CRMCommunicationPage = {
       this.mailState.query = e.target.value.toLowerCase();
       this.renderMailList();
     });
+    CRMUI.$("#mailTimeStart").addEventListener("change", e => { this.mailState.mailTimeStart = e.target.value; this.renderMailList(); });
+    CRMUI.$("#mailTimeEnd").addEventListener("change", e => { this.mailState.mailTimeEnd = e.target.value; this.renderMailList(); });
+    // 重置仅重置邮件时间筛选，保留当前邮箱与当前文件夹
+    CRMUI.$("#mailTimeReset").addEventListener("click", () => {
+      this.mailState.mailTimeStart = "";
+      this.mailState.mailTimeEnd = "";
+      CRMUI.$("#mailTimeStart").value = "";
+      CRMUI.$("#mailTimeEnd").value = "";
+      this.renderMailList();
+    });
     CRMUI.$("#batchAi").addEventListener("click", () => this.openBatchAiModal());
     CRMUI.$("#composeMail").addEventListener("click", () => this.openComposeMailModal());
     CRMUI.$("#batchReadMail").addEventListener("click", () => this.markSelectedMailsRead());
@@ -43,10 +60,17 @@ window.CRMCommunicationPage = {
     return CRM_MOCK.emails.filter(mail => mail.folder === folder).length;
   },
   getFilteredMails() {
+    const start = this.mailState.mailTimeStart || "";
+    const end = this.mailState.mailTimeEnd || "";
+    if (start && end && start > end) return [];
     return CRM_MOCK.emails.filter(mail => {
       const byFolder = mail.folder === this.mailState.folder;
       const text = `${mail.from} ${mail.subject} ${mail.body}`.toLowerCase();
-      return byFolder && text.includes(this.mailState.query);
+      // 邮件时间：按文件夹语义均取 mail.time（收件/发送/最后保存/原邮件时间），按日期粒度比较
+      const mailDate = String(mail.time || "").slice(0, 10);
+      const byStart = !start || mailDate >= start;
+      const byEnd = !end || mailDate <= end;
+      return byFolder && byStart && byEnd && text.includes(this.mailState.query);
     });
   },
   renderMailList() {
@@ -63,7 +87,6 @@ window.CRMCommunicationPage = {
           <div class="small muted">${mail.summary}</div>
           <div class="small muted">${mail.time}</div>
         </div>
-        <button class="btn mail-delete-btn" type="button" data-mail-delete="${mail.id}">删除</button>
       </div>
     `).join("") : `<div class="pad muted">当前条件下没有邮件</div>`;
     CRMUI.$$("[data-mail]").forEach(el => el.addEventListener("click", () => {
@@ -79,12 +102,6 @@ window.CRMCommunicationPage = {
         this.updateMailBatchActions();
       });
     });
-    CRMUI.$$("[data-mail-delete]").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        this.openDeleteMailModal(btn.dataset.mailDelete);
-      });
-    });
     this.updateMailBatchActions();
     this.renderMailDetail();
   },
@@ -98,7 +115,7 @@ window.CRMCommunicationPage = {
     CRMUI.$("#mailBody").innerHTML = `
       <div class="detail-title">${mail.subject}</div>
       <p class="muted">${mail.from} → ${mail.mailbox}</p>
-      <p class="muted">${mail.time} · 来源站点：${mail.siteId ? CRMUI.siteName(mail.siteId) : `<span class="badge red">待确认</span>`}</p>
+      <p class="muted">${mail.time} · 来源站点：${mail.siteId ? CRMUI.siteName(mail.siteId) : `<span class="badge red">未识别</span>`}</p>
       <div style="line-height:1.8;margin:18px 0">${mail.body}</div>
       <div>${mail.attachments.map(a => `<span class="badge gray">${a}</span>`).join(" ") || `<span class="muted">无附件</span>`}</div>
       <div class="toolbar" style="margin-top:18px">
@@ -353,7 +370,6 @@ window.CRMCommunicationPage = {
     CRMUI.modal("批量 AI 提炼", `
       <p>已选择 <strong>${selectedMails.length}</strong> 封邮件。</p>
       <p class="muted">是否立即开始 AI 提炼，并生成 PDF 报告？</p>
-      <p class="muted">影响范围：分析 ${selectedMails.length} 封，预计 ${Math.max(3, selectedMails.length * 2)} 秒。</p>
       ${CRMUI.table([
         { title: "邮件主题", render: m => m.subject },
         { title: "发件人", render: m => m.senderName },
@@ -429,7 +445,7 @@ window.CRMCommunicationPage = {
     return pdf;
   },
   renderWhatsApp(root) {
-    this.chatState = { selected: CRM_MOCK.whatsappConversations[0].id, query: "" };
+    this.chatState = { selected: CRM_MOCK.whatsappConversations[0].id, query: "", lastMessageTimeStart: "", lastMessageTimeEnd: "" };
     const account = this.personalWhatsappAccount();
     if (!account) {
       root.innerHTML = `
@@ -445,6 +461,11 @@ window.CRMCommunicationPage = {
     root.innerHTML = `
       <div class="filters whatsapp-account-bar">
         <input id="chatSearch" placeholder="搜索联系人、企业、消息">
+        <span class="muted">最近消息时间</span>
+        <input type="date" id="chatTimeStart" value="${this.chatState.lastMessageTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="chatTimeEnd" value="${this.chatState.lastMessageTimeEnd}">
+        <button class="btn" id="chatTimeReset">重置</button>
         <button class="btn" id="refreshChat">刷新</button>
       </div>
       <div class="split">
@@ -455,6 +476,16 @@ window.CRMCommunicationPage = {
     `;
     CRMUI.$("#chatSearch").addEventListener("input", e => {
       this.chatState.query = e.target.value.toLowerCase();
+      this.renderChatList();
+    });
+    CRMUI.$("#chatTimeStart").addEventListener("change", e => { this.chatState.lastMessageTimeStart = e.target.value; this.renderChatList(); });
+    CRMUI.$("#chatTimeEnd").addEventListener("change", e => { this.chatState.lastMessageTimeEnd = e.target.value; this.renderChatList(); });
+    // 重置恢复默认时间范围（不限制）
+    CRMUI.$("#chatTimeReset").addEventListener("click", () => {
+      this.chatState.lastMessageTimeStart = "";
+      this.chatState.lastMessageTimeEnd = "";
+      CRMUI.$("#chatTimeStart").value = "";
+      CRMUI.$("#chatTimeEnd").value = "";
       this.renderChatList();
     });
     CRMUI.$("#refreshChat").addEventListener("click", () => CRMUI.toast("会话已刷新"));
@@ -489,7 +520,16 @@ window.CRMCommunicationPage = {
     });
   },
   renderChatList() {
-    const list = CRM_MOCK.whatsappConversations.filter(c => `${c.name} ${c.company} ${c.messages.map(m => m.text).join(" ")}`.toLowerCase().includes(this.chatState.query));
+    const start = this.chatState.lastMessageTimeStart || "";
+    const end = this.chatState.lastMessageTimeEnd || "";
+    const list = CRM_MOCK.whatsappConversations.filter(c => {
+      const text = `${c.name} ${c.company} ${c.messages.map(m => m.text).join(" ")}`.toLowerCase();
+      // 最近消息时间：取会话最近一条消息时间，按日期粒度比较；空值不限制
+      const msgDate = String(c.lastMessageTime || "").slice(0, 10);
+      const byStart = !start || msgDate >= start;
+      const byEnd = !end || msgDate <= end;
+      return text.includes(this.chatState.query) && byStart && byEnd;
+    });
     CRMUI.$("#chatList").innerHTML = this.renderContactList(list);
     CRMUI.$$("[data-chat]").forEach(el => el.addEventListener("click", () => {
       this.chatState.selected = el.dataset.chat;

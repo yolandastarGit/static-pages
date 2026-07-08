@@ -1,19 +1,72 @@
 window.CRMAnalyticsPage = {
   render(root, page, routeKey) {
     const initial = routeKey === "analyticsAcquisition" ? "acquisition" : routeKey === "analyticsCustomer" ? "customer" : "sales";
+    // 统计时间默认值：销售经营/获客分析=本月，客户经营=本年
+    const isCustomer = initial === "customer";
+    const defaultRange = isCustomer ? this.currentYearRange() : this.currentMonthRange();
+    this.analyticsState = this.analyticsState || { statRange: isCustomer ? "本年" : "本月", statTimeStart: defaultRange.start, statTimeEnd: defaultRange.end, siteId: "" };
+    // 切换分析页时重置默认统计时间
+    this.analyticsState.statRange = isCustomer ? "本年" : "本月";
+    this.analyticsState.statTimeStart = defaultRange.start;
+    this.analyticsState.statTimeEnd = defaultRange.end;
     root.innerHTML = `
       <div class="filters">
-        <select id="analyticsRange"><option>本月</option><option>本季度</option><option>本年</option></select>
-        <select><option>全部站点</option>${CRM_MOCK.sites.map(s => `<option>${s.name}</option>`).join("")}</select>
+        <span class="muted">统计时间</span>
+        <select id="analyticsRange">
+          ${isCustomer
+            ? `<option>本年</option><option>本月</option><option>本季度</option><option>自定义</option>`
+            : `<option>本月</option><option>本季度</option><option>本年</option><option>今日</option><option>自定义</option>`}
+        </select>
+        <input type="date" id="analyticsStatStart" value="${this.analyticsState.statTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="analyticsStatEnd" value="${this.analyticsState.statTimeEnd}">
+        <select id="analyticsSite"><option value="">全部站点</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}">${s.name}</option>`).join("")}</select>
         <button class="btn primary" id="refreshAnalytics">刷新</button>
       </div>
       <div id="analyticsBody"></div>
     `;
+    CRMUI.$("#analyticsRange").addEventListener("change", e => {
+      const range = this.rangeByShortcut(e.target.value, isCustomer);
+      this.analyticsState.statRange = e.target.value;
+      this.analyticsState.statTimeStart = range.start;
+      this.analyticsState.statTimeEnd = range.end;
+      CRMUI.$("#analyticsStatStart").value = range.start;
+      CRMUI.$("#analyticsStatEnd").value = range.end;
+      this.renderTab(initial);
+    });
+    CRMUI.$$("#analyticsStatStart,#analyticsStatEnd").forEach(el => el.addEventListener("change", e => {
+      this.analyticsState.statRange = "自定义";
+      this.analyticsState[el.id.endsWith("Start") ? "statTimeStart" : "statTimeEnd"] = e.target.value;
+      this.renderTab(initial);
+    }));
+    CRMUI.$("#analyticsSite").addEventListener("change", e => { this.analyticsState.siteId = e.target.value; this.renderTab(initial); });
     CRMUI.$("#refreshAnalytics").addEventListener("click", () => {
       CRMUI.toast("分析数据已刷新");
       this.renderTab(initial);
     });
     this.renderTab(initial);
+  },
+  // 统计时间快捷选项 → 日期范围
+  rangeByShortcut(shortcut, isCustomer) {
+    const now = new Date();
+    if (shortcut === "今日") return { start: now.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) };
+    if (shortcut === "本月") return this.currentMonthRange();
+    if (shortcut === "本季度") {
+      const month = now.getMonth();
+      const qStart = Math.floor(month / 3) * 3;
+      return { start: new Date(now.getFullYear(), qStart, 1).toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) };
+    }
+    if (shortcut === "本年") return this.currentYearRange();
+    // 自定义：保留当前输入
+    return { start: this.analyticsState?.statTimeStart || "", end: this.analyticsState?.statTimeEnd || "" };
+  },
+  currentMonthRange() {
+    const now = new Date();
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) };
+  },
+  currentYearRange() {
+    const now = new Date();
+    return { start: new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) };
   },
   renderTab(tab) {
     const body = CRMUI.$("#analyticsBody");

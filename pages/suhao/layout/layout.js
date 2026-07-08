@@ -254,10 +254,8 @@ window.CRMLayout = {
         <div class="form-field"><label>姓名</label><input value="${CRM_MOCK.currentUser.name}" disabled></div>
         <div class="form-field"><label>角色</label><input value="${CRM_MOCK.currentUser.role}" disabled></div>
         <div class="form-field full"><label>授权站点</label><input value="${CRM_MOCK.currentUser.sites.map(CRMUI.siteName).join("、")}" disabled></div>
-        <div class="form-field full"><small class="muted">个人中心完整页化（资料可编辑、头像上传等）二期开放；如需修改基本信息，请联系系统管理员在用户管理中维护。</small></div>
       </div>`, () => CRMUI.closeModal());
   },
-  // 修改密码（MVP 最小补丁：弹窗形态，校验旧密码 + 新密码二次确认）
   openChangePasswordModal() {
     CRMUI.modal("修改密码", `
       <div class="form-grid">
@@ -272,7 +270,6 @@ window.CRMLayout = {
       if (newPwd.length < 6) return CRMUI.toast("新密码不少于 6 位");
       if (newPwd !== confirmPwd) return CRMUI.toast("两次输入的新密码不一致");
       if (newPwd === oldPwd) return CRMUI.toast("新密码不能与当前密码相同");
-      // mock：仅记录变更，不持久化（MVP 无真实鉴权后端）
       CRM_MOCK.currentUser.passwordUpdatedAt = "2026-07-05 22:00";
       CRMUI.closeModal();
       CRMUI.toast("密码已修改，下次登录请使用新密码");
@@ -316,7 +313,10 @@ window.CRMLayout = {
         { title: "默认邮箱", render: row => row.isDefault ? CRMUI.badge("开启") : `<span class="badge gray">否</span>` },
         { title: "状态", render: row => CRMUI.badge(row.status) },
         { title: "绑定时间", render: row => row.boundAt },
-        { title: "操作", render: row => `<button class="btn" type="button" data-personal-email-edit="${row.id}">编辑</button> <button class="btn" type="button" data-personal-email-verify="${row.id}">重新验证</button> ${row.isDefault ? "" : `<button class="btn" type="button" data-personal-email-default="${row.id}">设为默认</button>`} <button class="btn" type="button" data-personal-email-delete="${row.id}">删除</button>` }
+        { title: "操作", render: row => `<button class="btn" type="button" data-personal-email-edit="${row.id}">编辑</button> <button class="btn" type="button" data-personal-email-verify="${row.id}">重新验证</button> ${CRMUI.actionMore([
+          row.isDefault ? "" : `<button type="button" data-personal-email-default="${row.id}">设为默认</button>`,
+          `<button type="button" class="danger" data-personal-email-delete="${row.id}">删除</button>`
+        ].filter(Boolean))}` }
       ], rows, "暂无绑定邮箱")}
     `;
     CRMUI.$("#newPersonalEmail").addEventListener("click", () => this.renderPersonalEmailForm());

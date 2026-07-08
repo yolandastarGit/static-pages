@@ -21,12 +21,10 @@ window.CRM_MOCK = {
   ],
   dingTalkAccounts: ["admin.dingtalk", "chenhao.sales", "mia.sales", "alex.region"],
   sites: [
-    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
+    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-12 09:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-20 14:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", createdAt: "2026-06-25 16:10", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ],
-  // 业务字典（MVP 简化版字典管理的数据源；标签/跟进阶段/跟进方式/行业/国家等业务下拉均从此读取）
-  // 初始字典项对齐 PRD §23.5.4
   dictionaries: [
     { id: "dict-follow-stage", code: "followStage", name: "跟进阶段", domain: "线索域", items: [
       { id: "fs1", code: "待首响", name: "待首响", sort: 1, status: "启用", allowHighIntent: false },
@@ -115,7 +113,6 @@ window.CRM_MOCK = {
       { id: "lm3", code: "短信验证码", name: "短信验证码", sort: 3, status: "停用" }
     ]}
   ],
-  // AI 服务商与模型枚举（PRD §10.3，模型随服务商联动）
   aiProviderOptions: ["OpenAI", "Azure OpenAI", "阿里通义千问", "智谱 AI", "DeepSeek", "自定义"],
   aiModelOptions: {
     "OpenAI": ["gpt-4o", "gpt-4o-mini"],
@@ -125,7 +122,6 @@ window.CRM_MOCK = {
     "DeepSeek": ["deepseek-chat", "deepseek-reasoner"],
     "自定义": []
   },
-  // 邮件认证模式枚举（PRD §12.8.2）
   mailAuthModes: ["MASTER_PASSWORD（子邮箱授权码）", "OAUTH2", "XOAUTH2", "LOGIN", "PLAIN"],
   purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
   notificationChannels: ["站内信", "钉钉"],
@@ -134,7 +130,7 @@ window.CRM_MOCK = {
   notificationRules: [
     { id: "nr01", scene: "新线索分配", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "新线索已分配", body: "您有一条新的线索需要跟进，请及时查看线索详情。", status: "开启" },
     { id: "nr02", scene: "新客户分配", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "新客户已分配", body: "系统已为您分配新客户，请完善客户信息并建立跟进计划。", status: "开启" },
-    { id: "nr03", scene: "跟进阶段变更", channels: ["站内信", "钉钉"], targets: ["创建人"], userIds: [], title: "跟进阶段已变更", body: "跟进阶段发生变化，请关注后续处理动作。", status: "开启" },
+    { id: "nr03", scene: "跟进阶段变更", channels: ["站内信", "钉钉"], targets: ["创建人"], userIds: [], title: "跟进阶段已变更", body: "跟进阶段发生变化，请关注最新处理动作。", status: "开启" },
     { id: "nr04", scene: "待回复超时", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "待回复超时提醒", body: "关联消息超过阈值未回复，请及时处理。", status: "关闭" },
     { id: "nr05", scene: "线索状态变更", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "线索状态变更", body: "线索状态已更新，请查看最新状态。", status: "开启" },
     { id: "nr06", scene: "变更负责人", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "负责人已变更", body: "负责人发生变化，请关注业务交接信息。", status: "开启" },
@@ -190,7 +186,6 @@ window.CRM_MOCK = {
     dingTalkRobotWebhook: "https://oapi.dingtalk.com/robot/send?access_token=********",
     inboxRetentionDays: 365
   },
-  // 参数设置（系统通用业务参数；MVP 实现，对齐 PRD §12.6）
   paramSettings: [
     { id: "ps01", name: "登录超时时长", code: "session_timeout", value: "1440 分钟（24 小时）", desc: "用户无操作自动退出登录的时长", effect: "下次登录生效" },
     { id: "ps02", name: "密码最小长度", code: "password_min_length", value: "8 位", desc: "密码长度最小值", effect: "立即生效" },
@@ -202,7 +197,6 @@ window.CRM_MOCK = {
     { id: "ps08", name: "会话刷新间隔", code: "session_refresh_interval", value: "5 分钟", desc: "Token 续期间隔", effect: "下次登录生效" },
     { id: "ps09", name: "个人目标金额", code: "personal_target_amount", value: "0（无目标）", desc: "业务员的销售目标金额（系统级默认值，0 表示无目标）", effect: "立即生效" }
   ],
-  // 系统配置（原"系统开关"，承载平台级全局开关项；MVP 实现，切换立即生效并记录系统日志）
   systemConfig: [
     { id: "sc01", name: "AI 能力总开关", code: "aiMaster", value: true, desc: "全局启用/停用 AI 能力。关闭后 AI 能力管理页仍可见，但所有 AI 业务场景不再调用 AI。" },
     { id: "sc02", name: "AI 邮件意向分析", code: "aiEmailIntent", value: true, desc: "邮件 AI 智能分析。" },
@@ -212,7 +206,7 @@ window.CRM_MOCK = {
     { id: "sc06", name: "访客邮件采集", code: "visitorEmailCollect", value: true, desc: "接收访客邮件采集请求。" },
     { id: "sc07", name: "WhatsApp 消息接收", code: "whatsappReceive", value: true, desc: "接收 WhatsApp 消息。" },
     { id: "sc08", name: "钉钉扫码登录", code: "dingTalkLogin", value: true, desc: "是否允许钉钉扫码登录（依赖沟通服务协议配置 - 钉钉应用配置）。" },
-    { id: "sc09", name: "短信验证码登录", code: "smsLogin", value: false, desc: "二期功能，当前版本不开放；是否允许短信验证码登录。" },
+    { id: "sc09", name: "短信验证码登录", code: "smsLogin", value: false, desc: "是否允许短信验证码登录。" },
     { id: "sc10", name: "维护模式", code: "maintenance", value: false, desc: "开启后拒绝非系统管理员登录。" }
   ],
   personalWhatsappAccount: {
@@ -439,7 +433,7 @@ window.CRM_MOCK = {
       siteId: "",
       leadId: "",
       attachments: [],
-      aiTags: ["来源待确认", "信息不足"],
+      aiTags: ["来源未识别", "信息不足"],
       aiSummary: "采购意图存在但身份信息不足，发件域名无法匹配站点，建议先确认公司与应用场景。"
     },
     {
@@ -508,6 +502,7 @@ window.CRM_MOCK = {
       siteId: "s02",
       leadId: "l03",
       customerId: "",
+      lastMessageTime: "2026-07-02 13:37",
       aiTags: ["高意向", "采购经理"],
       aiSummary: "联系人连续询问报价、包装和交期，采购窗口较近，建议今天完成报价并确认样品费。",
       messages: [
@@ -529,6 +524,7 @@ window.CRM_MOCK = {
       siteId: "s01",
       leadId: "l04",
       customerId: "c02",
+      lastMessageTime: "2026-07-01 11:26",
       aiTags: ["老客户", "复购"],
       aiSummary: "该客户已有合同记录，本次咨询为复购扩展，适合由原负责人直接跟进。",
       messages: [
@@ -555,6 +551,7 @@ window.CRM_MOCK = {
       aiTags: ["高增长潜力", "批量采购"],
       manualTags: ["拉美市场"],
       createdAt: "2026-06-28 10:42",
+      updatedAt: "2026-07-02 11:10",
       lastFollowAt: "2026-07-02 11:10",
       nextFollowAt: "2026-07-04 10:00",
       customerId: "",
@@ -577,6 +574,7 @@ window.CRM_MOCK = {
       aiTags: ["节日订单", "认证关注"],
       manualTags: ["北美市场"],
       createdAt: "2026-07-01 16:18",
+      updatedAt: "2026-07-02 09:20",
       lastFollowAt: "2026-07-02 09:20",
       nextFollowAt: "2026-07-03 14:00",
       customerId: "c03",
@@ -599,6 +597,7 @@ window.CRM_MOCK = {
       aiTags: ["高意向"],
       manualTags: [],
       createdAt: "2026-07-02 09:31",
+      updatedAt: "2026-07-02 09:35",
       lastFollowAt: "",
       nextFollowAt: "",
       customerId: "",
@@ -623,6 +622,7 @@ window.CRM_MOCK = {
       aiTags: ["复购询盘"],
       manualTags: ["欧洲市场"],
       createdAt: "2026-05-18 13:22",
+      updatedAt: "2026-06-20 10:10",
       lastFollowAt: "2026-06-20 10:10",
       nextFollowAt: "2026-07-08 10:00",
       customerId: "c02",
@@ -691,7 +691,7 @@ window.CRM_MOCK = {
     { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false }
   ],
   contracts: [
-    { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", status: "执行中", ownerId: "u02", attachments: ["contract-0081.pdf"] }
+    { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", createdAt: "2026-06-16 10:30", status: "执行中", ownerId: "u02", attachments: ["contract-0081.pdf"] }
   ],
   aiConfig: {
     api: {
@@ -758,6 +758,24 @@ window.CRM_MOCK = {
         }
       }
     }
+  ],
+  loginLogs: [
+    { id: "lg01", account: "admin", name: "管理员", ip: "192.168.1.10", method: "账号密码", result: "成功", browser: "Chrome 126", os: "macOS", loginTime: "2026-07-08 09:12:21" },
+    { id: "lg02", account: "chenhao", name: "Chen Hao", ip: "192.168.1.21", method: "钉钉扫码", result: "成功", browser: "Chrome 126", os: "Windows 11", loginTime: "2026-07-08 08:45:09" },
+    { id: "lg03", account: "mialiu", name: "Mia Liu", ip: "10.0.0.32", method: "账号密码", result: "失败", browser: "Safari 17", os: "macOS", loginTime: "2026-07-07 18:30:44" },
+    { id: "lg04", account: "alexxu", name: "Alex Xu", ip: "192.168.1.55", method: "账号密码", result: "成功", browser: "Edge 126", os: "Windows 11", loginTime: "2026-07-06 14:20:11" },
+    { id: "lg05", account: "admin", name: "管理员", ip: "192.168.1.10", method: "账号密码", result: "成功", browser: "Chrome 126", os: "macOS", loginTime: "2026-07-05 09:05:30" }
+  ],
+  operateLogs: [
+    { id: "op01", user: "管理员", type: "新增", object: "线索", objectName: "LEAD-2026-0911", content: "新增线索", ip: "192.168.1.10", operateTime: "2026-07-08 10:12:09" },
+    { id: "op02", user: "Chen Hao", type: "编辑", object: "线索", objectName: "LEAD-2026-0911", content: "录入跟进记录", ip: "192.168.1.21", operateTime: "2026-07-08 09:20:11" },
+    { id: "op03", user: "管理员", type: "导出", object: "客户", objectName: "客户列表", content: "导出当前筛选结果 CSV", ip: "192.168.1.10", operateTime: "2026-07-07 16:40:55" },
+    { id: "op04", user: "Mia Liu", type: "编辑", object: "合同", objectName: "CON-2026-0081", content: "合同状态 已签约→执行中", ip: "10.0.0.32", operateTime: "2026-07-06 11:15:20" }
+  ],
+  configChangeLogs: [
+    { id: "cf01", user: "管理员", type: "配置更新", item: "公海回收超时时长", before: "7 天", after: "14 天", ip: "192.168.1.10", changeTime: "2026-07-08 11:05:18" },
+    { id: "cf02", user: "管理员", type: "开关切换", item: "AI 邮件意向分析", before: "关闭", after: "开启", ip: "192.168.1.10", changeTime: "2026-07-07 10:30:42" },
+    { id: "cf03", user: "管理员", type: "配置更新", item: "个人目标金额", before: "0", after: "80000", ip: "192.168.1.10", changeTime: "2026-07-05 14:12:09" }
   ],
   analytics: {
     metrics: [

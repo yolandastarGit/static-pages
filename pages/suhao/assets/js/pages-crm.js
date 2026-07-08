@@ -7,7 +7,33 @@ window.CRMCrmPage = {
   renderLeads(root) {
     const q = CRMRouter.query();
     const tabs = ["全部", "待跟进", "跟进中", "已转客户", "已成交", "无效", "丢失"];
-    this.leadState = { status: tabs.includes(q.status) ? q.status : "全部", statusGroup: q.statusGroup || "", query: q.q || "", siteId: "", sourceChannel: "", ownerId: "", tag: "", purchaseIntent: "", overdue: q.overdue || "", reply: q.reply || "", created: q.created || "", selected: new Set() };
+    // 默认创建时间=本月；工作台"新增线索"卡片 created=today 时改为今日；其余时间字段默认不限制
+    const monthRange = this.currentMonthRange();
+    const today = new Date().toISOString().slice(0, 10);
+    const createdToday = q.created === "today";
+    // 工作台"跟进超时"跳转：overdue=1 → 下次跟进时间 < 今日（end=昨日）
+    const overdueEnd = q.overdue ? this.yesterdayStr() : "";
+    this.leadState = {
+      status: tabs.includes(q.status) ? q.status : "全部",
+      statusGroup: q.statusGroup || "",
+      query: q.q || "",
+      siteId: "",
+      sourceChannel: "",
+      ownerId: "",
+      tag: "",
+      purchaseIntent: "",
+      overdue: q.overdue || "",
+      reply: q.reply || "",
+      createTimeStart: createdToday ? today : monthRange.start,
+      createTimeEnd: createdToday ? today : monthRange.end,
+      lastFollowUpTimeStart: "",
+      lastFollowUpTimeEnd: "",
+      nextFollowUpTimeStart: "",
+      nextFollowUpTimeEnd: overdueEnd,
+      updateTimeStart: "",
+      updateTimeEnd: "",
+      selected: new Set()
+    };
     root.innerHTML = `
       <div class="toolbar">
         ${this.canEditLead() ? `<button class="btn primary" id="newLead">新增线索</button>` : ""}
@@ -19,7 +45,6 @@ window.CRMCrmPage = {
       <div class="filters">
         <input id="leadSearch" value="${this.leadState.query}" placeholder="搜索线索编号、询盘联系人、企业名称、邮箱">
         <select id="leadSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
-        <select><option>本月创建时间</option><option>今天</option><option>本周</option><option>自定义</option></select>
         <select><option>全部阶段</option>${this.dictItems("followStage").map(item => `<option>${item.name}</option>`).join("")}</select>
         <select id="leadIntent"><option value="">全部意向产品</option>${(CRM_MOCK.purchaseIntentOptions || []).map(item => `<option>${item}</option>`).join("")}</select>
         <select id="leadSourceChannel"><option value="">全部来源渠道</option><option>邮件</option><option>WhatsApp</option><option>官网询盘</option><option>自然询盘</option><option>展会</option><option>客户转介绍</option><option>其他</option></select>
@@ -28,6 +53,24 @@ window.CRMCrmPage = {
         <button class="btn" id="leadQuery">查询</button>
         <button class="btn" id="leadReset">重置</button>
         <button class="btn" id="leadAdvanced">高级筛选</button>
+      </div>
+      <div class="filters" id="leadTimeFilters">
+        <span class="muted">创建时间</span>
+        <input type="date" id="leadCreateTimeStart" value="${this.leadState.createTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="leadCreateTimeEnd" value="${this.leadState.createTimeEnd}">
+        <span class="muted">最近跟进</span>
+        <input type="date" id="leadLastFollowStart" value="${this.leadState.lastFollowUpTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="leadLastFollowEnd" value="${this.leadState.lastFollowUpTimeEnd}">
+        <span class="muted">下次跟进</span>
+        <input type="date" id="leadNextFollowStart" value="${this.leadState.nextFollowUpTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="leadNextFollowEnd" value="${this.leadState.nextFollowUpTimeEnd}">
+        <span class="muted">更新时间</span>
+        <input type="date" id="leadUpdateTimeStart" value="${this.leadState.updateTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="leadUpdateTimeEnd" value="${this.leadState.updateTimeEnd}">
       </div>
       <div id="leadTable"></div>
     `;
@@ -43,9 +86,24 @@ window.CRMCrmPage = {
     CRMUI.$("#leadSourceChannel").addEventListener("change", e => { this.leadState.sourceChannel = e.target.value; this.renderLeadTable(); });
     CRMUI.$("#leadOwner").addEventListener("change", e => { this.leadState.ownerId = e.target.value; this.renderLeadTable(); });
     CRMUI.$("#leadTagFilter").addEventListener("change", e => { this.leadState.tag = e.target.value; this.renderLeadTable(); });
+    CRMUI.$$("#leadCreateTimeStart,#leadCreateTimeEnd,#leadLastFollowStart,#leadLastFollowEnd,#leadNextFollowStart,#leadNextFollowEnd,#leadUpdateTimeStart,#leadUpdateTimeEnd").forEach(el => el.addEventListener("change", e => {
+      // 映射控件 id → leadState 时间字段 key（Start/End）
+      const suffix = el.id.endsWith("Start") ? "Start" : "End";
+      const prefix = el.id.startsWith("leadCreateTime") ? "createTime"
+        : el.id.startsWith("leadLastFollow") ? "lastFollowUpTime"
+        : el.id.startsWith("leadNextFollow") ? "nextFollowUpTime"
+        : "updateTime";
+      this.leadState[`${prefix}${suffix}`] = e.target.value;
+      this.renderLeadTable();
+    }));
     CRMUI.$("#leadQuery").addEventListener("click", () => this.renderLeadTable());
     CRMUI.$("#leadAdvanced").addEventListener("click", () => CRMUI.toast("高级筛选项已展开：来源渠道、负责人、标签"));
-    CRMUI.$("#leadReset").addEventListener("click", () => { this.leadState = { status: "全部", statusGroup: "", query: "", siteId: "", sourceChannel: "", ownerId: "", tag: "", purchaseIntent: "", overdue: "", reply: "", created: "", selected: new Set() }; this.renderLeads(root); });
+    // 重置恢复线索列表默认时间范围（创建时间=本月，其余不限制）；保留权限范围（siteId 等清空为"全部"）
+    CRMUI.$("#leadReset").addEventListener("click", () => {
+      const range = this.currentMonthRange();
+      this.leadState = { status: "全部", statusGroup: "", query: "", siteId: "", sourceChannel: "", ownerId: "", tag: "", purchaseIntent: "", overdue: "", reply: "", createTimeStart: range.start, createTimeEnd: range.end, lastFollowUpTimeStart: "", lastFollowUpTimeEnd: "", nextFollowUpTimeStart: "", nextFollowUpTimeEnd: "", updateTimeStart: "", updateTimeEnd: "", selected: new Set() };
+      this.renderLeads(root);
+    });
     CRMUI.$("#newLead")?.addEventListener("click", () => this.openLeadModal());
     CRMUI.$("#bulkConvert")?.addEventListener("click", () => this.convertSelectedLeads());
     CRMUI.$("#globalFollowLogs").addEventListener("click", () => this.openGlobalFollowLogModal());
@@ -57,7 +115,31 @@ window.CRMCrmPage = {
       if (lead) setTimeout(() => this.openLeadDrawer(lead), 100);
     }
   },
+  // 当前月份起止（YYYY-MM-DD），用于"创建时间=本月"默认值
+  currentMonthRange() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const end = now.toISOString().slice(0, 10);
+    return { start, end };
+  },
+  // 昨日日期字符串（YYYY-MM-DD），用于工作台"跟进超时"跳转：下次跟进时间 < 今日
+  yesterdayStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  },
+  // 日期区间匹配：值格式 YYYY-MM-DD 或 YYYY-MM-DD HH:mm；空值不限制；开始含当天起、结束含当天止
+  dateInRange(value, start, end) {
+    if (!start && !end) return true;
+    const date = String(value || "").slice(0, 10);
+    if (!date) return false;
+    if (start && date < start) return false;
+    if (end && date > end) return false;
+    return true;
+  },
   renderPublicPool(root) {
+    // 入池时间默认本月
+    const monthRange = this.currentMonthRange();
     root.innerHTML = `
       <div class="toolbar">
         ${this.canRecycle() ? `<button class="btn primary" id="poolAssign">批量分配</button>` : ""}
@@ -66,10 +148,13 @@ window.CRMCrmPage = {
       <div class="filters card pad">
         <select id="poolSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <input id="poolSearch" placeholder="搜索线索编号、联系人、企业名称">
-        <input type="date" id="poolStart">
-        <input type="date" id="poolEnd">
+        <span class="muted">入池时间</span>
+        <input type="date" id="poolStart" value="${monthRange.start}">
+        <span class="muted">至</span>
+        <input type="date" id="poolEnd" value="${monthRange.end}">
         <select id="poolChannel"><option value="">全部来源渠道</option><option>邮件</option><option>WhatsApp</option><option>其他</option></select>
         <select id="poolProduct"><option value="">全部意向产品</option><option>CNC 铝件</option><option>毛绒玩具</option><option>活动礼品</option></select>
+        <button class="btn" id="poolReset">重置</button>
       </div>
       <div id="poolTable"></div>
     `;
@@ -82,9 +167,14 @@ window.CRMCrmPage = {
       const start = CRMUI.$("#poolStart").value;
       const end = CRMUI.$("#poolEnd").value;
       const rows = CRM_MOCK.leads.filter(l => {
+        // 入池时间筛选（不与创建时间混用）
         const poolDate = String(l.poolEnteredAt || l.createdAt || "").slice(0, 10);
-        return l.status === "待分配" && (!siteId || l.siteId === siteId) && (!channel || l.channel === channel)
-          && (!product || (l.products || []).includes(product)) && (!start || poolDate >= start) && (!end || poolDate <= end)
+        const byStart = !start || poolDate >= start;
+        const byEnd = !end || poolDate <= end;
+        // 站点待补充线索（siteId 为空）不被站点筛选误排除
+        const bySite = !siteId || l.siteId === siteId || l.siteId === "";
+        return l.status === "待分配" && bySite && (!channel || l.channel === channel)
+          && (!product || (l.products || []).includes(product)) && byStart && byEnd
           && `${l.no} ${l.company} ${l.contact}`.toLowerCase().includes(keyword);
       });
       CRMUI.$("#poolTable").innerHTML = CRMUI.table([
@@ -107,6 +197,17 @@ window.CRMCrmPage = {
     CRMUI.$$("#poolSearch,#poolSite,#poolChannel,#poolProduct,#poolStart,#poolEnd").forEach(el => el.addEventListener("input", draw));
     CRMUI.$("#poolAssign")?.addEventListener("click", () => this.assignPoolLeads(Array.from(this.poolSelected), draw));
     CRMUI.$("#poolRefresh").addEventListener("click", () => { CRMUI.toast("公海池数据已刷新"); draw(); });
+    // 重置恢复公海池默认时间范围（入池时间=本月）
+    CRMUI.$("#poolReset").addEventListener("click", () => {
+      const range = this.currentMonthRange();
+      CRMUI.$("#poolSearch").value = "";
+      CRMUI.$("#poolSite").value = "";
+      CRMUI.$("#poolChannel").value = "";
+      CRMUI.$("#poolProduct").value = "";
+      CRMUI.$("#poolStart").value = range.start;
+      CRMUI.$("#poolEnd").value = range.end;
+      draw();
+    });
     draw();
   },
   assignPoolLeads(ids, after) {
@@ -134,20 +235,26 @@ window.CRMCrmPage = {
   },
   leadRows() {
     const keyword = this.leadState.query;
+    const s = this.leadState;
     return CRM_MOCK.leads.filter(l => {
-      const byStatus = this.leadState.status === "全部" || l.status === this.leadState.status;
-      const byStatusGroup = this.leadState.statusGroup !== "invalidLost" || ["无效", "丢失"].includes(l.status);
-      const bySite = !this.leadState.siteId || l.siteId === this.leadState.siteId;
-      const byIntent = !this.leadState.purchaseIntent || l.purchaseIntent === this.leadState.purchaseIntent;
-      const bySource = !this.leadState.sourceChannel || l.channel === this.leadState.sourceChannel;
-      const byOwner = !this.leadState.ownerId || l.ownerId === this.leadState.ownerId;
-      const byTag = !this.leadState.tag || [...(l.aiTags || []), ...(l.manualTags || [])].includes(this.leadState.tag);
-      const byOverdue = !this.leadState.overdue || (l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status));
-      const byReply = this.leadState.reply !== "pending" || this.hasPendingReply(l);
-      const today = new Date().toISOString().slice(0, 10);
-      const byCreated = this.leadState.created !== "today" || String(l.createdAt || "").startsWith(today);
+      const byStatus = s.status === "全部" || l.status === s.status;
+      const byStatusGroup = s.statusGroup !== "invalidLost" || ["无效", "丢失"].includes(l.status);
+      // 站点待补充线索（siteId 为空）不被站点筛选误排除
+      const bySite = !s.siteId || l.siteId === s.siteId || l.siteId === "";
+      const byIntent = !s.purchaseIntent || l.purchaseIntent === s.purchaseIntent;
+      const bySource = !s.sourceChannel || l.channel === s.sourceChannel;
+      const byOwner = !s.ownerId || l.ownerId === s.ownerId;
+      const byTag = !s.tag || [...(l.aiTags || []), ...(l.manualTags || [])].includes(s.tag);
+      const byReply = s.reply !== "pending" || this.hasPendingReply(l);
+      // 时间范围筛选：各字段独立、空值不限制
+      const byCreated = this.dateInRange(l.createdAt, s.createTimeStart, s.createTimeEnd);
+      const byLastFollow = this.dateInRange(l.lastFollowAt, s.lastFollowUpTimeStart, s.lastFollowUpTimeEnd);
+      const byNextFollow = this.dateInRange(l.nextFollowAt, s.nextFollowUpTimeStart, s.nextFollowUpTimeEnd);
+      const byUpdate = this.dateInRange(l.updatedAt || l.createdAt, s.updateTimeStart, s.updateTimeEnd);
+      // 工作台"跟进超时"跳转：overdue=1 → 仅展示有下次跟进时间且非终态的线索（nextFollowUpTimeEnd 已置为昨日）
+      const byOverdue = !s.overdue || (l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status));
       const text = `${l.no} ${l.company} ${l.contact} ${l.email} ${l.purchaseIntent || ""}`.toLowerCase();
-      return byStatus && byStatusGroup && bySite && byIntent && bySource && byOwner && byTag && byOverdue && byReply && byCreated && text.includes(keyword);
+      return byStatus && byStatusGroup && bySite && byIntent && bySource && byOwner && byTag && byOverdue && byReply && byCreated && byLastFollow && byNextFollow && byUpdate && text.includes(keyword);
     });
   },
   hasPendingReply(lead) {
@@ -170,7 +277,14 @@ window.CRMCrmPage = {
       { title: "意向产品", render: l => (l.products || []).slice(0, 2).join("、") || "-" },
       { title: "最近跟进", render: l => l.lastFollowAt || "-" },
       { title: "创建时间", render: l => l.createdAt || "-" },
-      { title: "操作", render: l => `<button class="btn" data-follow="${l.id}">跟进</button> ${this.canEditLead() ? `<button class="btn" data-lead-tag="${l.id}">打标签</button> <button class="btn" data-lead-edit="${l.id}">编辑</button>` : ""} <button class="btn" data-lead-more="${l.id}">更多</button>` }
+      { title: "操作", render: l => `<button class="btn" data-follow="${l.id}">跟进</button> ${this.canEditLead() ? `<button class="btn" data-lead-tag="${l.id}">打标签</button> <button class="btn" data-lead-edit="${l.id}">编辑</button>` : ""} ${CRMUI.actionMore([
+        `<button type="button" data-lead-detail="${l.id}">查看详情</button>`,
+        `<button type="button" data-lead-email="${l.id}">查看关联邮件</button>`,
+        `<button type="button" data-lead-whatsapp="${l.id}">查看关联 WhatsApp</button>`,
+        `<button type="button" data-lead-convert="${l.id}">转高意向客户</button>`,
+        `<button type="button" data-lead-exception="${l.id}">标记异常</button>`,
+        `<button type="button" data-lead-owner="${l.id}">变更负责人</button>`
+      ])}` }
     ], rows, "暂无线索");
     CRMUI.$$("[data-lead]").forEach(el => el.addEventListener("click", e => {
       e.preventDefault();
@@ -179,7 +293,12 @@ window.CRMCrmPage = {
     CRMUI.$$("[data-follow]").forEach(el => el.addEventListener("click", () => this.openFollowModal(el.dataset.follow)));
     CRMUI.$$("[data-lead-tag]").forEach(el => el.addEventListener("click", () => this.openLeadTagModal(el.dataset.leadTag)));
     CRMUI.$$("[data-lead-edit]").forEach(el => el.addEventListener("click", () => this.openLeadModal(CRM_MOCK.leads.find(l => l.id === el.dataset.leadEdit))));
-    CRMUI.$$("[data-lead-more]").forEach(el => el.addEventListener("click", () => this.openLeadMoreModal(el.dataset.leadMore)));
+    CRMUI.$$("[data-lead-detail]").forEach(el => el.addEventListener("click", () => this.openLeadDrawer(CRM_MOCK.leads.find(l => l.id === el.dataset.leadDetail))));
+    CRMUI.$$("[data-lead-email]").forEach(el => el.addEventListener("click", () => CRMRouter.goto("email", { leadId: el.dataset.leadEmail })));
+    CRMUI.$$("[data-lead-whatsapp]").forEach(el => el.addEventListener("click", () => CRMRouter.goto("whatsapp", { leadId: el.dataset.leadWhatsapp })));
+    CRMUI.$$("[data-lead-convert]").forEach(el => el.addEventListener("click", () => this.convertLeadFromDetail(el.dataset.leadConvert)));
+    CRMUI.$$("[data-lead-exception]").forEach(el => el.addEventListener("click", () => this.openStatusModal(el.dataset.leadException)));
+    CRMUI.$$("[data-lead-owner]").forEach(el => el.addEventListener("click", () => this.openLeadOwnerModal(el.dataset.leadOwner)));
     CRMUI.$$("[data-lead-customer]").forEach(el => el.addEventListener("click", e => {
       e.preventDefault();
       const customer = CRM_MOCK.customers.find(c => c.id === el.dataset.leadCustomer);
@@ -251,7 +370,9 @@ window.CRMCrmPage = {
         return { log, lead, customerName };
       })
       .filter(row => {
-        const createdDate = String(row.log.createdAt || "").slice(0, 10);
+        // 跟进时间（实际录入时间）与下次跟进时间分别筛选，不混用
+        const followDate = String(row.log.createdAt || "").slice(0, 10);
+        const nextDate = String(row.log.nextFollowAt || "").slice(0, 10);
         const leadText = keyword(`${row.lead?.no || ""} ${row.lead?.company || ""}`);
         const customerText = keyword(`${row.customerName} ${row.lead?.company || ""}`);
         const byLead = !state.leadNo || leadText.includes(keyword(state.leadNo));
@@ -259,9 +380,11 @@ window.CRMCrmPage = {
         const byUser = !state.userId || row.log.userId === state.userId;
         const byMethod = !state.method || row.log.method === state.method;
         const byStage = !state.stage || row.log.stage === state.stage;
-        const byStart = !state.start || createdDate >= state.start;
-        const byEnd = !state.end || createdDate <= state.end;
-        return byLead && byCustomer && byUser && byMethod && byStage && byStart && byEnd;
+        const byFollowStart = !state.followUpTimeStart || followDate >= state.followUpTimeStart;
+        const byFollowEnd = !state.followUpTimeEnd || followDate <= state.followUpTimeEnd;
+        const byNextStart = !state.nextFollowUpTimeStart || (nextDate && nextDate >= state.nextFollowUpTimeStart);
+        const byNextEnd = !state.nextFollowUpTimeEnd || (nextDate && nextDate <= state.nextFollowUpTimeEnd);
+        return byLead && byCustomer && byUser && byMethod && byStage && byFollowStart && byFollowEnd && byNextStart && byNextEnd;
       })
       .sort((a, b) => String(b.log.createdAt).localeCompare(String(a.log.createdAt)));
   },
@@ -323,16 +446,28 @@ window.CRMCrmPage = {
     bindInput("followLogCustomer", "customer");
     bindChange("followLogUser", "userId");
     bindChange("followLogMethod", "method");
-    bindChange("followLogStart", "start");
-    bindChange("followLogEnd", "end");
+    bindChange("followLogFollowStart", "followUpTimeStart");
+    bindChange("followLogFollowEnd", "followUpTimeEnd");
+    bindChange("followLogNextStart", "nextFollowUpTimeStart");
+    bindChange("followLogNextEnd", "nextFollowUpTimeEnd");
     bindChange("followLogStage", "stage");
+    // 重置恢复默认（跟进时间=本月，下次跟进时间=不限制）
     CRMUI.$("#followLogReset").addEventListener("click", () => {
-      this.globalFollowLogState = { leadNo: "", customer: "", userId: "", method: "", start: "", end: "", stage: "", page: 1, pageSize: 5 };
+      const range = this.currentMonthRange();
+      this.globalFollowLogState = { leadNo: "", customer: "", userId: "", method: "", followUpTimeStart: range.start, followUpTimeEnd: range.end, nextFollowUpTimeStart: "", nextFollowUpTimeEnd: "", stage: "", page: 1, pageSize: 5 };
       this.openGlobalFollowLogModal();
     });
   },
   openGlobalFollowLogModal() {
-    this.globalFollowLogState = this.globalFollowLogState || { leadNo: "", customer: "", userId: "", method: "", start: "", end: "", stage: "", page: 1, pageSize: 5 };
+    // 默认跟进时间=本月，下次跟进时间=不限制
+    if (!this.globalFollowLogState || !this.globalFollowLogState.followUpTimeStart) {
+      const range = this.currentMonthRange();
+      this.globalFollowLogState = this.globalFollowLogState || { leadNo: "", customer: "", userId: "", method: "", followUpTimeStart: range.start, followUpTimeEnd: range.end, nextFollowUpTimeStart: "", nextFollowUpTimeEnd: "", stage: "", page: 1, pageSize: 5 };
+      if (!this.globalFollowLogState.followUpTimeStart) {
+        this.globalFollowLogState.followUpTimeStart = range.start;
+        this.globalFollowLogState.followUpTimeEnd = range.end;
+      }
+    }
     const state = this.globalFollowLogState;
     const methodOptions = this.followLogFilterOptions("method").map(value => `<option value="${value}" ${state.method === value ? "selected" : ""}>${value}</option>`).join("");
     const stageOptions = this.followLogFilterOptions("stage").map(value => `<option value="${value}" ${state.stage === value ? "selected" : ""}>${value}</option>`).join("");
@@ -343,8 +478,14 @@ window.CRMCrmPage = {
         <input id="followLogCustomer" value="${state.customer}" placeholder="按客户查询">
         <select id="followLogUser"><option value="">全部业务员</option>${userOptions}</select>
         <select id="followLogMethod"><option value="">全部跟进方式</option>${methodOptions}</select>
-        <input id="followLogStart" type="date" value="${state.start}">
-        <input id="followLogEnd" type="date" value="${state.end}">
+        <span class="muted">跟进时间</span>
+        <input id="followLogFollowStart" type="date" value="${state.followUpTimeStart}">
+        <span class="muted">至</span>
+        <input id="followLogFollowEnd" type="date" value="${state.followUpTimeEnd}">
+        <span class="muted">下次跟进时间</span>
+        <input id="followLogNextStart" type="date" value="${state.nextFollowUpTimeStart}">
+        <span class="muted">至</span>
+        <input id="followLogNextEnd" type="date" value="${state.nextFollowUpTimeEnd}">
         <select id="followLogStage"><option value="">全部跟进状态</option>${stageOptions}</select>
         <button class="btn" type="button" id="followLogReset">重置</button>
       </div>
@@ -424,26 +565,6 @@ window.CRMCrmPage = {
       if (c) this.openCustomerDrawer(c);
     });
   },
-  openLeadMoreModal(leadId) {
-    const lead = CRM_MOCK.leads.find(l => l.id === leadId);
-    CRMUI.modal("更多操作", `
-      <div class="toolbar" style="flex-wrap:wrap">
-        <button class="btn" type="button" id="moreDetail">查看详情</button>
-        <button class="btn" type="button" id="moreEmail">查看关联邮件</button>
-        <button class="btn" type="button" id="moreWhatsapp">查看关联 WhatsApp</button>
-        <button class="btn" type="button" id="moreConvert">转高意向客户</button>
-        <button class="btn" type="button" id="moreException">标记异常</button>
-        <button class="btn" type="button" id="moreOwner">变更负责人</button>
-      </div>
-    `, () => CRMUI.closeModal());
-    CRMUI.$("#modalForm button[type='submit']").textContent = "关闭";
-    CRMUI.$("#moreDetail").addEventListener("click", () => { CRMUI.closeModal(); this.openLeadDrawer(lead); });
-    CRMUI.$("#moreEmail").addEventListener("click", () => CRMRouter.goto("email", { leadId }));
-    CRMUI.$("#moreWhatsapp").addEventListener("click", () => CRMRouter.goto("whatsapp", { leadId }));
-    CRMUI.$("#moreConvert").addEventListener("click", () => { CRMUI.closeModal(); this.convertLeadFromDetail(leadId); });
-    CRMUI.$("#moreException").addEventListener("click", () => { CRMUI.closeModal(); this.openStatusModal(leadId); });
-    CRMUI.$("#moreOwner").addEventListener("click", () => { CRMUI.closeModal(); this.openLeadOwnerModal(leadId); });
-  },
   openLeadModal(lead) {
     const isEdit = Boolean(lead);
     CRMUI.modal(isEdit ? "编辑线索" : "新增线索", `
@@ -487,7 +608,7 @@ window.CRMCrmPage = {
         ownerId: form.get("ownerId") || CRM_MOCK.currentUser.id,
         status: "待跟进",
         stage: "待首响",
-        products: String(form.get("products") || "待确认").split(/[、,，]/).map(v => v.trim()).filter(Boolean),
+        products: String(form.get("products") || "").split(/[、,，]/).map(v => v.trim()).filter(Boolean),
         purchaseIntent: "",
         aiTags: [],
         manualTags: [],
@@ -570,7 +691,6 @@ window.CRMCrmPage = {
       this.renderLeadTable();
     });
   },
-  // 公海回收权限：仅运营专员/系统管理员（PRD §6.2.8/§15.4 兜底手动回收路径）
   canRecycle() {
     const role = CRM_MOCK.currentUser?.role;
     return role === "运营专员" || role === "系统管理员";
@@ -698,7 +818,9 @@ window.CRMCrmPage = {
     }
   },
   renderContracts(root) {
-    this.contractState = { query: "", status: "" };
+    // 签约日期默认本月，创建时间默认不限制
+    const monthRange = this.currentMonthRange();
+    this.contractState = { query: "", status: "", signDateStart: monthRange.start, signDateEnd: monthRange.end, createTimeStart: "", createTimeEnd: "" };
     root.innerHTML = `
       <div class="toolbar">
         <button class="btn primary" id="newContract">新增合同</button>
@@ -708,19 +830,59 @@ window.CRMCrmPage = {
         <select id="contractStatus"><option value="">全部状态</option><option>已签约</option><option>执行中</option><option>已完成</option><option>已终止</option><option>已作废</option></select>
         <select><option>全部负责人</option>${CRM_MOCK.users.map(u => `<option>${u.name}</option>`).join("")}</select>
       </div>
+      <div class="filters" id="contractTimeFilters">
+        <span class="muted">签约日期</span>
+        <input type="date" id="contractSignStart" value="${this.contractState.signDateStart}">
+        <span class="muted">至</span>
+        <input type="date" id="contractSignEnd" value="${this.contractState.signDateEnd}">
+        <span class="muted">创建时间</span>
+        <input type="date" id="contractCreateStart" value="${this.contractState.createTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="contractCreateEnd" value="${this.contractState.createTimeEnd}">
+        <button class="btn" id="contractReset">重置</button>
+      </div>
       <div id="contractTable"></div>
     `;
     CRMUI.$("#contractSearch").addEventListener("input", e => { this.contractState.query = e.target.value.toLowerCase(); this.renderContractTable(); });
     CRMUI.$("#contractStatus").addEventListener("change", e => { this.contractState.status = e.target.value; this.renderContractTable(); });
+    CRMUI.$$("#contractSignStart,#contractSignEnd,#contractCreateStart,#contractCreateEnd").forEach(el => el.addEventListener("change", e => {
+      const suffix = el.id.endsWith("Start") ? "Start" : "End";
+      const prefix = el.id.startsWith("contractSign") ? "signDate" : "createTime";
+      this.contractState[`${prefix}${suffix}`] = e.target.value;
+      this.renderContractTable();
+    }));
+    // 重置恢复默认（签约日期=本月，创建时间=不限制）
+    CRMUI.$("#contractReset").addEventListener("click", () => {
+      const range = this.currentMonthRange();
+      this.contractState.signDateStart = range.start;
+      this.contractState.signDateEnd = range.end;
+      this.contractState.createTimeStart = "";
+      this.contractState.createTimeEnd = "";
+      CRMUI.$("#contractSignStart").value = range.start;
+      CRMUI.$("#contractSignEnd").value = range.end;
+      CRMUI.$("#contractCreateStart").value = "";
+      CRMUI.$("#contractCreateEnd").value = "";
+      this.renderContractTable();
+    });
     CRMUI.$("#newContract").addEventListener("click", () => this.openContractModal(CRM_MOCK.customers[0].id, () => this.renderContractTable()));
     this.renderContractTable();
   },
   renderContractTable() {
+    const s = this.contractState;
     const rows = CRM_MOCK.contracts.filter(contract => {
       const customer = CRMUI.customerName(contract.customerId);
       const lead = this.contractLead(contract);
       const owner = CRMUI.userName(contract.ownerId);
-      return `${contract.no} ${contract.name} ${customer} ${lead?.no || ""} ${lead?.company || ""} ${owner}`.toLowerCase().includes(this.contractState.query) && (!this.contractState.status || contract.status === this.contractState.status);
+      // 签约日期与创建时间分别筛选、不混用
+      const signDate = String(contract.signedAt || "").slice(0, 10);
+      const createDate = String(contract.createdAt || "").slice(0, 10);
+      const bySignStart = !s.signDateStart || (signDate && signDate >= s.signDateStart);
+      const bySignEnd = !s.signDateEnd || (signDate && signDate <= s.signDateEnd);
+      const byCreateStart = !s.createTimeStart || (createDate && createDate >= s.createTimeStart);
+      const byCreateEnd = !s.createTimeEnd || (createDate && createDate <= s.createTimeEnd);
+      return `${contract.no} ${contract.name} ${customer} ${lead?.no || ""} ${lead?.company || ""} ${owner}`.toLowerCase().includes(s.query)
+        && (!s.status || contract.status === s.status)
+        && bySignStart && bySignEnd && byCreateStart && byCreateEnd;
     });
     CRMUI.$("#contractTable").innerHTML = CRMUI.table([
       { title: "合同编号", render: c => `<a href="#" data-contract="${c.id}">${c.no}</a>` },
@@ -732,7 +894,10 @@ window.CRMCrmPage = {
       { title: "签约日期", render: c => c.signedAt },
       { title: "状态", render: c => CRMUI.badge(c.status) },
       { title: "附件", render: c => `${c.attachments.length} 个附件` },
-      { title: "操作", render: c => `<button class="btn" data-contract="${c.id}">详情</button> <button class="btn" data-contract-edit="${c.id}">编辑</button> <button class="btn" data-contract-more="${c.id}">更多</button>` }
+      { title: "操作", render: c => `<button class="btn" data-contract="${c.id}">详情</button> <button class="btn" data-contract-edit="${c.id}">编辑</button> ${CRMUI.actionMore([
+        `<button type="button" data-contract-terminate="${c.id}" ${c.status !== "执行中" ? "disabled title='仅执行中合同可终止'" : ""}>终止合同</button>`,
+        `<button type="button" class="danger" data-contract-void="${c.id}" ${!["已签约", "执行中"].includes(c.status) ? "disabled title='仅已签约/执行中合同可作废'" : ""}>作废</button>`
+      ])}` }
     ], rows, "暂无合同");
     CRMUI.$$("[data-contract]").forEach(btn => btn.addEventListener("click", e => {
       e.preventDefault();
@@ -752,7 +917,18 @@ window.CRMCrmPage = {
     }));
     this.bindContractLeadLinks();
     CRMUI.$$("[data-contract-edit]").forEach(btn => btn.addEventListener("click", () => this.openEditContractModal(btn.dataset.contractEdit)));
-    CRMUI.$$("[data-contract-more]").forEach(btn => btn.addEventListener("click", () => this.openContractMoreModal(btn.dataset.contractMore)));
+    CRMUI.$$("[data-contract-terminate]").forEach(btn => btn.addEventListener("click", () => {
+      const c = CRM_MOCK.contracts.find(item => item.id === btn.dataset.contractTerminate);
+      if (!c || c.status !== "执行中") return;
+      c.status = "已终止";
+      CRMUI.toast("合同已终止");
+      this.renderContractTable();
+    }));
+    CRMUI.$$("[data-contract-void]").forEach(btn => btn.addEventListener("click", () => {
+      const c = CRM_MOCK.contracts.find(item => item.id === btn.dataset.contractVoid);
+      if (!c || !["已签约", "执行中"].includes(c.status)) return;
+      this.voidContract(btn.dataset.contractVoid);
+    }));
   },
   contractLead(contract) {
     return CRM_MOCK.leads.find(lead => lead.id === contract.leadId);
@@ -818,28 +994,6 @@ window.CRMCrmPage = {
       this.renderContractTable();
     });
   },
-  openContractMoreModal(id) {
-    const c = CRM_MOCK.contracts.find(item => item.id === id);
-    CRMUI.modal("合同更多操作", `
-      <div class="toolbar" style="flex-wrap:wrap">
-        <button class="btn" type="button" id="contractTerminate" ${c.status !== "执行中" ? "disabled title='仅执行中合同可终止'" : ""}>终止合同</button>
-        <button class="btn danger" type="button" id="contractVoid" ${!["已签约", "执行中"].includes(c.status) ? "disabled title='仅已签约/执行中合同可作废'" : ""}>作废</button>
-      </div>
-    `, () => CRMUI.closeModal());
-    CRMUI.$("#modalForm button[type='submit']").textContent = "关闭";
-    CRMUI.$("#contractTerminate")?.addEventListener("click", () => {
-      if (c.status !== "执行中") return;
-      c.status = "已终止";
-      CRMUI.closeModal();
-      CRMUI.toast("合同已终止");
-      this.renderContractTable();
-    });
-    CRMUI.$("#contractVoid")?.addEventListener("click", () => {
-      if (!["已签约", "执行中"].includes(c.status)) return;
-      CRMUI.closeModal();
-      this.voidContract(id);
-    });
-  },
   voidContract(id) {
     const c = CRM_MOCK.contracts.find(item => item.id === id);
     CRMUI.modal("作废合同", `
@@ -856,7 +1010,7 @@ window.CRMCrmPage = {
   },
   renderCustomers(root) {
     const q = CRMRouter.query();
-    this.customerState = { query: "", potentialLevel: "", industry: "", country: "", siteId: "", selected: new Set() };
+    this.customerState = { query: "", potentialLevel: "", industry: "", country: "", siteId: "", createTimeStart: "", createTimeEnd: "", lastFollowUpTimeStart: "", lastFollowUpTimeEnd: "", customerId: q.id || "", selected: new Set() };
     const levelOpts = this.dictItems("customerLevel").map(i => `<option value="${i.name}">${i.name}</option>`).join("");
     const industryOpts = this.dictItems("industry").map(i => `<option value="${i.name}">${i.name}</option>`).join("");
     const countryOpts = this.dictItems("country").map(i => `<option value="${i.name}">${i.name}</option>`).join("");
@@ -871,6 +1025,19 @@ window.CRMCrmPage = {
         <select id="customerIndustry"><option value="">全部行业</option>${industryOpts}</select>
         <select id="customerCountry"><option value="">全部国家/地区</option>${countryOpts}</select>
         <select id="customerSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
+        <button class="btn" id="customerQuery">查询</button>
+        <button class="btn" id="customerReset">重置</button>
+      </div>
+      <div class="filters" id="customerTimeFilters">
+        <span class="muted">创建时间</span>
+        <input type="date" id="customerCreateTimeStart" value="${this.customerState.createTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="customerCreateTimeEnd" value="${this.customerState.createTimeEnd}">
+        <span class="muted">最近跟进时间</span>
+        <input type="date" id="customerLastFollowStart" value="${this.customerState.lastFollowUpTimeStart}">
+        <span class="muted">至</span>
+        <input type="date" id="customerLastFollowEnd" value="${this.customerState.lastFollowUpTimeEnd}">
+        <span class="muted" title="后端待支持">（最近跟进时间筛选后端待支持，前端已保留控件与参数）</span>
       </div>
       <div id="customerTable"></div>
     `;
@@ -879,6 +1046,15 @@ window.CRMCrmPage = {
     CRMUI.$("#customerIndustry").addEventListener("change", e => { this.customerState.industry = e.target.value; this.renderCustomerTable(); });
     CRMUI.$("#customerCountry").addEventListener("change", e => { this.customerState.country = e.target.value; this.renderCustomerTable(); });
     CRMUI.$("#customerSite").addEventListener("change", e => { this.customerState.siteId = e.target.value; this.renderCustomerTable(); });
+    CRMUI.$$("#customerCreateTimeStart,#customerCreateTimeEnd,#customerLastFollowStart,#customerLastFollowEnd").forEach(el => el.addEventListener("change", e => {
+      const suffix = el.id.endsWith("Start") ? "Start" : "End";
+      const prefix = el.id.startsWith("customerCreateTime") ? "createTime" : "lastFollowUpTime";
+      this.customerState[`${prefix}${suffix}`] = e.target.value;
+      this.renderCustomerTable();
+    }));
+    CRMUI.$("#customerQuery").addEventListener("click", () => this.renderCustomerTable());
+    // 重置恢复默认（创建时间/最近跟进时间均不限制）
+    CRMUI.$("#customerReset").addEventListener("click", () => { this.customerState = { query: "", potentialLevel: "", industry: "", country: "", siteId: "", createTimeStart: "", createTimeEnd: "", lastFollowUpTimeStart: "", lastFollowUpTimeEnd: "", customerId: "", selected: new Set() }; this.renderCustomers(root); });
     CRMUI.$("#newCustomer").addEventListener("click", () => this.openCustomerModal());
     CRMUI.$("#transferCustomer").addEventListener("click", () => this.openTransferCustomerModal(Array.from(this.customerState.selected), "batch"));
     this.renderCustomerTable();
@@ -887,14 +1063,27 @@ window.CRMCrmPage = {
       if (customer) setTimeout(() => this.openCustomerDrawer(customer), 100);
     }
   },
+  // 客户最近一次关联跟进时间：取该客户名下线索的跟进记录最近一条 createdAt
+  customerLastFollowAt(customer) {
+    const leadIds = new Set(customer.leadIds || []);
+    const logs = CRM_MOCK.followLogs.filter(log => log.leadId && leadIds.has(log.leadId));
+    if (!logs.length) return "";
+    return logs.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0].createdAt;
+  },
   customerRows() {
+    const s = this.customerState;
     return CRM_MOCK.customers.filter(c => {
       const text = `${c.no} ${c.name}`.toLowerCase();
-      return text.includes(this.customerState.query)
-        && (!this.customerState.potentialLevel || c.potentialLevel === this.customerState.potentialLevel)
-        && (!this.customerState.industry || c.industry === this.customerState.industry)
-        && (!this.customerState.country || c.country === this.customerState.country)
-        && (!this.customerState.siteId || c.siteId === this.customerState.siteId);
+      const byCreated = this.dateInRange(c.createdAt, s.createTimeStart, s.createTimeEnd);
+      // 最近跟进时间：后端待支持，前端先按本地数据过滤
+      const lastFollow = this.customerLastFollowAt(c);
+      const byLastFollow = !s.lastFollowUpTimeStart && !s.lastFollowUpTimeEnd ? true : (lastFollow ? this.dateInRange(lastFollow, s.lastFollowUpTimeStart, s.lastFollowUpTimeEnd) : false);
+      return text.includes(s.query)
+        && (!s.potentialLevel || c.potentialLevel === s.potentialLevel)
+        && (!s.industry || c.industry === s.industry)
+        && (!s.country || c.country === s.country)
+        && (!s.siteId || c.siteId === s.siteId)
+        && byCreated && byLastFollow;
     });
   },
   renderCustomerTable() {
@@ -911,7 +1100,10 @@ window.CRMCrmPage = {
       { title: "关联线索数", render: c => { const n = (c.leadIds || []).length; return `<a href="#" data-customer-leads="${c.id}">${n}</a>`; } },
       { title: "关联合同数", render: c => CRM_MOCK.contracts.filter(ct => ct.customerId === c.id).length },
       { title: "最近签约合同", render: c => this.latestSignedContract(c) },
-      { title: "操作", render: c => `<button class="btn" data-customer="${c.id}">详情</button> <button class="btn" data-customer-edit="${c.id}">编辑</button> <button class="btn" data-customer-tag="${c.id}">打标签</button> <button class="btn" data-customer-transfer="${c.id}">变更负责人</button>` }
+      { title: "操作", render: c => `<button class="btn" data-customer="${c.id}">详情</button> <button class="btn" data-customer-edit="${c.id}">编辑</button> ${CRMUI.actionMore([
+        `<button type="button" data-customer-tag="${c.id}">打标签</button>`,
+        `<button type="button" data-customer-transfer="${c.id}">变更负责人</button>`
+      ])}` }
     ], this.customerRows(), "暂无客户");
     CRMUI.$$("[data-check-customer]").forEach(el => {
       el.addEventListener("click", e => e.stopPropagation());
@@ -926,7 +1118,7 @@ window.CRMCrmPage = {
     }));
     CRMUI.$$("[data-ai-profile]").forEach(el => el.addEventListener("click", () => {
       const c = CRM_MOCK.customers.find(item => item.id === el.dataset.aiProfile);
-      CRMUI.modal("AI 客户画像", `<p>${c.aiProfile}</p><p class="muted">该画像为线索转化为客户时同步的只读信息。</p>`, () => CRMUI.closeModal());
+      CRMUI.modal("AI 客户画像", `<p>${c.aiProfile}</p>`, () => CRMUI.closeModal());
     }));
     CRMUI.$$("[data-customer-edit]").forEach(el => el.addEventListener("click", () => this.openCustomerModal(CRM_MOCK.customers.find(c => c.id === el.dataset.customerEdit))));
     CRMUI.$$("[data-customer-tag]").forEach(el => el.addEventListener("click", () => this.openCustomerTagModal(el.dataset.customerTag)));

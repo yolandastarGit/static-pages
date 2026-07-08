@@ -58,7 +58,10 @@ window.CRMUI = {
     mask.innerHTML = `
       <div class="modal">
         <div class="modal-head"><div class="modal-title">${title}</div><button class="icon-btn" data-close>×</button></div>
-        <form id="modalForm">${body}<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">确认</button></div></form>
+        <form id="modalForm" class="modal-form">
+          <div class="modal-body">${body}</div>
+          <div class="modal-foot"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">确认</button></div>
+        </form>
       </div>
     `;
     mask.classList.add("show");
@@ -106,8 +109,82 @@ window.CRMUI = {
   formSelect(label, name, options, value = "") {
     return `<div class="form-field"><label>${label}</label><select name="${name}">${options.map(o => `<option value="${o.value}" ${o.value === value ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>`;
   },
-  formMultiSelect(label, name, options, values = []) {
+  multiSelect(name, options, values = []) {
     const selected = new Set(values);
-    return `<div class="form-field"><label>${label}</label><select name="${name}" multiple>${options.map(o => `<option value="${o.value}" ${selected.has(o.value) ? "selected" : ""}>${o.label}</option>`).join("")}</select><small class="muted">按住 Command/Ctrl 可选择多个标签</small></div>`;
+    const selectedLabels = options.filter(o => selected.has(o.value)).map(o => o.label);
+    const summary = selectedLabels.length ? selectedLabels.map(text => `<span class="multi-select-tag">${text}</span>`).join("") : `<span class="multi-select-placeholder">请选择</span>`;
+    return `<details class="multi-select"><summary>${summary}<span class="multi-select-arrow">⌄</span></summary><div class="multi-select-menu">${options.map(o => `<label class="multi-select-option"><input type="checkbox" name="${name}" value="${o.value}" ${selected.has(o.value) ? "checked" : ""}>${o.label}</label>`).join("")}</div></details>`;
+  },
+  formMultiSelect(label, name, options, values = []) {
+    return `<div class="form-field"><label>${label}</label>${this.multiSelect(name, options, values)}</div>`;
+  },
+  actionMore(items) {
+    return `<span class="action-more"><button class="btn action-more-trigger" type="button" data-action-more-trigger>更多 <span>⌄</span></button><div class="action-more-menu" hidden>${items.join("")}</div></span>`;
   }
 };
+
+(() => {
+  const menuOf = more => more?._actionMoreMenu || more?.querySelector(".action-more-menu");
+
+  const closeActionMore = except => {
+    document.querySelectorAll(".action-more").forEach(more => {
+      if (more === except) return;
+      more.classList.remove("open");
+      const menu = menuOf(more);
+      if (!menu) return;
+      menu.hidden = true;
+      if (menu.parentElement !== more) more.appendChild(menu);
+    });
+  };
+
+  const placeActionMoreMenu = more => {
+    const trigger = more.querySelector("[data-action-more-trigger]");
+    const menu = menuOf(more);
+    if (!trigger || !menu || menu.hidden) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const gap = 6;
+    const viewportPadding = 8;
+    const maxLeft = window.innerWidth - menuRect.width - viewportPadding;
+    const left = Math.max(viewportPadding, Math.min(triggerRect.right - menuRect.width, maxLeft));
+    const bottomTop = triggerRect.bottom + gap;
+    const top = bottomTop + menuRect.height > window.innerHeight - viewportPadding
+      ? Math.max(viewportPadding, triggerRect.top - menuRect.height - gap)
+      : bottomTop;
+
+    menu.style.setProperty("--action-more-left", `${left}px`);
+    menu.style.setProperty("--action-more-top", `${top}px`);
+  };
+
+  document.addEventListener("click", event => {
+    const trigger = event.target.closest("[data-action-more-trigger]");
+    if (trigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      const more = trigger.closest(".action-more");
+      const menu = menuOf(more);
+      if (!more || !menu) return;
+      const willOpen = menu.hidden;
+      closeActionMore(more);
+      if (willOpen) {
+        more._actionMoreMenu = menu;
+        document.body.appendChild(menu);
+      }
+      menu.hidden = !willOpen;
+      more.classList.toggle("open", willOpen);
+      if (willOpen) placeActionMoreMenu(more);
+      return;
+    }
+
+    if (event.target.closest(".action-more-menu")) {
+      setTimeout(() => closeActionMore(), 0);
+      return;
+    }
+
+    if (!event.target.closest(".action-more")) closeActionMore();
+  });
+
+  window.addEventListener("resize", () => closeActionMore());
+  window.addEventListener("scroll", () => closeActionMore(), true);
+})();
