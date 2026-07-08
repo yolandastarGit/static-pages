@@ -53,8 +53,7 @@ window.CRMCrmPage = {
         <button class="btn" id="leadQuery">查询</button>
         <button class="btn" id="leadReset">重置</button>
         <button class="btn" id="leadAdvanced">高级筛选</button>
-      </div>
-      <div class="filters" id="leadTimeFilters">
+        <span class="filter-break"></span>
         <span class="muted">创建时间</span>
         <input type="date" id="leadCreateTimeStart" value="${this.leadState.createTimeStart}">
         <span class="muted">至</span>
@@ -829,8 +828,7 @@ window.CRMCrmPage = {
         <input id="contractSearch" placeholder="搜索合同编号、客户名称、关联线索、负责人">
         <select id="contractStatus"><option value="">全部状态</option><option>已签约</option><option>执行中</option><option>已完成</option><option>已终止</option><option>已作废</option></select>
         <select><option>全部负责人</option>${CRM_MOCK.users.map(u => `<option>${u.name}</option>`).join("")}</select>
-      </div>
-      <div class="filters" id="contractTimeFilters">
+        <span class="filter-break"></span>
         <span class="muted">签约日期</span>
         <input type="date" id="contractSignStart" value="${this.contractState.signDateStart}">
         <span class="muted">至</span>
@@ -1027,8 +1025,7 @@ window.CRMCrmPage = {
         <select id="customerSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <button class="btn" id="customerQuery">查询</button>
         <button class="btn" id="customerReset">重置</button>
-      </div>
-      <div class="filters" id="customerTimeFilters">
+        <span class="filter-break"></span>
         <span class="muted">创建时间</span>
         <input type="date" id="customerCreateTimeStart" value="${this.customerState.createTimeStart}">
         <span class="muted">至</span>
@@ -1037,7 +1034,6 @@ window.CRMCrmPage = {
         <input type="date" id="customerLastFollowStart" value="${this.customerState.lastFollowUpTimeStart}">
         <span class="muted">至</span>
         <input type="date" id="customerLastFollowEnd" value="${this.customerState.lastFollowUpTimeEnd}">
-        <span class="muted" title="后端待支持">（最近跟进时间筛选后端待支持，前端已保留控件与参数）</span>
       </div>
       <div id="customerTable"></div>
     `;

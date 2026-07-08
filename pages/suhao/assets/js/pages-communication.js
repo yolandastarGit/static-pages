@@ -13,16 +13,15 @@ window.CRMCommunicationPage = {
         <button class="btn" id="batchReadMail">批量标记已读</button>
         <button class="btn" id="batchAi">批量 AI 提炼</button>
         <button class="btn" id="batchDeleteMail" hidden>批量删除</button>
-      </div>
-      <div class="tabs" id="mailTabs">
-        ${[["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map(t => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
-      </div>
-      <div class="filters" id="mailTimeFilters">
+        <span class="filter-break"></span>
         <span class="muted">邮件时间</span>
         <input type="date" id="mailTimeStart" value="${this.mailState.mailTimeStart}">
         <span class="muted">至</span>
         <input type="date" id="mailTimeEnd" value="${this.mailState.mailTimeEnd}">
         <button class="btn" id="mailTimeReset">重置</button>
+      </div>
+      <div class="tabs" id="mailTabs">
+        ${[["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map(t => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
       </div>
       <div class="split">
         <div class="card" id="mailList"></div>

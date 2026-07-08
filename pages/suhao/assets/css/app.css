@@ -758,6 +758,12 @@ nav {
   min-width: 210px;
 }
 
+.filter-break {
+  flex-basis: 100%;
+  width: 100%;
+  height: 0;
+}
+
 .filters input:focus,
 .filters select:focus,
 .form-field input:focus,
