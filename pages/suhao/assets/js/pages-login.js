@@ -24,10 +24,10 @@ window.CRMLoginPage = {
               <button type="button" data-login-method="dingtalk">钉钉扫码登录</button>
             </div>
             <form id="loginForm" class="login-form">
-              <div class="form-field full"><label>用户名 / 邮箱</label><input name="account" autocomplete="username" placeholder="admin / chenhao / mialiu / alexxu"></div>
-              <div class="form-field full login-password"><label>密码</label><input name="password" type="password" autocomplete="current-password" placeholder="请输入密码"><button class="btn" type="button" id="togglePassword">显示</button></div>
+              <div class="form-field full"><label>登录账号</label><input name="account" autocomplete="username" placeholder="admin / chenhao / mialiu / alexxu"></div>
+              <div class="form-field full login-password"><label>登录密码</label><input name="password" type="password" autocomplete="current-password" placeholder="请输入密码"><button class="btn" type="button" id="togglePassword">显示</button></div>
               <div class="login-options">
-                <label class="login-check"><input type="checkbox" name="remember"> 记住登录</label>
+                <label class="login-check"><input type="checkbox" name="remember"> 记住账号</label>
                 <button class="link-btn" type="button" id="forgotPassword">忘记密码</button>
               </div>
               <button class="btn primary login-submit" type="submit">登录</button>
@@ -41,6 +41,7 @@ window.CRMLoginPage = {
                 <button class="btn" type="button" id="refreshDingQr">刷新二维码</button>
               </div>
             </div>
+            <p class="muted small" style="text-align:center;margin-top:14px">© 2026 AI 智能 CRM. All rights reserved.</p>
           </section>
         </section>
         <section class="login-hero" aria-label="AI CRM 智能主视觉">

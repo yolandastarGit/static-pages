@@ -24,7 +24,8 @@ const requiredFiles = [
   "router/router.js",
   "layout/layout.js",
   "mock/data.js",
-  "docs/design/AI_CRM_产品需求总文档.md",
+  "docs/design/08-企业级产品设计上下文.md",
+  "docs/prd/PRD_v1.md",
   "docs/prd/菜单结构.md"
 ];
 

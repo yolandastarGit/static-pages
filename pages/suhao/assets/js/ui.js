@@ -21,8 +21,8 @@ window.CRMUI = {
   },
   badge(text) {
     const color = {
-      "启用": "green", "停用": "gray", "禁用": "gray", "待跟进": "cyan", "跟进中": "blue", "高意向": "violet",
-      "已成交": "green", "公海待分配": "amber", "无效": "gray", "丢失": "red",
+      "启用": "green", "停用": "gray", "禁用": "gray", "待分配": "amber", "待跟进": "cyan", "跟进中": "blue", "已转客户": "violet",
+      "已成交": "green", "无效": "gray", "丢失": "red",
       "执行中": "blue", "已签约": "green", "已完成": "green", "已终止": "red", "已作废": "gray",
       "开启": "green", "关闭": "gray", "已绑定": "green", "未绑定": "gray"
     }[text] || "gray";
@@ -79,8 +79,13 @@ window.CRMUI = {
     toast.classList.add("show");
     setTimeout(() => toast.classList.remove("show"), 2200);
   },
-  optionList(items, valueKey = "id", labelKey = "name") {
-    return items.map(item => `<option value="${item[valueKey]}">${item[labelKey]}</option>`).join("");
+  optionList(items, valueKey = "id", labelKey = "name", selectedValue = "") {
+    if (items.length && typeof valueKey === "string" && !(valueKey in items[0])) {
+      selectedValue = valueKey;
+      valueKey = "id";
+      labelKey = "name";
+    }
+    return items.map(item => `<option value="${item[valueKey]}" ${item[valueKey] === selectedValue ? "selected" : ""}>${item[labelKey]}</option>`).join("");
   },
   createChart(canvasId, type, data, options = {}) {
     const canvas = this.$(`#${canvasId}`);

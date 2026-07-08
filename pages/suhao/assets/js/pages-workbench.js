@@ -3,7 +3,7 @@ window.CRMWorkbenchPage = {
     const role = this.workbenchRole();
     root.innerHTML = `
       <div class="filters">
-        <select id="timeRange"><option>本月</option><option>本周</option><option>本季度</option></select>
+        <select id="timeRange"><option>当天</option><option>本周</option><option>本月</option><option>自定义</option></select>
         <select id="siteFilter"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
         <button class="btn" id="refreshWorkbench">刷新数据</button>
         <span class="muted" style="margin-left:auto">${this.roleLabel(role)}视图${this.isFallbackRole(role) ? "（二期前按运营专员视图渲染）" : ""}</span>
@@ -95,18 +95,18 @@ window.CRMWorkbenchPage = {
       { label: "邮件未读", value: this.unreadEmails(), route: "email", query: "", foot: "本人邮箱" },
       { label: "跟进超时", value: scopeLeads.filter(l => l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status)).length, route: "leads", query: "overdue=1", foot: "本人线索" }
     ] : [
-      { label: "公海待分配", value: CRM_MOCK.leads.filter(l => l.status === "公海待分配" && (!this.siteScope() || l.siteId === this.siteScope())).length, route: "publicPool", query: "", foot: "负责站点" },
+      { label: "待分配", value: CRM_MOCK.leads.filter(l => l.status === "待分配" && (!this.siteScope() || l.siteId === this.siteScope())).length, route: "publicPool", query: "", foot: "负责站点" },
       { label: "待回复线索", value: this.pendingReplyCount(scopeLeads), route: "leads", query: "reply=pending", foot: "本团队" },
       { label: "邮件未读", value: this.unreadEmails(), route: "email", query: "", foot: "本人邮箱" },
       { label: "跟进超时", value: scopeLeads.filter(l => l.nextFollowAt && !["已成交", "无效", "丢失"].includes(l.status)).length, route: "leads", query: "overdue=1", foot: "本团队" }
     ];
     const alertCards = isSales ? [
       { label: "无效·丢失线索", value: scopeLeads.filter(l => l.status === "无效" || l.status === "丢失").length, route: "leads", query: "statusGroup=invalidLost", foot: "仅本人" },
-      { label: "高意向待转化", value: scopeLeads.filter(l => l.status === "高意向").length, route: "leads", query: "status=高意向", foot: "仅本人" },
-      { label: "无异常", value: "--", route: "", query: "", foot: "其它预警项二期开放" }
+      { label: "超期回收线索", value: CRM_MOCK.leads.filter(l => l.status === "待分配" && l.poolReason === "超期回收").length, route: "publicPool", query: "", foot: "仅本人" },
+      { label: "异常站点", value: CRM_MOCK.sites.filter(s => s.status === "停用" && (!this.siteScope() || s.id === this.siteScope())).length, route: "sites", query: "", foot: "授权站点" }
     ] : [
       { label: "无效·丢失线索", value: scopeLeads.filter(l => l.status === "无效" || l.status === "丢失").length, route: "leads", query: "statusGroup=invalidLost", foot: "本团队" },
-      { label: "超期回收线索", value: CRM_MOCK.leads.filter(l => l.status === "公海待分配" && l.poolReason === "超期回收").length, route: "publicPool", query: "", foot: "负责站点" },
+      { label: "超期回收线索", value: CRM_MOCK.leads.filter(l => l.status === "待分配" && l.poolReason === "超期回收").length, route: "publicPool", query: "", foot: "负责站点" },
       { label: "异常站点", value: CRM_MOCK.sites.filter(s => s.status === "停用" && (!this.siteScope() || s.id === this.siteScope())).length, route: "sites", query: "", foot: "负责站点" }
     ];
     const renderCards = cards => cards.map(c => `
@@ -138,7 +138,7 @@ window.CRMWorkbenchPage = {
       { label: isSales ? "我的客户" : "客户总数", value: customers.length, foot: "客户资产", route: "customers" },
       { label: isSales ? "我的合同" : "合同总数", value: contracts.length, foot: "合同记录", route: "contracts" },
       { label: "成交金额", value: `¥${contracts.reduce((s, c) => s + c.amount, 0).toLocaleString()}`, foot: "合同金额汇总", route: "contracts" },
-      { label: "公海线索", value: CRM_MOCK.leads.filter(l => l.status === "公海待分配" && (!siteId || l.siteId === siteId)).length, foot: "待分配", route: "publicPool" },
+      { label: "公海线索", value: CRM_MOCK.leads.filter(l => l.status === "待分配" && (!siteId || l.siteId === siteId)).length, foot: "待分配", route: "publicPool" },
       { label: "启用站点", value: CRM_MOCK.sites.filter(s => s.status === "启用" && (!siteId || s.id === siteId)).length, foot: "消息接入范围", route: "sites" }
     ];
     CRMUI.$("#metricGrid").innerHTML = metrics.map(m => `
@@ -152,7 +152,7 @@ window.CRMWorkbenchPage = {
   },
   renderCharts() {
     CRMUI.createChart("funnelChart", "bar", {
-      labels: ["全部消息", "识别线索", "跟进中", "高意向", "转高意向客户"],
+      labels: ["全部消息", "识别为线索", "跟进中", "已转客户", "已成交"],
       datasets: [{ label: "数量", data: CRM_MOCK.analytics.funnel, backgroundColor: ["#0756d8", "#3f7fe7", "#77a5ef", "#a8c3f2", "#d6e3fa"] }]
     }, { indexAxis: "y" });
     CRMUI.createChart("amountChart", "line", {

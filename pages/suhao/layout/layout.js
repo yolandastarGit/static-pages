@@ -94,15 +94,15 @@ window.CRMLayout = {
     const routeMap = {
       "新线索分配": { route: "leads", params: { id: "l01" } },
       "新客户分配": { route: "customers", params: { id: "c02" } },
-      "商机阶段变更": { route: "leads", params: { id: "l02" } },
-      "合同到期提醒": { route: "contracts", params: {} },
+      "跟进阶段变更": { route: "leads", params: { id: "l02" } },
+      "待回复超时": { route: "leads", params: { reply: "pending" } },
       "线索状态变更": { route: "leads", params: { id: "l01" } },
-      "待跟进超时": { route: "leads", params: { status: "待跟进" } },
-      "客户负责人转移": { route: "customers", params: { id: "c02" } },
+      "变更负责人": { route: "customers", params: { id: "c02" } },
       "合同创建": { route: "contracts", params: {} },
       "合同状态变更": { route: "contracts", params: {} },
       "邮件未读数量提醒": { route: "email", params: {} },
-      "邮件未读超时提醒": { route: "email", params: {} }
+      "邮件未读超时提醒": { route: "email", params: {} },
+      "公海回收": { route: "publicPool", params: {} }
     };
     const times = ["刚刚", "10 分钟前", "28 分钟前", "1 小时前", "2 小时前", "今天 09:40", "昨天 18:22", "昨天 15:08", "昨天 11:30", "2026-07-02 16:20", "2026-07-02 10:05"];
     CRM_MOCK.notifications = Array.isArray(CRM_MOCK.notifications) ? CRM_MOCK.notifications : [];
@@ -253,7 +253,7 @@ window.CRMLayout = {
       <div class="form-grid">
         <div class="form-field"><label>姓名</label><input value="${CRM_MOCK.currentUser.name}" disabled></div>
         <div class="form-field"><label>角色</label><input value="${CRM_MOCK.currentUser.role}" disabled></div>
-        <div class="form-field full"><label>管理站点</label><input value="${CRM_MOCK.currentUser.sites.map(CRMUI.siteName).join("、")}" disabled></div>
+        <div class="form-field full"><label>授权站点</label><input value="${CRM_MOCK.currentUser.sites.map(CRMUI.siteName).join("、")}" disabled></div>
         <div class="form-field full"><small class="muted">个人中心完整页化（资料可编辑、头像上传等）二期开放；如需修改基本信息，请联系系统管理员在用户管理中维护。</small></div>
       </div>`, () => CRMUI.closeModal());
   },

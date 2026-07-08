@@ -26,16 +26,15 @@ window.CRM_MOCK = {
     { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ],
   // 业务字典（MVP 简化版字典管理的数据源；标签/跟进阶段/跟进方式/行业/国家等业务下拉均从此读取）
-  // 初始字典项对齐 PRD §12.5.6
+  // 初始字典项对齐 PRD §23.5.4
   dictionaries: [
     { id: "dict-follow-stage", code: "followStage", name: "跟进阶段", domain: "线索域", items: [
-      { id: "fs1", code: "待首响", name: "待首响", sort: 1, status: "启用", triggerHighIntent: false },
-      { id: "fs2", code: "已联系", name: "已联系", sort: 2, status: "启用", triggerHighIntent: false },
-      { id: "fs3", code: "需求确认", name: "需求确认", sort: 3, status: "启用", triggerHighIntent: false },
-      { id: "fs4", code: "样品阶段", name: "样品阶段", sort: 4, status: "启用", triggerHighIntent: false },
-      { id: "fs5", code: "报价阶段", name: "报价阶段", sort: 5, status: "启用", triggerHighIntent: false },
-      { id: "fs6", code: "高意向客户", name: "高意向客户", sort: 6, status: "启用", triggerHighIntent: true },
-      { id: "fs7", code: "合同已成交", name: "合同已成交", sort: 7, status: "启用", triggerHighIntent: false }
+      { id: "fs1", code: "待首响", name: "待首响", sort: 1, status: "启用", allowHighIntent: false },
+      { id: "fs2", code: "已联系", name: "已联系", sort: 2, status: "启用", allowHighIntent: false },
+      { id: "fs3", code: "需求确认", name: "需求确认", sort: 3, status: "启用", allowHighIntent: false },
+      { id: "fs4", code: "打样阶段", name: "打样阶段", sort: 4, status: "启用", allowHighIntent: true },
+      { id: "fs5", code: "报价阶段", name: "报价阶段", sort: 5, status: "启用", allowHighIntent: true },
+      { id: "fs6", code: "谈判阶段", name: "谈判阶段", sort: 6, status: "启用", allowHighIntent: true }
     ]},
     { id: "dict-follow-method", code: "followMethod", name: "跟进方式", domain: "线索域", items: [
       { id: "fm1", code: "电话", name: "电话", sort: 1, status: "启用" },
@@ -45,7 +44,7 @@ window.CRM_MOCK = {
       { id: "fm5", code: "备注", name: "备注", sort: 5, status: "启用" }
     ]},
     { id: "dict-customer-level", code: "customerLevel", name: "客户潜质分级", domain: "客户域", items: [
-      { id: "cl1", code: "可跟", name: "可跟", sort: 1, status: "启用" },
+      { id: "cl1", code: "可跟进", name: "可跟进", sort: 1, status: "启用" },
       { id: "cl2", code: "潜在", name: "潜在", sort: 2, status: "启用" },
       { id: "cl3", code: "一般客户", name: "一般客户", sort: 3, status: "启用" }
     ]},
@@ -116,8 +115,6 @@ window.CRM_MOCK = {
       { id: "lm3", code: "短信验证码", name: "短信验证码", sort: 3, status: "停用" }
     ]}
   ],
-  // 线索标记"丢失"时的结构化原因枚举（PRD §6.3.6，非字典管理项，系统内置）
-  lossReasonOptions: ["价格谈不拢", "客户选择竞品", "客户预算不足", "客户需求变更", "客户失联", "项目取消", "其他"],
   // AI 服务商与模型枚举（PRD §10.3，模型随服务商联动）
   aiProviderOptions: ["OpenAI", "Azure OpenAI", "阿里通义千问", "智谱 AI", "DeepSeek", "自定义"],
   aiModelOptions: {
@@ -132,20 +129,20 @@ window.CRM_MOCK = {
   mailAuthModes: ["MASTER_PASSWORD（子邮箱授权码）", "OAUTH2", "XOAUTH2", "LOGIN", "PLAIN"],
   purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
   notificationChannels: ["站内信", "钉钉"],
-  notificationTargetOptions: ["当前负责人", "创建人", "分配人", "部门负责人", "指定用户"],
-  notificationScenes: ["新线索分配", "新客户分配", "商机阶段变更", "合同到期提醒", "线索状态变更", "待跟进超时", "客户负责人转移", "合同创建", "合同状态变更", "邮件未读数量提醒", "邮件未读超时提醒"],
+  notificationTargetOptions: ["当前负责人", "创建人", "分配人", "站点运营专员", "指定用户"],
+  notificationScenes: ["新线索分配", "新客户分配", "线索状态变更", "跟进阶段变更", "待回复超时", "变更负责人", "合同创建", "合同状态变更", "邮件未读数量提醒", "邮件未读超时提醒", "公海回收"],
   notificationRules: [
-    { id: "nr01", scene: "新线索分配", channels: ["站内信", "钉钉"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "新线索已分配", body: "您有一条新的线索需要跟进，请及时查看线索详情。", status: "开启" },
+    { id: "nr01", scene: "新线索分配", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "新线索已分配", body: "您有一条新的线索需要跟进，请及时查看线索详情。", status: "开启" },
     { id: "nr02", scene: "新客户分配", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "新客户已分配", body: "系统已为您分配新客户，请完善客户信息并建立跟进计划。", status: "开启" },
-    { id: "nr03", scene: "商机阶段变更", channels: ["站内信", "钉钉"], targets: ["当前负责人", "创建人"], userIds: [], title: "商机阶段已变更", body: "商机阶段发生变化，请关注后续处理动作。", status: "开启" },
-    { id: "nr04", scene: "合同到期提醒", channels: ["站内信"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "合同即将到期", body: "合同即将到期，请提前确认续约或关闭计划。", status: "关闭" },
+    { id: "nr03", scene: "跟进阶段变更", channels: ["站内信", "钉钉"], targets: ["创建人"], userIds: [], title: "跟进阶段已变更", body: "跟进阶段发生变化，请关注后续处理动作。", status: "开启" },
+    { id: "nr04", scene: "待回复超时", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "待回复超时提醒", body: "关联消息超过阈值未回复，请及时处理。", status: "关闭" },
     { id: "nr05", scene: "线索状态变更", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "线索状态变更", body: "线索状态已更新，请查看最新状态。", status: "开启" },
-    { id: "nr06", scene: "待跟进超时", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "待跟进超时提醒", body: "存在超时未跟进线索，请尽快处理。", status: "开启" },
-    { id: "nr07", scene: "客户负责人转移", channels: ["站内信"], targets: ["当前负责人", "分配人"], userIds: [], title: "客户负责人已转移", body: "客户负责人发生变化，请关注客户交接信息。", status: "开启" },
-    { id: "nr08", scene: "合同创建", channels: ["站内信"], targets: ["创建人", "部门负责人"], userIds: [], title: "合同已创建", body: "新的合同记录已创建，请关注审批和履约进度。", status: "开启" },
+    { id: "nr06", scene: "变更负责人", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "负责人已变更", body: "负责人发生变化，请关注业务交接信息。", status: "开启" },
+    { id: "nr07", scene: "合同创建", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "合同已创建", body: "新的合同记录已创建，请关注合同详情。", status: "开启" },
+    { id: "nr08", scene: "公海回收", channels: ["站内信"], targets: ["站点运营专员"], userIds: [], title: "线索已回收至公海", body: "有线索进入公海池，请及时分配。", status: "开启" },
     { id: "nr09", scene: "合同状态变更", channels: ["站内信"], targets: ["当前负责人", "创建人"], userIds: [], title: "合同状态变更", body: "合同状态已更新，请查看合同详情。", status: "开启" },
     { id: "nr10", scene: "邮件未读数量提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "邮件未读数量提醒", body: "当前存在较多未读邮件，请及时处理。", status: "开启" },
-    { id: "nr11", scene: "邮件未读超时提醒", channels: ["站内信", "钉钉"], targets: ["当前负责人", "部门负责人"], userIds: [], title: "邮件未读超时提醒", body: "存在长时间未读邮件，请及时查看并跟进。", status: "开启" }
+    { id: "nr11", scene: "邮件未读超时提醒", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "邮件未读超时提醒", body: "存在长时间未读邮件，请及时查看并跟进。", status: "开启" }
   ],
   mailboxes: ["sales@industrial.example.com", "info@toys.example.com"],
   mailServiceConfig: {
@@ -573,7 +570,7 @@ window.CRM_MOCK = {
       siteId: "s02",
       channel: "邮件",
       ownerId: "u03",
-      status: "高意向",
+      status: "已转客户",
       stage: "报价阶段",
       products: ["毛绒玩具", "私标包装"],
       purchaseIntent: "价格咨询",
@@ -582,7 +579,7 @@ window.CRM_MOCK = {
       createdAt: "2026-07-01 16:18",
       lastFollowAt: "2026-07-02 09:20",
       nextFollowAt: "2026-07-03 14:00",
-      customerId: "",
+      customerId: "c03",
       aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转高意向客户并录入报价跟进。"
     },
     {
@@ -595,7 +592,7 @@ window.CRM_MOCK = {
       siteId: "s02",
       channel: "WhatsApp",
       ownerId: "",
-      status: "公海待分配",
+      status: "待分配",
       stage: "待首响",
       products: ["毛绒玩具", "活动礼品"],
       purchaseIntent: "明确采购",
@@ -620,7 +617,7 @@ window.CRM_MOCK = {
       channel: "WhatsApp",
       ownerId: "u02",
       status: "已成交",
-      stage: "合同已成交",
+      stage: "谈判阶段",
       products: ["五金支架"],
       purchaseIntent: "复购扩展",
       aiTags: ["复购询盘"],
@@ -629,13 +626,13 @@ window.CRM_MOCK = {
       lastFollowAt: "2026-06-20 10:10",
       nextFollowAt: "2026-07-08 10:00",
       customerId: "c02",
-      aiSummary: "老客户复购，合同已成交，可进入客户经营。"
+      aiSummary: "老客户复购，已通过合同完成成交闭环，可进入客户经营。"
     }
   ],
   followLogs: [
     { id: "f01", leadId: "l01", userId: "u02", method: "邮件", stage: "需求确认", content: "已回复客户，确认图纸版本、材料牌号和认证要求。", nextFollowAt: "2026-07-04 10:00", createdAt: "2026-07-02 11:10" },
     { id: "f02", leadId: "l02", userId: "u03", method: "电话", stage: "报价阶段", content: "客户希望今天收到 5000/10000 件阶梯报价。", nextFollowAt: "2026-07-03 14:00", createdAt: "2026-07-02 09:20" },
-    { id: "f03", leadId: "l04", userId: "u02", method: "备注", stage: "合同已成交", content: "录入合同 CON-2026-0081。", nextFollowAt: "2026-07-08 10:00", createdAt: "2026-06-20 10:10" }
+    { id: "f03", leadId: "l04", userId: "u02", method: "备注", stage: "谈判阶段", content: "录入合同 CON-2026-0081。", nextFollowAt: "2026-07-08 10:00", createdAt: "2026-06-20 10:10" }
   ],
   customers: [
     {
@@ -662,7 +659,7 @@ window.CRM_MOCK = {
       country: "德国",
       industry: "机械设备",
       ownerId: "u02",
-      potentialLevel: "可跟",
+      potentialLevel: "可跟进",
       tags: ["复购客户", "长期合作客户"],
       leadIds: ["l04"],
       contractIds: ["ct01"],
@@ -671,6 +668,22 @@ window.CRM_MOCK = {
       ],
       aiProfile: "德国自动化设备制造企业，关注稳定供货、批次一致性和技术响应速度。",
       createdAt: "2026-05-20"
+    },
+    {
+      id: "c03",
+      no: "CUS-2026-0302",
+      name: "PlayNorth Trading",
+      siteId: "s02",
+      country: "加拿大",
+      industry: "玩具礼品",
+      ownerId: "u03",
+      potentialLevel: "潜在",
+      tags: ["高潜客户"],
+      leadIds: ["l02"],
+      contractIds: [],
+      transferRecords: [],
+      aiProfile: "北美零售活动礼品采购商，关注 EN71 认证、私标包装和活动节点交付。",
+      createdAt: "2026-07-02"
     }
   ],
   contacts: [

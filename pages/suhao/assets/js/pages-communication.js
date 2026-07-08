@@ -8,7 +8,9 @@ window.CRMCommunicationPage = {
     root.innerHTML = `
       <div class="filters">
         <select id="mailbox">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select>
+        <button class="btn primary" id="composeMail">写邮件</button>
         <input id="mailSearch" placeholder="搜索主题、发件人、正文">
+        <button class="btn" id="batchReadMail">批量标记已读</button>
         <button class="btn" id="batchAi">批量 AI 提炼</button>
         <button class="btn" id="batchDeleteMail" hidden>批量删除</button>
       </div>
@@ -32,6 +34,8 @@ window.CRMCommunicationPage = {
       this.renderMailList();
     });
     CRMUI.$("#batchAi").addEventListener("click", () => this.openBatchAiModal());
+    CRMUI.$("#composeMail").addEventListener("click", () => this.openComposeMailModal());
+    CRMUI.$("#batchReadMail").addEventListener("click", () => this.markSelectedMailsRead());
     CRMUI.$("#batchDeleteMail").addEventListener("click", () => this.openBatchDeleteMailModal());
     this.renderMailList();
   },
@@ -101,6 +105,7 @@ window.CRMCommunicationPage = {
         <button class="btn primary" id="generateLead">${mail.leadId ? "查看线索" : "生成线索"}</button>
         <button class="btn" id="replyMail">回复</button>
         <button class="btn" id="forwardMail">转发</button>
+        <button class="btn danger" id="deleteMailDetail">删除</button>
       </div>
     `;
     const profile = this.companyProfileForMail(mail);
@@ -123,6 +128,30 @@ window.CRMCommunicationPage = {
     });
     CRMUI.$("#replyMail").addEventListener("click", () => CRMUI.toast("已打开回复编辑状态"));
     CRMUI.$("#forwardMail").addEventListener("click", () => CRMUI.toast("已打开转发编辑状态"));
+    CRMUI.$("#deleteMailDetail").addEventListener("click", () => this.openDeleteMailModal(mail.id));
+  },
+  openComposeMailModal(mail = {}) {
+    CRMUI.modal("写邮件", `
+      <div class="form-grid">
+        <div class="form-field"><label>发件人</label><select name="from">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select></div>
+        ${CRMUI.formInput("收件人", "to", mail.to || "")}
+        ${CRMUI.formInput("抄送", "cc", "")}
+        ${CRMUI.formInput("密送", "bcc", "")}
+        ${CRMUI.formInput("主题", "subject", mail.subject || "")}
+        <div class="form-field full"><label>正文</label><textarea name="body">${mail.body || ""}</textarea></div>
+        <div class="form-field full"><label>附件</label><input name="attachment" type="file" multiple></div>
+      </div>`, form => {
+      if (!form.get("to") && !form.get("subject") && !form.get("body")) return CRMUI.toast("收件人/主题/正文至少填写一项");
+      CRMUI.closeModal();
+      CRMUI.toast("发送成功");
+    });
+  },
+  markSelectedMailsRead() {
+    const ids = Array.from(this.mailState.batchSelected);
+    if (!ids.length) return CRMUI.toast("请选择至少一封邮件");
+    CRM_MOCK.emails.forEach(mail => { if (ids.includes(mail.id)) mail.read = true; });
+    CRMUI.toast(`已标记 ${ids.length} 封邮件为已读`);
+    this.renderMailList();
   },
   companyProfileForMail(mail) {
     const domain = mail.from.match(/@([^>\s]+)/)?.[1] || "";
@@ -280,8 +309,12 @@ window.CRMCommunicationPage = {
         ${CRMUI.formInput("企业名称", "company", mail.senderName.includes("Unknown") ? "" : mail.senderName)}
         ${CRMUI.formInput("联系人", "contact", mail.senderName)}
         ${CRMUI.formInput("邮箱", "email", mail.from.match(/<(.+)>/)?.[1] || "")}
+        ${CRMUI.formInput("电话", "phone", "")}
+        ${CRMUI.formInput("WhatsApp", "whatsapp", "")}
         <div class="form-field"><label>来源站点</label><select name="siteId" required><option value="">请选择</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}" ${s.id === defaultSiteId ? "selected" : ""}>${s.name}</option>`).join("")}</select></div>
-        ${CRMUI.formSelect("采购意向", "purchaseIntent", (CRM_MOCK.purchaseIntentOptions || []).map(v => ({ value: v, label: v })))}
+        <div class="form-field"><label>来源渠道</label><input name="channel" value="邮件" readonly></div>
+        ${CRMUI.formInput("意向产品", "products", "")}
+        ${CRMUI.formMultiSelect("线索标签", "tags", (CRM_MOCK.dictionaries.find(d => d.code === "leadTag")?.items || []).map(i => ({ value: i.name, label: i.name })), [])}
       </div>`, form => {
       const lead = {
         id: `l${Date.now()}`,
@@ -289,16 +322,17 @@ window.CRMCommunicationPage = {
         company: form.get("company") || "未命名企业",
         contact: form.get("contact"),
         email: form.get("email"),
-        phone: "",
+        phone: form.get("phone"),
+        whatsapp: form.get("whatsapp"),
         siteId: form.get("siteId"),
-        channel: "邮件",
+        channel: form.get("channel") || "邮件",
         ownerId: me.id,
         status: "待跟进",
         stage: "待首响",
-        products: ["待识别"],
-        purchaseIntent: form.get("purchaseIntent"),
+        products: String(form.get("products") || "待识别").split(/[、,，]/).map(v => v.trim()).filter(Boolean),
+        purchaseIntent: "",
         aiTags: mail.aiTags,
-        manualTags: [],
+        manualTags: form.getAll("tags"),
         createdAt: "2026-07-02 12:00",
         lastFollowAt: "",
         nextFollowAt: "",
@@ -319,6 +353,7 @@ window.CRMCommunicationPage = {
     CRMUI.modal("批量 AI 提炼", `
       <p>已选择 <strong>${selectedMails.length}</strong> 封邮件。</p>
       <p class="muted">是否立即开始 AI 提炼，并生成 PDF 报告？</p>
+      <p class="muted">影响范围：分析 ${selectedMails.length} 封，预计 ${Math.max(3, selectedMails.length * 2)} 秒。</p>
       ${CRMUI.table([
         { title: "邮件主题", render: m => m.subject },
         { title: "发件人", render: m => m.senderName },
@@ -409,14 +444,7 @@ window.CRMCommunicationPage = {
     }
     root.innerHTML = `
       <div class="filters whatsapp-account-bar">
-        <div class="bound-account">
-          <span class="badge green">已绑定</span>
-          <strong>${account.account}</strong>
-          <span class="muted">最近同步 ${account.lastSyncAt || "-"}</span>
-        </div>
         <input id="chatSearch" placeholder="搜索联系人、企业、消息">
-        <button class="btn" id="reauthorizeWhatsappAccount">重新授权</button>
-        <button class="btn" id="unbindWhatsappAccount">解绑</button>
         <button class="btn" id="refreshChat">刷新</button>
       </div>
       <div class="split">
@@ -428,12 +456,6 @@ window.CRMCommunicationPage = {
     CRMUI.$("#chatSearch").addEventListener("input", e => {
       this.chatState.query = e.target.value.toLowerCase();
       this.renderChatList();
-    });
-    CRMUI.$("#reauthorizeWhatsappAccount").addEventListener("click", () => this.renderWhatsAppBindFlow(root, true));
-    CRMUI.$("#unbindWhatsappAccount").addEventListener("click", () => {
-      CRM_MOCK.personalWhatsappAccount = null;
-      CRMUI.toast("WhatsApp 已解绑");
-      this.renderWhatsApp(root);
     });
     CRMUI.$("#refreshChat").addEventListener("click", () => CRMUI.toast("会话已刷新"));
     this.renderChatList();
@@ -511,7 +533,7 @@ window.CRMCommunicationPage = {
     CRMUI.$("#chatBody").innerHTML = `
       <div class="detail-title">${c.name}</div><p class="muted">${c.company} · ${c.phone}</p>
       <div class="chat-body">${c.messages.map(m => `<div class="bubble ${m.from === "me" ? "me" : ""}">${m.text}<div class="small">${m.time}</div></div>`).join("")}</div>
-      <div class="chat-input"><input id="chatInput" style="flex:1" placeholder="输入消息，Enter 发送"><button class="btn primary" id="sendMsg">发送</button></div>
+      <div class="chat-input"><textarea id="chatInput" style="flex:1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea><button class="btn" id="uploadChatImage">上传图片</button><button class="btn" id="uploadChatFile">上传文件</button><button class="btn primary" id="sendMsg">发送</button></div>
     `;
     CRMUI.$("#chatInfo").innerHTML = `
       <div class="card-title">AI 智能分析</div>
@@ -536,9 +558,52 @@ window.CRMCommunicationPage = {
       this.renderChatDetail();
     };
     CRMUI.$("#sendMsg").addEventListener("click", send);
-    CRMUI.$("#chatInput").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
-    CRMUI.$("#chatLead").addEventListener("click", () => CRMRouter.goto("leads", { id: c.leadId }));
+    CRMUI.$("#chatInput").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    CRMUI.$("#uploadChatImage").addEventListener("click", () => CRMUI.toast("已打开图片上传入口"));
+    CRMUI.$("#uploadChatFile").addEventListener("click", () => CRMUI.toast("已打开文件上传入口"));
+    CRMUI.$("#chatLead").addEventListener("click", () => c.leadId ? CRMRouter.goto("leads", { id: c.leadId }) : this.openWhatsappGenerateLeadModal(c));
     const customerBtn = CRMUI.$("#chatCustomer");
     if (customerBtn) customerBtn.addEventListener("click", () => CRMRouter.goto("customers", { id: c.customerId }));
+  },
+  openWhatsappGenerateLeadModal(conversation) {
+    CRMUI.modal("确认生成线索", `
+      <div class="form-grid">
+        ${CRMUI.formInput("询盘联系人姓名", "contact", conversation.name)}
+        ${CRMUI.formInput("企业名称（所属企业）", "company", conversation.company || "")}
+        <div class="form-field"><label>手机号码</label><input name="phone" value="${conversation.phone}" readonly></div>
+        <div class="form-field"><label>来源站点</label><input value="${CRMUI.siteName(conversation.siteId)}" readonly><input name="siteId" value="${conversation.siteId}" hidden></div>
+        <div class="form-field"><label>来源渠道</label><input name="channel" value="WhatsApp" readonly></div>
+        ${CRMUI.formInput("意向产品", "products", "")}
+      </div>`, form => {
+      if (!form.get("contact") || !form.get("company")) return CRMUI.toast("请完善询盘联系人姓名和企业名称");
+      const lead = {
+        id: `l${Date.now()}`,
+        no: `LEAD-2026-${Math.floor(Math.random() * 9000 + 1000)}`,
+        company: form.get("company"),
+        contact: form.get("contact"),
+        email: "",
+        phone: form.get("phone"),
+        whatsapp: form.get("phone"),
+        siteId: form.get("siteId"),
+        channel: "WhatsApp",
+        ownerId: CRM_MOCK.currentUser.id,
+        status: "待跟进",
+        stage: "待首响",
+        products: String(form.get("products") || "待识别").split(/[、,，]/).map(v => v.trim()).filter(Boolean),
+        purchaseIntent: "",
+        aiTags: conversation.aiTags || [],
+        manualTags: [],
+        createdAt: "2026-07-02 12:20",
+        lastFollowAt: "",
+        nextFollowAt: "",
+        customerId: "",
+        aiSummary: conversation.aiSummary
+      };
+      CRM_MOCK.leads.unshift(lead);
+      conversation.leadId = lead.id;
+      CRMUI.closeModal();
+      CRMUI.toast("线索已生成");
+      this.renderChatDetail();
+    });
   }
 };
