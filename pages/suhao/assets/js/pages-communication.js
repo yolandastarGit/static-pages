@@ -6,19 +6,17 @@ window.CRMCommunicationPage = {
     this.mailRoot = root;
     this.mailState = { folder: "inbox", selected: CRM_MOCK.emails[0].id, query: "", mailTimeStart: "", mailTimeEnd: "", batchSelected: new Set() };
     root.innerHTML = `
-      <div class="filters">
-        <select id="mailbox">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select>
+      <div class="toolbar">
         <button class="btn primary" id="composeMail">写邮件</button>
-        <input id="mailSearch" placeholder="搜索主题、发件人、正文">
         <button class="btn" id="batchReadMail">批量标记已读</button>
         <button class="btn" id="batchAi">批量 AI 提炼</button>
         <button class="btn" id="batchDeleteMail" hidden>批量删除</button>
-        <span class="filter-break"></span>
-        <span class="muted">邮件时间</span>
-        <input type="date" id="mailTimeStart" value="${this.mailState.mailTimeStart}">
-        <span class="muted">至</span>
-        <input type="date" id="mailTimeEnd" value="${this.mailState.mailTimeEnd}">
-        <button class="btn" id="mailTimeReset">重置</button>
+      </div>
+      <div class="filters search-filter">
+        <label class="filter-item"><span>邮箱</span><select id="mailbox">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select></label>
+        <label class="filter-item"><span>关键词</span><input id="mailSearch" placeholder="搜索主题、发件人、正文"></label>
+        <label class="filter-item"><span>邮件时间</span><span class="range-picker"><input type="date" id="mailTimeStart" value="${this.mailState.mailTimeStart}"><span class="range-separator">-</span><input type="date" id="mailTimeEnd" value="${this.mailState.mailTimeEnd}"></span></label>
+        <div class="filter-actions"><button class="btn" id="mailQuery">查询</button><button class="btn" id="mailReset">重置</button></div>
       </div>
       <div class="tabs" id="mailTabs">
         ${[["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map(t => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
@@ -41,10 +39,12 @@ window.CRMCommunicationPage = {
     });
     CRMUI.$("#mailTimeStart").addEventListener("change", e => { this.mailState.mailTimeStart = e.target.value; this.renderMailList(); });
     CRMUI.$("#mailTimeEnd").addEventListener("change", e => { this.mailState.mailTimeEnd = e.target.value; this.renderMailList(); });
-    // 重置仅重置邮件时间筛选，保留当前邮箱与当前文件夹
-    CRMUI.$("#mailTimeReset").addEventListener("click", () => {
+    CRMUI.$("#mailQuery").addEventListener("click", () => this.renderMailList());
+    CRMUI.$("#mailReset").addEventListener("click", () => {
+      this.mailState.query = "";
       this.mailState.mailTimeStart = "";
       this.mailState.mailTimeEnd = "";
+      CRMUI.$("#mailSearch").value = "";
       CRMUI.$("#mailTimeStart").value = "";
       CRMUI.$("#mailTimeEnd").value = "";
       this.renderMailList();
@@ -458,14 +458,10 @@ window.CRMCommunicationPage = {
       return;
     }
     root.innerHTML = `
-      <div class="filters whatsapp-account-bar">
-        <input id="chatSearch" placeholder="搜索联系人、企业、消息">
-        <span class="muted">最近消息时间</span>
-        <input type="date" id="chatTimeStart" value="${this.chatState.lastMessageTimeStart}">
-        <span class="muted">至</span>
-        <input type="date" id="chatTimeEnd" value="${this.chatState.lastMessageTimeEnd}">
-        <button class="btn" id="chatTimeReset">重置</button>
-        <button class="btn" id="refreshChat">刷新</button>
+      <div class="filters whatsapp-account-bar search-filter">
+        <label class="filter-item"><span>关键词</span><input id="chatSearch" placeholder="搜索联系人、企业、消息"></label>
+        <label class="filter-item"><span>消息时间</span><span class="range-picker"><input type="date" id="chatTimeStart" value="${this.chatState.lastMessageTimeStart}"><span class="range-separator">-</span><input type="date" id="chatTimeEnd" value="${this.chatState.lastMessageTimeEnd}"></span></label>
+        <div class="filter-actions"><button class="btn" id="chatQuery">查询</button><button class="btn" id="chatReset">重置</button><button class="btn" id="refreshChat">刷新</button></div>
       </div>
       <div class="split">
         <div class="card whatsapp-contact-panel" id="chatList"></div>
@@ -479,10 +475,12 @@ window.CRMCommunicationPage = {
     });
     CRMUI.$("#chatTimeStart").addEventListener("change", e => { this.chatState.lastMessageTimeStart = e.target.value; this.renderChatList(); });
     CRMUI.$("#chatTimeEnd").addEventListener("change", e => { this.chatState.lastMessageTimeEnd = e.target.value; this.renderChatList(); });
-    // 重置恢复默认时间范围（不限制）
-    CRMUI.$("#chatTimeReset").addEventListener("click", () => {
+    CRMUI.$("#chatQuery").addEventListener("click", () => this.renderChatList());
+    CRMUI.$("#chatReset").addEventListener("click", () => {
+      this.chatState.query = "";
       this.chatState.lastMessageTimeStart = "";
       this.chatState.lastMessageTimeEnd = "";
+      CRMUI.$("#chatSearch").value = "";
       CRMUI.$("#chatTimeStart").value = "";
       CRMUI.$("#chatTimeEnd").value = "";
       this.renderChatList();

@@ -10,18 +10,15 @@ window.CRMAnalyticsPage = {
     this.analyticsState.statTimeStart = defaultRange.start;
     this.analyticsState.statTimeEnd = defaultRange.end;
     root.innerHTML = `
-      <div class="filters">
-        <span class="muted">统计时间</span>
-        <select id="analyticsRange">
+      <div class="filters search-filter">
+        <label class="filter-item"><span>统计时间</span><select id="analyticsRange">
           ${isCustomer
             ? `<option>本年</option><option>本月</option><option>本季度</option><option>自定义</option>`
             : `<option>本月</option><option>本季度</option><option>本年</option><option>今日</option><option>自定义</option>`}
-        </select>
-        <input type="date" id="analyticsStatStart" value="${this.analyticsState.statTimeStart}">
-        <span class="muted">至</span>
-        <input type="date" id="analyticsStatEnd" value="${this.analyticsState.statTimeEnd}">
-        <select id="analyticsSite"><option value="">全部站点</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}">${s.name}</option>`).join("")}</select>
-        <button class="btn primary" id="refreshAnalytics">刷新</button>
+        </select></label>
+        <label class="filter-item"><span>时间范围</span><span class="range-picker"><input type="date" id="analyticsStatStart" value="${this.analyticsState.statTimeStart}"><span class="range-separator">-</span><input type="date" id="analyticsStatEnd" value="${this.analyticsState.statTimeEnd}"></span></label>
+        <label class="filter-item"><span>站点</span><select id="analyticsSite"><option value="">全部站点</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}">${s.name}</option>`).join("")}</select></label>
+        <div class="filter-actions"><button class="btn primary" id="analyticsQuery">查询</button><button class="btn" id="analyticsReset">重置</button></div>
       </div>
       <div id="analyticsBody"></div>
     `;
@@ -40,8 +37,20 @@ window.CRMAnalyticsPage = {
       this.renderTab(initial);
     }));
     CRMUI.$("#analyticsSite").addEventListener("change", e => { this.analyticsState.siteId = e.target.value; this.renderTab(initial); });
-    CRMUI.$("#refreshAnalytics").addEventListener("click", () => {
+    CRMUI.$("#analyticsQuery").addEventListener("click", () => {
       CRMUI.toast("分析数据已刷新");
+      this.renderTab(initial);
+    });
+    CRMUI.$("#analyticsReset").addEventListener("click", () => {
+      const range = isCustomer ? this.currentYearRange() : this.currentMonthRange();
+      this.analyticsState.statRange = isCustomer ? "本年" : "本月";
+      this.analyticsState.statTimeStart = range.start;
+      this.analyticsState.statTimeEnd = range.end;
+      this.analyticsState.siteId = "";
+      CRMUI.$("#analyticsRange").value = this.analyticsState.statRange;
+      CRMUI.$("#analyticsStatStart").value = range.start;
+      CRMUI.$("#analyticsStatEnd").value = range.end;
+      CRMUI.$("#analyticsSite").value = "";
       this.renderTab(initial);
     });
     this.renderTab(initial);

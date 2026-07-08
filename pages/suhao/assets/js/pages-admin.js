@@ -13,7 +13,11 @@ window.CRMAdminPage = {
         <button class="btn primary" id="newAiProvider">新增 AI 能力</button>
         <button class="btn" id="refreshAiProvider">刷新</button>
       </div>
-      <div class="filters card pad"><input id="aiSearch" placeholder="搜索能力名称 / 服务商"><select id="aiStatus"><option value="">全部状态</option><option>启用</option><option>停用</option></select></div>
+      <div class="filters card pad search-filter">
+        <label class="filter-item"><span>关键词</span><input id="aiSearch" placeholder="搜索能力名称 / 服务商"></label>
+        <label class="filter-item"><span>状态</span><select id="aiStatus"><option value="">全部状态</option><option>启用</option><option>停用</option></select></label>
+        <div class="filter-actions"><button class="btn" id="aiQuery">查询</button><button class="btn" id="aiReset">重置</button></div>
+      </div>
       <div class="section-title">AI 能力列表</div>
       <div id="aiProviderTable"></div>
     `;
@@ -23,6 +27,13 @@ window.CRMAdminPage = {
     CRMUI.$("#refreshAiProvider").addEventListener("click", () => { CRMUI.toast("AI 能力列表已刷新"); this.renderAiProviderTable(); });
     CRMUI.$("#aiSearch").addEventListener("input", e => { this.aiState.query = e.target.value.toLowerCase(); this.renderAiProviderTable(); });
     CRMUI.$("#aiStatus").addEventListener("change", e => { this.aiState.status = e.target.value; this.renderAiProviderTable(); });
+    CRMUI.$("#aiQuery").addEventListener("click", () => this.renderAiProviderTable());
+    CRMUI.$("#aiReset").addEventListener("click", () => {
+      this.aiState = { query: "", status: "" };
+      CRMUI.$("#aiSearch").value = "";
+      CRMUI.$("#aiStatus").value = "";
+      this.renderAiProviderTable();
+    });
   },
   renderAiProviderTable() {
     const providers = (CRM_MOCK.aiProviders || []).filter(row => {
@@ -138,13 +149,10 @@ window.CRMAdminPage = {
         <button class="btn primary" id="newSite">新增站点</button>
         <button class="btn" id="refreshSites">刷新</button>
       </div>
-      <div class="filters card pad">
-        <input id="siteSearch" placeholder="搜索站点名称或编码">
-        <span class="muted">创建时间</span>
-        <input type="date" id="siteCreateTimeStart" value="${this.siteState.createTimeStart}">
-        <span class="muted">至</span>
-        <input type="date" id="siteCreateTimeEnd" value="${this.siteState.createTimeEnd}">
-        <button class="btn" id="siteReset">重置</button>
+      <div class="filters card pad search-filter">
+        <label class="filter-item"><span>关键词</span><input id="siteSearch" placeholder="搜索站点名称或编码"></label>
+        <label class="filter-item"><span>创建时间</span><span class="range-picker"><input type="date" id="siteCreateTimeStart" value="${this.siteState.createTimeStart}"><span class="range-separator">-</span><input type="date" id="siteCreateTimeEnd" value="${this.siteState.createTimeEnd}"></span></label>
+        <div class="filter-actions"><button class="btn" id="siteQuery">查询</button><button class="btn" id="siteReset">重置</button></div>
       </div>
       <div id="siteTable"></div>
       <div class="section-title">消息拉取状态</div>
@@ -193,6 +201,7 @@ window.CRMAdminPage = {
     };
     // 时间筛选 change 用 input 事件统一触发重绘（绑定一次，避免重复绑定）
     CRMUI.$$("#siteSearch,#siteCreateTimeStart,#siteCreateTimeEnd").forEach(el => el.addEventListener("input", draw));
+    CRMUI.$("#siteQuery").addEventListener("click", draw);
     // 重置恢复默认（创建时间=不限制）
     CRMUI.$("#siteReset").addEventListener("click", () => {
       this.siteState = { query: "", createTimeStart: "", createTimeEnd: "" };
@@ -247,9 +256,10 @@ window.CRMAdminPage = {
   renderNotificationCenter(root) {
     this.notificationState = { query: "", status: "" };
     root.innerHTML = `
-      <div class="filters card pad">
-        <input id="notificationSearch" placeholder="搜索通知场景">
-        <select id="notificationStatus"><option value="">全部状态</option><option>开启</option><option>关闭</option></select>
+      <div class="filters card pad search-filter">
+        <label class="filter-item"><span>关键词</span><input id="notificationSearch" placeholder="搜索通知场景"></label>
+        <label class="filter-item"><span>状态</span><select id="notificationStatus"><option value="">全部状态</option><option>开启</option><option>关闭</option></select></label>
+        <div class="filter-actions"><button class="btn" id="notificationQuery">查询</button><button class="btn" id="notificationReset">重置</button></div>
       </div>
       <div id="notificationTable"></div>
     `;
@@ -259,6 +269,13 @@ window.CRMAdminPage = {
     });
     CRMUI.$("#notificationStatus").addEventListener("change", e => {
       this.notificationState.status = e.target.value;
+      this.renderNotificationTable();
+    });
+    CRMUI.$("#notificationQuery").addEventListener("click", () => this.renderNotificationTable());
+    CRMUI.$("#notificationReset").addEventListener("click", () => {
+      this.notificationState = { query: "", status: "" };
+      CRMUI.$("#notificationSearch").value = "";
+      CRMUI.$("#notificationStatus").value = "";
       this.renderNotificationTable();
     });
     this.renderNotificationTable();
@@ -351,12 +368,11 @@ window.CRMAdminPage = {
   },
   renderCommunicationConfig(root) {
     const q = CRMRouter.query();
-    const validTabs = ["mail", "whatsapp", "dingtalk", "push"];
+    const validTabs = ["mail", "dingtalk", "push"];
     this.communicationState = { tab: validTabs.includes(q.tab) ? q.tab : "mail" };
     root.innerHTML = `
       <div class="tabs" id="communicationTabs">
         <div class="tab ${this.communicationState.tab === "mail" ? "active" : ""}" data-tab="mail">邮件服务配置</div>
-        <div class="tab ${this.communicationState.tab === "whatsapp" ? "active" : ""}" data-tab="whatsapp">WhatsApp 服务配置</div>
         <div class="tab ${this.communicationState.tab === "dingtalk" ? "active" : ""}" data-tab="dingtalk">钉钉应用配置</div>
         <div class="tab ${this.communicationState.tab === "push" ? "active" : ""}" data-tab="push">消息推送配置</div>
       </div>
@@ -373,7 +389,6 @@ window.CRMAdminPage = {
   renderCommunicationTable() {
     const tab = this.communicationState.tab;
     if (tab === "mail") return this.renderMailServiceConfig();
-    if (tab === "whatsapp") return this.renderWhatsappServiceConfig();
     if (tab === "dingtalk") return this.renderDingTalkServiceConfig();
     if (tab === "push") return this.renderPushServiceConfig();
   },
@@ -487,103 +502,6 @@ window.CRMAdminPage = {
       button.disabled = false;
       button.textContent = "同步";
       CRMUI.toast("邮件同步完成");
-    }, 700);
-  },
-  renderWhatsappServiceConfig() {
-    const config = CRM_MOCK.whatsappServiceConfig;
-    CRMUI.$("#communicationTable").innerHTML = `
-      <form class="mail-config-form" id="whatsappServiceForm">
-        <section class="mail-config-section">
-          <div class="mail-section-title"><span>基础配置</span></div>
-          <div class="form-grid">
-            ${CRMUI.formSelect("服务商（Provider）", "provider", ["Meta Cloud API", "第三方 BSP", "自定义 API"].map(value => ({ value, label: value })), config.provider)}
-            ${CRMUI.formInput("Base URL", "baseUrl", config.baseUrl)}
-            ${CRMUI.formInput("API Key", "apiKey", config.apiKey)}
-            ${CRMUI.formInput("Access Token", "accessToken", config.accessToken, "password")}
-            ${CRMUI.formInput("App ID", "appId", config.appId)}
-            ${CRMUI.formInput("App Secret", "appSecret", config.appSecret, "password")}
-            ${CRMUI.formInput("Business Account ID", "businessAccountId", config.businessAccountId)}
-            ${CRMUI.formInput("Phone Number ID", "phoneNumberId", config.phoneNumberId)}
-            ${CRMUI.formInput("Webhook URL", "webhookUrl", config.webhookUrl)}
-            ${CRMUI.formInput("Webhook Verify Token", "webhookVerifyToken", config.webhookVerifyToken)}
-            ${CRMUI.formInput("Callback 地址", "callbackUrl", config.callbackUrl)}
-          </div>
-        </section>
-        <section class="mail-config-section">
-          <div class="mail-section-title"><span>运行配置</span></div>
-          <div class="form-grid">
-            ${CRMUI.formInput("请求超时时间（Timeout）", "timeout", config.timeout, "number")}
-            ${CRMUI.formInput("重试次数", "retryCount", config.retryCount, "number")}
-            ${CRMUI.formSelect("是否启用", "enabled", [{ value: "true", label: "启用" }, { value: "false", label: "停用" }], String(Boolean(config.enabled)))}
-            ${CRMUI.formInput("默认发送账号", "defaultSender", config.defaultSender)}
-          </div>
-        </section>
-        <div class="mail-config-actions">
-          <button class="btn primary" id="saveWhatsappService" type="submit">保存</button>
-          <button class="btn" id="testWhatsappService" type="button">测试连接</button>
-          <button class="btn" id="syncWhatsappService" type="button">同步</button>
-        </div>
-      </form>
-    `;
-    CRMUI.$("#whatsappServiceForm").addEventListener("submit", e => {
-      e.preventDefault();
-      this.saveWhatsappServiceConfig(new FormData(e.target));
-    });
-    CRMUI.$("#testWhatsappService").addEventListener("click", () => this.testWhatsappServiceConfig());
-    CRMUI.$("#syncWhatsappService").addEventListener("click", () => this.syncWhatsappServiceConfig());
-  },
-  validateWhatsappServiceConfig(form) {
-    const required = ["provider", "baseUrl", "apiKey", "accessToken", "webhookUrl", "webhookVerifyToken", "timeout", "retryCount"];
-    const missing = required.find(name => !String(form.get(name) || "").trim());
-    if (missing) {
-      CRMUI.toast("请完善 WhatsApp 服务配置必填项");
-      return false;
-    }
-    return true;
-  },
-  saveWhatsappServiceConfig(form) {
-    if (!this.validateWhatsappServiceConfig(form)) return;
-    Object.assign(CRM_MOCK.whatsappServiceConfig, {
-      provider: form.get("provider"),
-      baseUrl: form.get("baseUrl"),
-      apiKey: form.get("apiKey"),
-      accessToken: form.get("accessToken"),
-      appId: form.get("appId"),
-      appSecret: form.get("appSecret"),
-      businessAccountId: form.get("businessAccountId"),
-      phoneNumberId: form.get("phoneNumberId"),
-      webhookUrl: form.get("webhookUrl"),
-      webhookVerifyToken: form.get("webhookVerifyToken"),
-      callbackUrl: form.get("callbackUrl"),
-      timeout: Number(form.get("timeout")),
-      retryCount: Number(form.get("retryCount")),
-      enabled: form.get("enabled") === "true",
-      defaultSender: form.get("defaultSender")
-    });
-    CRMUI.toast("WhatsApp 服务配置已保存");
-  },
-  testWhatsappServiceConfig() {
-    const form = new FormData(CRMUI.$("#whatsappServiceForm"));
-    if (!this.validateWhatsappServiceConfig(form)) return;
-    const button = CRMUI.$("#testWhatsappService");
-    button.disabled = true;
-    button.textContent = "测试中";
-    setTimeout(() => {
-      button.disabled = false;
-      button.textContent = "测试连接";
-      CRMUI.toast("WhatsApp 服务连接测试通过");
-    }, 700);
-  },
-  syncWhatsappServiceConfig() {
-    const form = new FormData(CRMUI.$("#whatsappServiceForm"));
-    if (!this.validateWhatsappServiceConfig(form)) return;
-    const button = CRMUI.$("#syncWhatsappService");
-    button.disabled = true;
-    button.textContent = "同步中";
-    setTimeout(() => {
-      button.disabled = false;
-      button.textContent = "同步";
-      CRMUI.toast("WhatsApp 服务配置同步完成");
     }, 700);
   },
   renderDingTalkServiceConfig() {
@@ -813,17 +731,13 @@ window.CRMAdminPage = {
       <div class="toolbar">
         <button class="btn primary" id="newSystemUser">新增用户</button>
       </div>
-      <div class="filters card pad">
-        <input id="systemSearch" placeholder="搜索用户姓名、登录账号、手机号、邮箱">
-        <select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select>
-        <select id="systemSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select>
-        <select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select>
-        <span class="muted">创建时间</span>
-        <input type="date" id="systemCreateTimeStart" value="${this.userState.createTimeStart}">
-        <span class="muted">至</span>
-        <input type="date" id="systemCreateTimeEnd" value="${this.userState.createTimeEnd}">
-        <button class="btn" id="systemQuery">查询</button>
-        <button class="btn" id="systemReset">重置</button>
+      <div class="filters card pad search-filter">
+        <label class="filter-item"><span>关键词</span><input id="systemSearch" placeholder="搜索用户姓名、登录账号、手机号、邮箱"></label>
+        <label class="filter-item"><span>角色</span><select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select></label>
+        <label class="filter-item"><span>站点</span><select id="systemSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></label>
+        <label class="filter-item"><span>状态</span><select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select></label>
+        <label class="filter-item"><span>创建时间</span><span class="range-picker"><input type="date" id="systemCreateTimeStart" value="${this.userState.createTimeStart}"><span class="range-separator">-</span><input type="date" id="systemCreateTimeEnd" value="${this.userState.createTimeEnd}"></span></label>
+        <div class="filter-actions"><button class="btn" id="systemQuery">查询</button><button class="btn" id="systemReset">重置</button></div>
       </div>
       <div id="systemTable"></div>
     `;
@@ -1051,7 +965,10 @@ window.CRMAdminPage = {
       <div class="toolbar">
         <button class="btn primary" id="systemEdit">编辑</button>
       </div>
-      <div class="filters card pad"><input id="systemSearch" placeholder="搜索${title}"></div>
+      <div class="filters card pad search-filter">
+        <label class="filter-item"><span>关键词</span><input id="systemSearch" placeholder="搜索${title}"></label>
+        <div class="filter-actions"><button class="btn" id="systemQuery">查询</button><button class="btn" id="systemReset">重置</button></div>
+      </div>
       <div id="systemTable"></div>
     `;
     const draw = () => {
@@ -1065,6 +982,11 @@ window.CRMAdminPage = {
       ], filtered);
     };
     CRMUI.$("#systemSearch").addEventListener("input", draw);
+    CRMUI.$("#systemQuery").addEventListener("click", draw);
+    CRMUI.$("#systemReset").addEventListener("click", () => {
+      CRMUI.$("#systemSearch").value = "";
+      draw();
+    });
     CRMUI.$("#systemEdit").addEventListener("click", () => CRMUI.toast(`${title}已进入编辑状态`));
     draw();
   },
@@ -1089,15 +1011,14 @@ window.CRMAdminPage = {
           <div class="dict-list-head">
             <strong id="dictActiveTitle"></strong>
           </div>
-          <div class="dict-filter-bar">
-            <input id="dictItemSearch" placeholder="字典名称 / 字典编码">
-            <select id="dictItemStatus">
+          <div class="dict-filter-bar search-filter">
+            <label class="filter-item"><span>关键词</span><input id="dictItemSearch" placeholder="字典名称 / 字典编码"></label>
+            <label class="filter-item"><span>状态</span><select id="dictItemStatus">
               <option value="">全部状态</option>
               <option value="启用">启用</option>
               <option value="停用">停用</option>
-            </select>
-            <button class="btn primary" id="dictItemSearchBtn">搜索</button>
-            <button class="btn" id="dictItemSearchReset">重置</button>
+            </select></label>
+            <div class="filter-actions"><button class="btn primary" id="dictItemSearchBtn">查询</button><button class="btn" id="dictItemSearchReset">重置</button></div>
           </div>
           <div class="dict-toolbar">
             <button class="btn primary" id="dictItemAdd">新增</button>
@@ -1307,19 +1228,17 @@ window.CRMAdminPage = {
     const timeKey = tab === "login" ? "loginTime" : tab === "operate" ? "operateTime" : "changeTime";
     const timeLabel = tab === "login" ? "登录时间" : tab === "operate" ? "操作时间" : "变更时间";
     CRMUI.$("#systemLogBody").innerHTML = `
-      <div class="filters card pad">
-        <input id="logQuery" value="${state.query}" placeholder="搜索关键词">
-        <span class="muted">${timeLabel}</span>
-        <input type="date" id="logTimeStart" value="${state[`${timeKey}Start`] || ""}">
-        <span class="muted">至</span>
-        <input type="date" id="logTimeEnd" value="${state[`${timeKey}End`] || ""}">
-        <button class="btn" id="logReset">重置</button>
+      <div class="filters card pad search-filter">
+        <label class="filter-item"><span>关键词</span><input id="logQuery" value="${state.query}" placeholder="搜索关键词"></label>
+        <label class="filter-item"><span>${timeLabel}</span><span class="range-picker"><input type="date" id="logTimeStart" value="${state[`${timeKey}Start`] || ""}"><span class="range-separator">-</span><input type="date" id="logTimeEnd" value="${state[`${timeKey}End`] || ""}"></span></label>
+        <div class="filter-actions"><button class="btn" id="logQueryBtn">查询</button><button class="btn" id="logReset">重置</button></div>
       </div>
       <div id="systemLogTable"></div>
     `;
     CRMUI.$("#logQuery").addEventListener("input", e => { state.query = e.target.value.toLowerCase(); this.renderSystemLogTable(tab); });
     CRMUI.$("#logTimeStart").addEventListener("change", e => { state[`${timeKey}Start`] = e.target.value; this.renderSystemLogTable(tab); });
     CRMUI.$("#logTimeEnd").addEventListener("change", e => { state[`${timeKey}End`] = e.target.value; this.renderSystemLogTable(tab); });
+    CRMUI.$("#logQueryBtn").addEventListener("click", () => this.renderSystemLogTable(tab));
     // 重置恢复该 Tab 默认时间范围（近 7 天），不改变当前 Tab
     CRMUI.$("#logReset").addEventListener("click", () => {
       const range = this.last7DaysRange();

@@ -153,23 +153,6 @@ window.CRM_MOCK = {
     authMode: "MASTER_PASSWORD（子邮箱授权码）",
     pullInterval: 1800
   },
-  whatsappServiceConfig: {
-    provider: "Meta Cloud API",
-    baseUrl: "https://graph.facebook.com/v20.0",
-    apiKey: "wa_********",
-    accessToken: "token_********",
-    appId: "app_102938",
-    appSecret: "secret_********",
-    businessAccountId: "biz_829103",
-    phoneNumberId: "phone_561829",
-    webhookUrl: "https://crm.example.com/webhook/whatsapp",
-    webhookVerifyToken: "verify_********",
-    callbackUrl: "https://crm.example.com/callback/whatsapp",
-    timeout: 30,
-    retryCount: 3,
-    enabled: true,
-    defaultSender: "+1 650-123-4567"
-  },
   personalEmailAccounts: [
     { id: "pe01", userId: "u01", email: "demo@example.com", isDefault: true, status: "已验证", boundAt: "2026-06-30 10:12" },
     { id: "pe02", userId: "u01", email: "demo.work@example.com", isDefault: false, status: "已验证", boundAt: "2026-07-01 09:20" }
