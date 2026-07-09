@@ -4,22 +4,27 @@ window.CRMCommunicationPage = {
   },
   renderEmail(root) {
     this.mailRoot = root;
-    this.mailState = { folder: "inbox", selected: CRM_MOCK.emails[0].id, query: "", mailTimeStart: "", mailTimeEnd: "", batchSelected: new Set() };
+    this.mailState = { folder: "inbox", selected: CRM_MOCK.emails[0].id, mailbox: "", query: "", mailTimeStart: "", mailTimeEnd: "", batchSelected: new Set() };
+    const mailboxOptions = (CRM_MOCK.mailboxes || []).map(mailbox => `<option value="${mailbox}">${mailbox}（${CRMUI.siteName(this.mailboxSiteId(mailbox))}）</option>`).join("");
     root.innerHTML = `
-      <div class="toolbar">
-        <button class="btn primary" id="composeMail">写邮件</button>
-        <button class="btn" id="batchReadMail">批量标记已读</button>
-        <button class="btn" id="batchAi">批量 AI 提炼</button>
-        <button class="btn" id="batchDeleteMail" hidden>批量删除</button>
-      </div>
-      <div class="filters search-filter">
-        <label class="filter-item"><span>邮箱</span><select id="mailbox">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select></label>
-        <label class="filter-item"><span>关键词</span><input id="mailSearch" placeholder="搜索主题、发件人、正文"></label>
-        <label class="filter-item"><span>邮件时间</span><span class="range-picker"><input type="date" id="mailTimeStart" value="${this.mailState.mailTimeStart}"><span class="range-separator">-</span><input type="date" id="mailTimeEnd" value="${this.mailState.mailTimeEnd}"></span></label>
-        <div class="filter-actions"><button class="btn" id="mailQuery">查询</button><button class="btn" id="mailReset">重置</button></div>
-      </div>
       <div class="tabs" id="mailTabs">
         ${[["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]].map(t => `<div class="tab ${t[0] === "inbox" ? "active" : ""}" data-folder="${t[0]}">${t[1]} <span class="badge gray">${this.folderCount(t[0])}</span></div>`).join("")}
+      </div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn primary" id="composeMail">写邮件</button>
+          <button class="btn" id="batchReadMail">批量标记已读</button>
+          <button class="btn" id="batchAi">批量 AI 提炼</button>
+          <button class="btn" id="batchDeleteMail" hidden>批量删除</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters search-filter">
+            <label class="filter-item"><span>邮箱</span><select id="mailbox"><option value="">全部邮箱</option>${mailboxOptions}</select></label>
+            <label class="filter-item"><span>关键词</span><input id="mailSearch" placeholder="搜索主题、发件人、正文"></label>
+            <label class="filter-item"><span>邮件时间</span><span class="range-picker"><input type="date" id="mailTimeStart" value="${this.mailState.mailTimeStart}"><span class="range-separator">-</span><input type="date" id="mailTimeEnd" value="${this.mailState.mailTimeEnd}"></span></label>
+            <div class="filter-actions"><button class="btn" id="mailQuery">查询</button><button class="btn" id="mailReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div class="split">
         <div class="card" id="mailList"></div>
@@ -37,14 +42,20 @@ window.CRMCommunicationPage = {
       this.mailState.query = e.target.value.toLowerCase();
       this.renderMailList();
     });
+    CRMUI.$("#mailbox").addEventListener("change", e => {
+      this.mailState.mailbox = e.target.value;
+      this.renderMailList();
+    });
     CRMUI.$("#mailTimeStart").addEventListener("change", e => { this.mailState.mailTimeStart = e.target.value; this.renderMailList(); });
     CRMUI.$("#mailTimeEnd").addEventListener("change", e => { this.mailState.mailTimeEnd = e.target.value; this.renderMailList(); });
     CRMUI.$("#mailQuery").addEventListener("click", () => this.renderMailList());
     CRMUI.$("#mailReset").addEventListener("click", () => {
       this.mailState.query = "";
+      this.mailState.mailbox = "";
       this.mailState.mailTimeStart = "";
       this.mailState.mailTimeEnd = "";
       CRMUI.$("#mailSearch").value = "";
+      CRMUI.$("#mailbox").value = "";
       CRMUI.$("#mailTimeStart").value = "";
       CRMUI.$("#mailTimeEnd").value = "";
       this.renderMailList();
@@ -61,16 +72,32 @@ window.CRMCommunicationPage = {
   getFilteredMails() {
     const start = this.mailState.mailTimeStart || "";
     const end = this.mailState.mailTimeEnd || "";
+    const mailbox = this.mailState.mailbox || "";
     if (start && end && start > end) return [];
     return CRM_MOCK.emails.filter(mail => {
       const byFolder = mail.folder === this.mailState.folder;
+      const byMailbox = !mailbox || mail.mailbox === mailbox;
       const text = `${mail.from} ${mail.subject} ${mail.body}`.toLowerCase();
       // 邮件时间：按文件夹语义均取 mail.time（收件/发送/最后保存/原邮件时间），按日期粒度比较
       const mailDate = String(mail.time || "").slice(0, 10);
       const byStart = !start || mailDate >= start;
       const byEnd = !end || mailDate <= end;
-      return byFolder && byStart && byEnd && text.includes(this.mailState.query);
+      return byFolder && byMailbox && byStart && byEnd && text.includes(this.mailState.query);
     });
+  },
+  mailboxSiteId(mailbox) {
+    const siteBound = (CRM_MOCK.sites || []).find(site => site.boundEmail === mailbox);
+    const currentPersonal = (CRM_MOCK.personalEmailAccounts || []).find(account => account.userId === CRM_MOCK.currentUser.id && account.email === mailbox);
+    const systemAccount = (CRM_MOCK.emailAccounts || []).find(account => account.email === mailbox);
+    return siteBound?.id || currentPersonal?.siteId || systemAccount?.siteId || "";
+  },
+  mailboxOwnerId(mailbox) {
+    const siteBound = (CRM_MOCK.sites || []).find(site => site.boundEmail === mailbox);
+    const personal = (CRM_MOCK.personalEmailAccounts || []).find(account => account.email === mailbox);
+    return siteBound?.boundEmailOwnerId || personal?.userId || CRM_MOCK.currentUser.id;
+  },
+  mailSourceSiteId(mail) {
+    return this.mailboxSiteId(mail.mailbox) || mail.siteId || "";
   },
   renderMailList() {
     const mails = this.getFilteredMails();
@@ -114,11 +141,12 @@ window.CRMCommunicationPage = {
     CRMUI.$("#mailBody").innerHTML = `
       <div class="detail-title">${mail.subject}</div>
       <p class="muted">${mail.from} → ${mail.mailbox}</p>
-      <p class="muted">${mail.time} · 来源站点：${mail.siteId ? CRMUI.siteName(mail.siteId) : `<span class="badge red">未识别</span>`}</p>
+      <p class="muted">${mail.time} · 来源站点：${this.mailSourceSiteId(mail) ? CRMUI.siteName(this.mailSourceSiteId(mail)) : `<span class="badge red">未识别</span>`}</p>
       <div style="line-height:1.8;margin:18px 0">${mail.body}</div>
       <div>${mail.attachments.map(a => `<span class="badge gray">${a}</span>`).join(" ") || `<span class="muted">无附件</span>`}</div>
       <div class="toolbar" style="margin-top:18px">
         <button class="btn primary" id="generateLead">${mail.leadId ? "查看线索" : "生成线索"}</button>
+        ${["运营专员", "协同人"].includes(CRM_MOCK.currentUser.role) ? `<button class="btn" id="transferMailToSales">转派给业务员</button>` : ""}
         <button class="btn" id="replyMail">回复</button>
         <button class="btn" id="forwardMail">转发</button>
         <button class="btn danger" id="deleteMailDetail">删除</button>
@@ -142,9 +170,33 @@ window.CRMCommunicationPage = {
       if (mail.leadId) CRMRouter.goto("leads", { id: mail.leadId });
       else this.openGenerateLeadModal(mail);
     });
+    CRMUI.$("#transferMailToSales")?.addEventListener("click", () => this.openMailTransferModal(mail));
     CRMUI.$("#replyMail").addEventListener("click", () => CRMUI.toast("已打开回复编辑状态"));
     CRMUI.$("#forwardMail").addEventListener("click", () => CRMUI.toast("已打开转发编辑状态"));
     CRMUI.$("#deleteMailDetail").addEventListener("click", () => this.openDeleteMailModal(mail.id));
+  },
+  openMailTransferModal(mail) {
+    const sales = CRM_MOCK.users.filter(user => user.role === "业务员" && user.status === "启用");
+    CRMUI.modal("转派给业务员", `
+      <div class="form-grid">
+        <div class="form-field"><label>邮件主题</label><input value="${mail.subject}" disabled></div>
+        <div class="form-field"><label>目标业务员</label><select name="ownerId">${sales.map(user => `<option value="${user.id}">${user.name}</option>`).join("")}</select></div>
+        <div class="form-field full"><label>转派备注</label><textarea name="note"></textarea></div>
+      </div>`, form => {
+      const ownerId = form.get("ownerId");
+      if (!ownerId) return CRMUI.toast("请选择目标业务员");
+      if (mail.leadId) {
+        const lead = CRM_MOCK.leads.find(item => item.id === mail.leadId);
+        if (lead) lead.ownerId = ownerId;
+        CRMUI.toast("线索负责人已变更");
+      } else {
+        mail.transferredTo = ownerId;
+        mail.transferSource = "转派";
+        CRMUI.toast("邮件已转派至业务员收件箱");
+      }
+      CRMUI.closeModal();
+      this.renderMailDetail();
+    });
   },
   openComposeMailModal(mail = {}) {
     CRMUI.modal("写邮件", `
@@ -317,9 +369,9 @@ window.CRMCommunicationPage = {
     }));
   },
   openGenerateLeadModal(mail) {
-    // 业务规则 BR-024/BR-026：邮件生成线索天然归属当前绑定业务员，默认状态"待跟进"，不进入公海池
     const me = CRM_MOCK.currentUser;
-    const defaultSiteId = (me.siteIds && me.siteIds[0]) || CRM_MOCK.sites[0]?.id || "";
+    const defaultSiteId = this.mailSourceSiteId(mail);
+    if (!defaultSiteId) return CRMUI.toast("请选择邮箱关联站点");
     CRMUI.modal("确认生成线索", `
       <div class="form-grid">
         ${CRMUI.formInput("企业名称", "company", mail.senderName.includes("Unknown") ? "" : mail.senderName)}
@@ -341,8 +393,9 @@ window.CRMCommunicationPage = {
         phone: form.get("phone"),
         whatsapp: form.get("whatsapp"),
         siteId: form.get("siteId"),
+        ownerSiteId: form.get("siteId"),
         channel: form.get("channel") || "邮件",
-        ownerId: me.id,
+        ownerId: this.mailboxOwnerId(mail.mailbox) || me.id,
         status: "待跟进",
         stage: "待首响",
         products: String(form.get("products") || "待识别").split(/[、,，]/).map(v => v.trim()).filter(Boolean),
@@ -359,7 +412,7 @@ window.CRMCommunicationPage = {
       mail.leadId = lead.id;
       mail.siteId = form.get("siteId");
       CRMUI.closeModal();
-      CRMUI.toast("线索已生成并归属当前业务员");
+      CRMUI.toast("线索已生成");
       this.renderMailDetail();
     });
   },
@@ -444,6 +497,10 @@ window.CRMCommunicationPage = {
     return pdf;
   },
   renderWhatsApp(root) {
+    if (CRM_MOCK.currentUser.role !== "业务员") {
+      root.innerHTML = `<div class="card pad muted">当前角色不支持绑定或查看 WhatsApp 会话。</div>`;
+      return;
+    }
     this.chatState = { selected: CRM_MOCK.whatsappConversations[0].id, query: "", lastMessageTimeStart: "", lastMessageTimeEnd: "" };
     const account = this.personalWhatsappAccount();
     if (!account) {
@@ -458,10 +515,17 @@ window.CRMCommunicationPage = {
       return;
     }
     root.innerHTML = `
-      <div class="filters whatsapp-account-bar search-filter">
-        <label class="filter-item"><span>关键词</span><input id="chatSearch" placeholder="搜索联系人、企业、消息"></label>
-        <label class="filter-item"><span>消息时间</span><span class="range-picker"><input type="date" id="chatTimeStart" value="${this.chatState.lastMessageTimeStart}"><span class="range-separator">-</span><input type="date" id="chatTimeEnd" value="${this.chatState.lastMessageTimeEnd}"></span></label>
-        <div class="filter-actions"><button class="btn" id="chatQuery">查询</button><button class="btn" id="chatReset">重置</button><button class="btn" id="refreshChat">刷新</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn" id="refreshChat">刷新</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters whatsapp-account-bar search-filter">
+            <label class="filter-item"><span>关键词</span><input id="chatSearch" placeholder="搜索联系人、企业、消息"></label>
+            <label class="filter-item"><span>消息时间</span><span class="range-picker"><input type="date" id="chatTimeStart" value="${this.chatState.lastMessageTimeStart}"><span class="range-separator">-</span><input type="date" id="chatTimeEnd" value="${this.chatState.lastMessageTimeEnd}"></span></label>
+            <div class="filter-actions"><button class="btn" id="chatQuery">查询</button><button class="btn" id="chatReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div class="split">
         <div class="card whatsapp-contact-panel" id="chatList"></div>
@@ -603,12 +667,14 @@ window.CRMCommunicationPage = {
     if (customerBtn) customerBtn.addEventListener("click", () => CRMRouter.goto("customers", { id: c.customerId }));
   },
   openWhatsappGenerateLeadModal(conversation) {
+    const authorizedSiteId = CRM_MOCK.currentUser?.siteIds?.[0] || "";
+    if (!authorizedSiteId) return CRMUI.toast("当前业务员未配置授权站点，无法生成线索");
     CRMUI.modal("确认生成线索", `
       <div class="form-grid">
         ${CRMUI.formInput("询盘联系人姓名", "contact", conversation.name)}
         ${CRMUI.formInput("企业名称（所属企业）", "company", conversation.company || "")}
         <div class="form-field"><label>手机号码</label><input name="phone" value="${conversation.phone}" readonly></div>
-        <div class="form-field"><label>来源站点</label><input value="${CRMUI.siteName(conversation.siteId)}" readonly><input name="siteId" value="${conversation.siteId}" hidden></div>
+        <div class="form-field"><label>来源站点</label><input value="${CRMUI.siteName(authorizedSiteId)}" readonly><input name="siteId" value="${authorizedSiteId}" hidden></div>
         <div class="form-field"><label>来源渠道</label><input name="channel" value="WhatsApp" readonly></div>
         ${CRMUI.formInput("意向产品", "products", "")}
       </div>`, form => {
@@ -622,6 +688,7 @@ window.CRMCommunicationPage = {
         phone: form.get("phone"),
         whatsapp: form.get("phone"),
         siteId: form.get("siteId"),
+        ownerSiteId: form.get("siteId"),
         channel: "WhatsApp",
         ownerId: CRM_MOCK.currentUser.id,
         status: "待跟进",

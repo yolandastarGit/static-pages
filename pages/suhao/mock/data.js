@@ -21,8 +21,8 @@ window.CRM_MOCK = {
   ],
   dingTalkAccounts: ["admin.dingtalk", "chenhao.sales", "mia.sales", "alex.region"],
   sites: [
-    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-12 09:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-20 14:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-12 09:00", boundEmailOwnerId: "u01", boundEmail: "demo@example.com", boundEmailAt: "2026-07-01 09:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-20 14:30", boundEmailOwnerId: "u01", boundEmail: "demo.work@example.com", boundEmailAt: "2026-07-01 09:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
     { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", createdAt: "2026-06-25 16:10", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ],
   dictionaries: [
@@ -126,19 +126,14 @@ window.CRM_MOCK = {
   purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
   notificationChannels: ["站内信", "钉钉"],
   notificationTargetOptions: ["当前负责人", "创建人", "分配人", "站点运营专员", "指定用户"],
-  notificationScenes: ["新线索分配", "新客户分配", "线索状态变更", "跟进阶段变更", "待回复超时", "变更负责人", "合同创建", "合同状态变更", "邮件未读数量提醒", "邮件未读超时提醒", "公海回收"],
+  notificationScenes: ["新线索生成", "7 天邮件客户未回复提醒", "负责人变更", "邮件未读/未回数量提醒", "邮件未读/未回超时提醒", "跟进到期提醒"],
   notificationRules: [
-    { id: "nr01", scene: "新线索分配", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "新线索已分配", body: "您有一条新的线索需要跟进，请及时查看线索详情。", status: "开启" },
-    { id: "nr02", scene: "新客户分配", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "新客户已分配", body: "系统已为您分配新客户，请完善客户信息并建立跟进计划。", status: "开启" },
-    { id: "nr03", scene: "跟进阶段变更", channels: ["站内信", "钉钉"], targets: ["创建人"], userIds: [], title: "跟进阶段已变更", body: "跟进阶段发生变化，请关注最新处理动作。", status: "开启" },
-    { id: "nr04", scene: "待回复超时", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "待回复超时提醒", body: "关联消息超过阈值未回复，请及时处理。", status: "关闭" },
-    { id: "nr05", scene: "线索状态变更", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "线索状态变更", body: "线索状态已更新，请查看最新状态。", status: "开启" },
-    { id: "nr06", scene: "变更负责人", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "负责人已变更", body: "负责人发生变化，请关注业务交接信息。", status: "开启" },
-    { id: "nr07", scene: "合同创建", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "合同已创建", body: "新的合同记录已创建，请关注合同详情。", status: "开启" },
-    { id: "nr08", scene: "公海回收", channels: ["站内信"], targets: ["站点运营专员"], userIds: [], title: "线索已回收至公海", body: "有线索进入公海池，请及时分配。", status: "开启" },
-    { id: "nr09", scene: "合同状态变更", channels: ["站内信"], targets: ["当前负责人", "创建人"], userIds: [], title: "合同状态变更", body: "合同状态已更新，请查看合同详情。", status: "开启" },
-    { id: "nr10", scene: "邮件未读数量提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "邮件未读数量提醒", body: "当前存在较多未读邮件，请及时处理。", status: "开启" },
-    { id: "nr11", scene: "邮件未读超时提醒", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "邮件未读超时提醒", body: "存在长时间未读邮件，请及时查看并跟进。", status: "开启" }
+    { id: "nr01", scene: "新线索生成", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "新线索已生成", body: "AI 已识别有效询盘并生成线索，请及时查看并跟进。", status: "开启" },
+    { id: "nr02", scene: "7 天邮件客户未回复提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "客户邮件待回复", body: "客户来信已超过 7 天未回复，请及时处理。", status: "开启" },
+    { id: "nr03", scene: "负责人变更", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "负责人已变更", body: "业务负责人发生变化，请关注交接信息。", status: "开启" },
+    { id: "nr04", scene: "邮件未读/未回数量提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "邮件未读/未回数量提醒", body: "当前存在未读或未回复邮件，请及时处理。", status: "开启" },
+    { id: "nr05", scene: "邮件未读/未回超时提醒", channels: ["站内信", "钉钉"], targets: ["当前负责人"], userIds: [], title: "邮件未读/未回超时提醒", body: "存在长时间未读或未回复邮件，请及时查看。", status: "开启" },
+    { id: "nr06", scene: "跟进到期提醒", channels: ["站内信"], targets: ["当前负责人"], userIds: [], title: "跟进已到期", body: "线索下次跟进时间已到期，请及时跟进。", status: "开启" }
   ],
   mailboxes: ["sales@industrial.example.com", "info@toys.example.com"],
   mailServiceConfig: {
@@ -154,8 +149,8 @@ window.CRM_MOCK = {
     pullInterval: 1800
   },
   personalEmailAccounts: [
-    { id: "pe01", userId: "u01", email: "demo@example.com", isDefault: true, status: "已验证", boundAt: "2026-06-30 10:12" },
-    { id: "pe02", userId: "u01", email: "demo.work@example.com", isDefault: false, status: "已验证", boundAt: "2026-07-01 09:20" }
+    { id: "pe01", userId: "u01", email: "demo@example.com", status: "已验证", boundAt: "2026-06-30 10:12" },
+    { id: "pe02", userId: "u01", email: "demo.work@example.com", status: "已验证", boundAt: "2026-07-01 09:20" }
   ],
   dingTalkServiceConfig: {
     appKey: "ding_********",
@@ -169,6 +164,24 @@ window.CRM_MOCK = {
     dingTalkRobotWebhook: "https://oapi.dingtalk.com/robot/send?access_token=********",
     inboxRetentionDays: 365
   },
+  whatsappServiceConfig: {
+    apiEndpoint: "https://graph.facebook.com/v20.0",
+    accessToken: "******",
+    webhookUrl: "https://crm.example.com/webhook/whatsapp",
+    enabled: true
+  },
+  siteOperationData: [
+    { id: "sod01", siteId: "s01", periodType: "月", period: "2026-07", adSpend: 12800, websiteVisits: 45210, inquiryCount: 186, highIntentInquiryCount: 64, inquiryConversionRate: 4.1, costPerInquiry: 68.82, costPerHighIntentInquiry: 200, avgVisitDuration: 168, bounceRate: 38.5, gscImpressions: 186000, gscClicks: 7210, gscKeywords: 1260, gscAvgPosition: 18.4 },
+    { id: "sod02", siteId: "s02", periodType: "月", period: "2026-07", adSpend: 9600, websiteVisits: 38620, inquiryCount: 154, highIntentInquiryCount: 52, inquiryConversionRate: 4.0, costPerInquiry: 62.34, costPerHighIntentInquiry: 184.62, avgVisitDuration: 151, bounceRate: 41.2, gscImpressions: 143000, gscClicks: 5860, gscKeywords: 980, gscAvgPosition: 21.6 },
+    { id: "sod03", siteId: "s04", periodType: "月", period: "2026-07", adSpend: 15200, websiteVisits: 42100, inquiryCount: 132, highIntentInquiryCount: 48, inquiryConversionRate: 3.1, costPerInquiry: 115.15, costPerHighIntentInquiry: 316.67, avgVisitDuration: 176, bounceRate: 35.9, gscImpressions: 165200, gscClicks: 6420, gscKeywords: 1108, gscAvgPosition: 17.9 },
+    { id: "sod04", siteId: "s05", periodType: "月", period: "2026-07", adSpend: 8800, websiteVisits: 31900, inquiryCount: 118, highIntentInquiryCount: 39, inquiryConversionRate: 3.7, costPerInquiry: 74.58, costPerHighIntentInquiry: 225.64, avgVisitDuration: 142, bounceRate: 44.1, gscImpressions: 120500, gscClicks: 4920, gscKeywords: 826, gscAvgPosition: 23.8 },
+    { id: "sod05", siteId: "s06", periodType: "月", period: "2026-07", adSpend: 7300, websiteVisits: 27480, inquiryCount: 96, highIntentInquiryCount: 31, inquiryConversionRate: 3.5, costPerInquiry: 76.04, costPerHighIntentInquiry: 235.48, avgVisitDuration: 133, bounceRate: 46.6, gscImpressions: 101200, gscClicks: 3880, gscKeywords: 704, gscAvgPosition: 25.3 },
+    { id: "sod06", siteId: "s07", periodType: "月", period: "2026-07", adSpend: 6900, websiteVisits: 23650, inquiryCount: 82, highIntentInquiryCount: 28, inquiryConversionRate: 3.5, costPerInquiry: 84.15, costPerHighIntentInquiry: 246.43, avgVisitDuration: 129, bounceRate: 43.8, gscImpressions: 94300, gscClicks: 3610, gscKeywords: 690, gscAvgPosition: 24.7 },
+    { id: "sod07", siteId: "s08", periodType: "月", period: "2026-07", adSpend: 10400, websiteVisits: 29810, inquiryCount: 105, highIntentInquiryCount: 35, inquiryConversionRate: 3.5, costPerInquiry: 99.05, costPerHighIntentInquiry: 297.14, avgVisitDuration: 139, bounceRate: 42.5, gscImpressions: 118900, gscClicks: 4388, gscKeywords: 772, gscAvgPosition: 22.1 },
+    { id: "sod08", siteId: "s09", periodType: "月", period: "2026-07", adSpend: 8100, websiteVisits: 25420, inquiryCount: 88, highIntentInquiryCount: 27, inquiryConversionRate: 3.5, costPerInquiry: 92.05, costPerHighIntentInquiry: 300, avgVisitDuration: 121, bounceRate: 47.2, gscImpressions: 109600, gscClicks: 4026, gscKeywords: 721, gscAvgPosition: 26.8 },
+    { id: "sod09", siteId: "s01", periodType: "周", period: "2026-W27", adSpend: 3200, websiteVisits: 11240, inquiryCount: 45, highIntentInquiryCount: 16, inquiryConversionRate: 4.0, costPerInquiry: 71.11, costPerHighIntentInquiry: 200, avgVisitDuration: 166, bounceRate: 38.1, gscImpressions: 46200, gscClicks: 1780, gscKeywords: 430, gscAvgPosition: 18.7 },
+    { id: "sod10", siteId: "s02", periodType: "周", period: "2026-W27", adSpend: 2400, websiteVisits: 9620, inquiryCount: 38, highIntentInquiryCount: 12, inquiryConversionRate: 4.0, costPerInquiry: 63.16, costPerHighIntentInquiry: 200, avgVisitDuration: 149, bounceRate: 40.4, gscImpressions: 34800, gscClicks: 1390, gscKeywords: 350, gscAvgPosition: 21.2 }
+  ],
   paramSettings: [
     { id: "ps01", name: "登录超时时长", code: "session_timeout", value: "1440 分钟（24 小时）", desc: "用户无操作自动退出登录的时长", effect: "下次登录生效" },
     { id: "ps02", name: "密码最小长度", code: "password_min_length", value: "8 位", desc: "密码长度最小值", effect: "立即生效" },
@@ -194,7 +207,7 @@ window.CRM_MOCK = {
   ],
   personalWhatsappAccount: {
     id: "pwa01",
-    userId: "u01",
+    userId: "u02",
     account: "+1 650-123-4567",
     status: "已绑定",
     lastSyncAt: "2026-07-03 09:30",
@@ -204,6 +217,7 @@ window.CRM_MOCK = {
     {
       id: "mail01",
       email: "sales@industrial.example.com",
+      siteId: "s01",
       displayName: "工业事业部销售邮箱",
       provider: "Google Workspace",
       imapHost: "imap.gmail.com",
@@ -225,6 +239,7 @@ window.CRM_MOCK = {
     {
       id: "mail02",
       email: "info@toys.example.com",
+      siteId: "s02",
       displayName: "玩具站询盘邮箱",
       provider: "Microsoft 365",
       imapHost: "outlook.office365.com",
@@ -561,7 +576,7 @@ window.CRM_MOCK = {
       lastFollowAt: "2026-07-02 09:20",
       nextFollowAt: "2026-07-03 14:00",
       customerId: "c03",
-      aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转高意向客户并录入报价跟进。"
+      aiSummary: "客户采购目标清晰，具备活动时间节点，可推进转客户并录入报价跟进。"
     },
     {
       id: "l03",
@@ -779,3 +794,195 @@ window.CRM_MOCK = {
     customersByCountry: { "United States": 32, Germany: 21, UAE: 18, Mexico: 15, Canada: 11 }
   }
 };
+
+(() => {
+  const mock = window.CRM_MOCK;
+  const appendById = (key, rows) => {
+    const existing = new Set((mock[key] || []).map(item => item.id));
+    rows.forEach(row => {
+      if (!existing.has(row.id)) mock[key].push(row);
+    });
+  };
+  const providerConfig = (name, model, enabled = true) => ({
+    api: {
+      apiKey: enabled ? "sk-********" : "",
+      baseUrl: "https://api.example.com/v1",
+      model,
+      secret: "",
+      timeout: 30,
+      temperature: 0.2,
+      maxTokens: 4096
+    },
+    features: {
+      mailAnalysis: enabled ? "开启" : "关闭",
+      whatsappAnalysis: enabled ? "开启" : "关闭",
+      leadSummary: "开启"
+    }
+  });
+
+  appendById("sites", [
+    { id: "s04", name: "汽车零部件独立站", code: "AUTO_PARTS", domain: "auto-parts.example.com", status: "启用", ownerId: "u02", createdAt: "2026-05-28 10:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s05", name: "家居用品 B2B 站", code: "HOME_B2B", domain: "home.example.com", status: "启用", ownerId: "u03", createdAt: "2026-06-02 09:20", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s06", name: "电子元件询盘站", code: "ELECTRONICS", domain: "electronics.example.com", status: "启用", ownerId: "u02", createdAt: "2026-06-06 11:15", config: { ai: "开启", publicPool: "关闭", sync: "自动" } },
+    { id: "s07", name: "医疗耗材海外站", code: "MEDICAL", domain: "medical.example.com", status: "启用", ownerId: "u03", createdAt: "2026-06-10 15:40", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s08", name: "户外装备采购站", code: "OUTDOOR", domain: "outdoor.example.com", status: "启用", ownerId: "u04", createdAt: "2026-06-16 10:05", config: { ai: "开启", publicPool: "开启", sync: "手动" } },
+    { id: "s09", name: "包装材料询价站", code: "PACKAGING", domain: "packaging.example.com", status: "启用", ownerId: "u02", createdAt: "2026-06-21 14:10", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s10", name: "新能源配件展示站", code: "ENERGY", domain: "energy.example.com", status: "停用", ownerId: "u04", createdAt: "2026-06-30 17:25", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
+  ]);
+
+  appendById("emailAccounts", [
+    { id: "mail03", email: "quotes@auto-parts.example.com", siteId: "s04", displayName: "汽车零部件询价邮箱", provider: "Google Workspace", imapHost: "imap.gmail.com", imapPort: "993", imapSsl: "开启", imapUser: "quotes@auto-parts.example.com", imapPassword: "******", smtpHost: "smtp.gmail.com", smtpPort: "465", smtpSsl: "开启", smtpUser: "quotes@auto-parts.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "启用", createdAt: "2026-06-24 10:20" },
+    { id: "mail04", email: "inquiry@home.example.com", siteId: "s05", displayName: "家居用品询盘邮箱", provider: "Microsoft 365", imapHost: "outlook.office365.com", imapPort: "993", imapSsl: "开启", imapUser: "inquiry@home.example.com", imapPassword: "******", smtpHost: "smtp.office365.com", smtpPort: "587", smtpSsl: "开启", smtpUser: "inquiry@home.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "启用", createdAt: "2026-06-25 14:00" },
+    { id: "mail05", email: "sales@electronics.example.com", siteId: "s06", displayName: "电子元件销售邮箱", provider: "自定义邮箱", imapHost: "imap.electronics.example.com", imapPort: "993", imapSsl: "开启", imapUser: "sales@electronics.example.com", imapPassword: "******", smtpHost: "smtp.electronics.example.com", smtpPort: "465", smtpSsl: "开启", smtpUser: "sales@electronics.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "启用", createdAt: "2026-06-26 09:45" },
+    { id: "mail06", email: "orders@medical.example.com", siteId: "s07", displayName: "医疗耗材订单邮箱", provider: "Google Workspace", imapHost: "imap.gmail.com", imapPort: "993", imapSsl: "开启", imapUser: "orders@medical.example.com", imapPassword: "******", smtpHost: "smtp.gmail.com", smtpPort: "465", smtpSsl: "开启", smtpUser: "orders@medical.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "启用", createdAt: "2026-06-27 16:15" },
+    { id: "mail07", email: "contact@outdoor.example.com", siteId: "s08", displayName: "户外装备联系邮箱", provider: "Microsoft 365", imapHost: "outlook.office365.com", imapPort: "993", imapSsl: "开启", imapUser: "contact@outdoor.example.com", imapPassword: "******", smtpHost: "smtp.office365.com", smtpPort: "587", smtpSsl: "开启", smtpUser: "contact@outdoor.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "启用", createdAt: "2026-06-28 11:30" },
+    { id: "mail08", email: "rfq@packaging.example.com", siteId: "s09", displayName: "包装材料 RFQ 邮箱", provider: "自定义邮箱", imapHost: "imap.packaging.example.com", imapPort: "993", imapSsl: "开启", imapUser: "rfq@packaging.example.com", imapPassword: "******", smtpHost: "smtp.packaging.example.com", smtpPort: "465", smtpSsl: "开启", smtpUser: "rfq@packaging.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "启用", createdAt: "2026-06-29 10:55" },
+    { id: "mail09", email: "partner@brand.example.com", siteId: "s03", displayName: "品牌站合作邮箱", provider: "自定义邮箱", imapHost: "imap.brand.example.com", imapPort: "993", imapSsl: "开启", imapUser: "partner@brand.example.com", imapPassword: "******", smtpHost: "smtp.brand.example.com", smtpPort: "465", smtpSsl: "开启", smtpUser: "partner@brand.example.com", smtpPassword: "******", imapStatus: "待验证", smtpStatus: "待验证", isDefault: false, status: "停用", createdAt: "2026-07-01 09:10" },
+    { id: "mail10", email: "sales@energy.example.com", siteId: "s10", displayName: "新能源配件销售邮箱", provider: "Google Workspace", imapHost: "imap.gmail.com", imapPort: "993", imapSsl: "开启", imapUser: "sales@energy.example.com", imapPassword: "******", smtpHost: "smtp.gmail.com", smtpPort: "465", smtpSsl: "开启", smtpUser: "sales@energy.example.com", smtpPassword: "******", imapStatus: "已验证", smtpStatus: "已验证", isDefault: false, status: "停用", createdAt: "2026-07-02 13:25" }
+  ]);
+  mock.mailboxes = mock.emailAccounts.filter(account => account.status === "启用").map(account => account.email);
+
+  appendById("emails", [
+    { id: "m07", mailbox: "quotes@auto-parts.example.com", folder: "inbox", from: "Marco Silva <procurement@andesfleet.cl>", senderName: "Marco Silva", subject: "RFQ for brake caliper brackets", summary: "Please quote 18,000 brake caliper brackets with PPAP documents...", body: "We are sourcing brake caliper brackets for fleet maintenance. Please quote 18,000 pcs with PPAP documents and delivery schedule.", time: "2026-07-03 09:15", read: false, siteId: "s04", leadId: "l05", attachments: ["rfq-caliper.pdf"], aiTags: ["批量采购", "汽车配件"], aiSummary: "客户明确数量和 PPAP 要求，可优先分配汽车零部件业务员跟进。" },
+    { id: "m08", mailbox: "inquiry@home.example.com", folder: "inbox", from: "Emma Brown <buyer@casa-global.co.uk>", senderName: "Emma Brown", subject: "Kitchen organizer private label", summary: "We need private label kitchen organizers for Q4 retail shelves...", body: "Please quote kitchen organizers with private label packaging. First batch 12,000 sets, target shipment in September.", time: "2026-07-03 10:05", read: true, siteId: "s05", leadId: "l06", attachments: ["package-reference.jpg"], aiTags: ["私标", "Q4 订单"], aiSummary: "客户有明确上市节点和数量，建议同步包装方案和打样周期。" },
+    { id: "m09", mailbox: "sales@electronics.example.com", folder: "inbox", from: "Daniel Park <daniel@koreatech.kr>", senderName: "Daniel Park", subject: "Connector samples request", summary: "Could you provide USB-C connector samples and datasheet?", body: "Could you provide USB-C connector samples and datasheet? We are qualifying suppliers for a smart device project.", time: "2026-07-03 11:25", read: false, siteId: "s06", leadId: "l07", attachments: ["connector-spec.xlsx"], aiTags: ["样品评估", "电子元件"], aiSummary: "客户处于供应商导入阶段，需快速提供规格书和样品政策。" },
+    { id: "m10", mailbox: "orders@medical.example.com", folder: "inbox", from: "Dr. Priya Nair <sourcing@medline-in.in>", senderName: "Dr. Priya Nair", subject: "Disposable nitrile gloves tender", summary: "Tender for disposable nitrile gloves, monthly 200 cartons...", body: "We are preparing a tender for disposable nitrile gloves. Monthly demand is about 200 cartons. Please provide certificates and payment terms.", time: "2026-07-03 13:40", read: true, siteId: "s07", leadId: "l08", attachments: ["tender-terms.pdf"], aiTags: ["招标", "认证关注"], aiSummary: "客户需要资质和付款条款，建议由医疗耗材负责人跟进投标资料。" },
+    { id: "m11", mailbox: "contact@outdoor.example.com", folder: "inbox", from: "Noah Wilson <noah@trailmart.com.au>", senderName: "Noah Wilson", subject: "Camping cookware quote", summary: "Quote lightweight camping cookware set, 6,000 sets...", body: "We need a quote for lightweight camping cookware set, 6,000 sets, with retail box. Please include lead time.", time: "2026-07-03 15:18", read: false, siteId: "s08", leadId: "l09", attachments: [], aiTags: ["户外装备", "价格咨询"], aiSummary: "客户询价信息完整，可按 SKU 和包装方案推进报价。" },
+    { id: "m12", mailbox: "rfq@packaging.example.com", folder: "inbox", from: "Sofia Rossi <sofia@italiafoods.it>", senderName: "Sofia Rossi", subject: "Custom kraft paper bags", summary: "Looking for kraft paper bags with FSC certificate...", body: "We are looking for custom kraft paper bags with FSC certificate. Please quote 50,000 pcs and 100,000 pcs.", time: "2026-07-04 08:50", read: true, siteId: "s09", leadId: "l10", attachments: ["bag-size.pdf"], aiTags: ["包装材料", "认证关注"], aiSummary: "客户关注环保认证和阶梯报价，建议同步 MOQ、交期和打样费。" },
+    { id: "m13", mailbox: "sales@industrial.example.com", folder: "inbox", from: "Henry Adams <henry@polar-mining.ca>", senderName: "Henry Adams", subject: "Machined stainless valve body", summary: "Need stainless valve body samples before annual order...", body: "We need stainless valve body samples before confirming annual order. Please share machining tolerance and QC process.", time: "2026-07-04 10:32", read: false, siteId: "s01", leadId: "l11", attachments: ["valve-drawing.step"], aiTags: ["样品评估", "工业制造"], aiSummary: "客户询问样品与质检流程，属于工业站高价值技术询盘。" },
+    { id: "m14", mailbox: "info@toys.example.com", folder: "inbox", from: "Marta Lopez <marta@fiesta-shop.mx>", senderName: "Marta Lopez", subject: "Holiday plush assortment", summary: "Need holiday plush assortment with mixed SKUs...", body: "Need holiday plush assortment with mixed SKUs. Please quote 20,000 pcs and provide EN71 certificate.", time: "2026-07-04 11:46", read: false, siteId: "s02", leadId: "l12", attachments: [], aiTags: ["节日订单", "批量采购"], aiSummary: "客户需求明确且数量较大，可进入报价阶段。" },
+    { id: "m15", mailbox: "quotes@auto-parts.example.com", folder: "sent", from: "管理员 <quotes@auto-parts.example.com>", senderName: "管理员", subject: "Re: RFQ for brake caliper brackets", summary: "Thanks for your RFQ, we will prepare tooling and PPAP timeline...", body: "Thanks for your RFQ. We will prepare tooling cost, PPAP timeline and mass production schedule.", time: "2026-07-03 09:48", read: true, siteId: "s04", leadId: "l05", attachments: [], aiTags: ["已回复"], aiSummary: "已完成首轮回复，下一步等待客户确认图纸版本。" },
+    { id: "m16", mailbox: "inquiry@home.example.com", folder: "draft", from: "管理员 <inquiry@home.example.com>", senderName: "管理员", subject: "Draft: Kitchen organizer quotation", summary: "Draft quotation for 12,000 sets with private label packaging...", body: "Draft quotation for 12,000 sets with private label packaging and September shipment.", time: "2026-07-03 16:20", read: true, siteId: "s05", leadId: "l06", attachments: [], aiTags: ["草稿"], aiSummary: "草稿报价待补充包装费用。" },
+    { id: "m17", mailbox: "sales@electronics.example.com", folder: "trash", from: "ads@unknown-tools.net", senderName: "Unknown Ads", subject: "SEO service for suppliers", summary: "We can promote your B2B website globally...", body: "We can promote your B2B website globally with SEO service.", time: "2026-07-02 18:05", read: true, siteId: "s06", leadId: "", attachments: [], aiTags: ["无效营销"], aiSummary: "推广邮件，不建议进入线索。" }
+  ]);
+
+  appendById("whatsappConversations", [
+    { id: "w03", name: "Marco Silva", phone: "+56 9 2211 3488", company: "Andes Fleet Supply", location: "Santiago, Chile", listTime: "09:48", unreadCount: 2, avatarTone: "blue", previewIcon: "↘", siteId: "s04", leadId: "l05", customerId: "", lastMessageTime: "2026-07-03 09:48", aiTags: ["汽车配件", "批量采购"], aiSummary: "客户补充了年框采购计划，建议确认图纸版本。", messages: [{ id: "wm06", from: "customer", text: "Can you support PPAP level 3?", time: "09:42" }, { id: "wm07", from: "me", text: "Yes, please share the drawing revision.", time: "09:48" }] },
+    { id: "w04", name: "Emma Brown", phone: "+44 7700 900321", company: "Casa Global Retail", location: "London, UK", listTime: "10:18", unreadCount: 0, avatarTone: "violet", previewIcon: "✓✓", siteId: "s05", leadId: "l06", customerId: "", lastMessageTime: "2026-07-03 10:18", aiTags: ["私标", "零售"], aiSummary: "客户确认包装方案，等待报价。", messages: [{ id: "wm08", from: "customer", text: "Please include shelf-ready box cost.", time: "10:10" }, { id: "wm09", from: "me", text: "Noted, we will include it in the quote.", time: "10:18" }] },
+    { id: "w05", name: "Daniel Park", phone: "+82 10 8822 1900", company: "KoreaTech Devices", location: "Seoul, Korea", listTime: "11:31", unreadCount: 5, avatarTone: "cyan", previewIcon: "↘", siteId: "s06", leadId: "l07", customerId: "", lastMessageTime: "2026-07-03 11:31", aiTags: ["样品评估", "电子元件"], aiSummary: "客户正在导入供应商，需要样品与规格书。", messages: [{ id: "wm10", from: "customer", text: "Can you send 20 sample pcs first?", time: "11:31" }] },
+    { id: "w06", name: "Priya Nair", phone: "+91 98765 10234", company: "Medline India", location: "Mumbai, India", listTime: "13:55", unreadCount: 1, avatarTone: "sage", previewIcon: "↘", siteId: "s07", leadId: "l08", customerId: "", lastMessageTime: "2026-07-03 13:55", aiTags: ["招标", "认证关注"], aiSummary: "客户需要投标资料和证书扫描件。", messages: [{ id: "wm11", from: "customer", text: "Please share CE and ISO certificates.", time: "13:55" }] },
+    { id: "w07", name: "Noah Wilson", phone: "+61 412 900 778", company: "TrailMart", location: "Sydney, Australia", listTime: "15:22", unreadCount: 0, avatarTone: "amber", previewIcon: "✓✓", siteId: "s08", leadId: "l09", customerId: "", lastMessageTime: "2026-07-03 15:22", aiTags: ["户外装备"], aiSummary: "客户等待 6,000 套户外炊具报价。", messages: [{ id: "wm12", from: "customer", text: "Can you quote with retail box?", time: "15:18" }, { id: "wm13", from: "me", text: "Yes, please confirm color mix.", time: "15:22" }] },
+    { id: "w08", name: "Sofia Rossi", phone: "+39 347 110 2290", company: "Italia Foods", location: "Milan, Italy", listTime: "08:58", unreadCount: 3, avatarTone: "green", previewIcon: "↘", siteId: "s09", leadId: "l10", customerId: "", lastMessageTime: "2026-07-04 08:58", aiTags: ["包装材料"], aiSummary: "客户要求 FSC 证书和阶梯报价。", messages: [{ id: "wm14", from: "customer", text: "FSC certificate is mandatory.", time: "08:58" }] },
+    { id: "w09", name: "Henry Adams", phone: "+1 604 882 1900", company: "Polar Mining", location: "Vancouver, Canada", listTime: "10:36", unreadCount: 4, avatarTone: "blue", previewIcon: "↘", siteId: "s01", leadId: "l11", customerId: "", lastMessageTime: "2026-07-04 10:36", aiTags: ["工业制造", "样品评估"], aiSummary: "客户询问不锈钢阀体样品和质检流程。", messages: [{ id: "wm15", from: "customer", text: "What tolerance can you hold for the valve body?", time: "10:36" }] },
+    { id: "w10", name: "Marta Lopez", phone: "+52 55 4421 0091", company: "Fiesta Shop", location: "Mexico City, Mexico", listTime: "11:52", unreadCount: 0, avatarTone: "violet", previewIcon: "✓✓", siteId: "s02", leadId: "l12", customerId: "", lastMessageTime: "2026-07-04 11:52", aiTags: ["节日订单"], aiSummary: "客户已确认节日 SKU 组合，待报价。", messages: [{ id: "wm16", from: "customer", text: "Please include 6 SKU assortment.", time: "11:46" }, { id: "wm17", from: "me", text: "We will prepare the mixed SKU quote.", time: "11:52" }] }
+  ]);
+
+  appendById("leads", [
+    { id: "l05", no: "LEAD-2026-0914", company: "Andes Fleet Supply", contact: "Marco Silva", email: "procurement@andesfleet.cl", phone: "+56 9 2211 3488", siteId: "s04", channel: "邮件", ownerId: "u02", status: "待跟进", stage: "待首响", products: ["刹车卡钳支架", "汽车冲压件"], purchaseIntent: "明确采购", aiTags: ["批量采购", "汽车配件"], manualTags: ["拉美市场"], createdAt: "2026-07-03 09:15", updatedAt: "2026-07-03 09:48", lastFollowAt: "2026-07-03 09:48", nextFollowAt: "2026-07-05 10:00", customerId: "", aiSummary: "客户要求 PPAP 文件与年度采购计划，适合快速技术评估。" },
+    { id: "l06", no: "LEAD-2026-0915", company: "Casa Global Retail", contact: "Emma Brown", email: "buyer@casa-global.co.uk", phone: "+44 7700 900321", siteId: "s05", channel: "邮件", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["厨房收纳盒", "私标包装"], purchaseIntent: "价格咨询", aiTags: ["私标", "Q4 订单"], manualTags: ["欧洲市场"], createdAt: "2026-07-03 10:05", updatedAt: "2026-07-03 16:20", lastFollowAt: "2026-07-03 16:20", nextFollowAt: "2026-07-05 15:00", customerId: "", aiSummary: "客户需要私标包装并关注上架时间，报价需包含包装方案。" },
+    { id: "l07", no: "LEAD-2026-0916", company: "KoreaTech Devices", contact: "Daniel Park", email: "daniel@koreatech.kr", phone: "+82 10 8822 1900", siteId: "s06", channel: "邮件", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["USB-C 连接器"], purchaseIntent: "样品评估", aiTags: ["样品评估", "电子元件"], manualTags: ["东南亚市场"], createdAt: "2026-07-03 11:25", updatedAt: "2026-07-03 11:31", lastFollowAt: "2026-07-03 11:31", nextFollowAt: "2026-07-04 16:00", customerId: "", aiSummary: "客户正在进行供应商导入，需优先提供样品和规格书。" },
+    { id: "l08", no: "LEAD-2026-0917", company: "Medline India", contact: "Priya Nair", email: "sourcing@medline-in.in", phone: "+91 98765 10234", siteId: "s07", channel: "邮件", ownerId: "u03", status: "待跟进", stage: "需求确认", products: ["丁腈手套", "医疗耗材"], purchaseIntent: "明确采购", aiTags: ["招标", "认证关注"], manualTags: [], createdAt: "2026-07-03 13:40", updatedAt: "2026-07-03 13:55", lastFollowAt: "2026-07-03 13:55", nextFollowAt: "2026-07-04 11:00", customerId: "", aiSummary: "客户准备招标，需要证书和付款条款。" },
+    { id: "l09", no: "LEAD-2026-0918", company: "TrailMart", contact: "Noah Wilson", email: "noah@trailmart.com.au", phone: "+61 412 900 778", siteId: "s08", channel: "WhatsApp", ownerId: "u04", status: "已联系", stage: "需求确认", products: ["户外炊具套装"], purchaseIntent: "价格咨询", aiTags: ["户外装备"], manualTags: ["样品优先"], createdAt: "2026-07-03 15:18", updatedAt: "2026-07-03 15:22", lastFollowAt: "2026-07-03 15:22", nextFollowAt: "2026-07-05 09:30", customerId: "", aiSummary: "客户关注包装和交期，报价前需确认颜色组合。" },
+    { id: "l10", no: "LEAD-2026-0919", company: "Italia Foods", contact: "Sofia Rossi", email: "sofia@italiafoods.it", phone: "+39 347 110 2290", siteId: "s09", channel: "邮件", ownerId: "u02", status: "跟进中", stage: "报价阶段", products: ["牛皮纸袋", "食品包装"], purchaseIntent: "明确采购", aiTags: ["包装材料", "认证关注"], manualTags: ["欧洲市场"], createdAt: "2026-07-04 08:50", updatedAt: "2026-07-04 08:58", lastFollowAt: "2026-07-04 08:58", nextFollowAt: "2026-07-05 14:30", customerId: "", aiSummary: "客户关注 FSC 认证和阶梯报价，需同步 MOQ 与打样费。" },
+    { id: "l11", no: "LEAD-2026-0920", company: "Polar Mining", contact: "Henry Adams", email: "henry@polar-mining.ca", phone: "+1 604 882 1900", siteId: "s01", channel: "邮件", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["不锈钢阀体"], purchaseIntent: "样品评估", aiTags: ["工业制造", "样品评估"], manualTags: ["北美市场"], createdAt: "2026-07-04 10:32", updatedAt: "2026-07-04 10:36", lastFollowAt: "2026-07-04 10:36", nextFollowAt: "2026-07-06 10:30", customerId: "", aiSummary: "客户有技术图纸和样品需求，建议安排工程评审。" },
+    { id: "l12", no: "LEAD-2026-0921", company: "Fiesta Shop", contact: "Marta Lopez", email: "marta@fiesta-shop.mx", phone: "+52 55 4421 0091", siteId: "s02", channel: "邮件", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["节日毛绒玩具"], purchaseIntent: "明确采购", aiTags: ["节日订单", "批量采购"], manualTags: ["拉美市场"], createdAt: "2026-07-04 11:46", updatedAt: "2026-07-04 11:52", lastFollowAt: "2026-07-04 11:52", nextFollowAt: "2026-07-06 15:00", customerId: "", aiSummary: "客户要求 6 个 SKU 组合和 EN71 证书，适合推进报价确认。" }
+  ]);
+
+  appendById("followLogs", [
+    { id: "f04", leadId: "l05", userId: "u02", method: "WhatsApp", stage: "待首响", content: "客户询问 PPAP Level 3 能力，已要求补充图纸版本。", nextFollowAt: "2026-07-05 10:00", createdAt: "2026-07-03 09:48" },
+    { id: "f05", leadId: "l06", userId: "u03", method: "邮件", stage: "报价阶段", content: "发送私标包装报价草稿，待补充 shelf-ready box 费用。", nextFollowAt: "2026-07-05 15:00", createdAt: "2026-07-03 16:20" },
+    { id: "f06", leadId: "l07", userId: "u02", method: "WhatsApp", stage: "打样阶段", content: "客户申请 20 pcs 样品，已准备规格书和样品政策。", nextFollowAt: "2026-07-04 16:00", createdAt: "2026-07-03 11:31" },
+    { id: "f07", leadId: "l08", userId: "u03", method: "WhatsApp", stage: "需求确认", content: "客户要求 CE 与 ISO 证书扫描件，已转给品控确认。", nextFollowAt: "2026-07-04 11:00", createdAt: "2026-07-03 13:55" },
+    { id: "f08", leadId: "l09", userId: "u04", method: "WhatsApp", stage: "需求确认", content: "确认户外炊具套装颜色组合和零售盒方案。", nextFollowAt: "2026-07-05 09:30", createdAt: "2026-07-03 15:22" },
+    { id: "f09", leadId: "l10", userId: "u02", method: "WhatsApp", stage: "报价阶段", content: "客户确认 FSC 证书为必需项，准备 5 万与 10 万阶梯报价。", nextFollowAt: "2026-07-05 14:30", createdAt: "2026-07-04 08:58" },
+    { id: "f10", leadId: "l11", userId: "u02", method: "电话", stage: "打样阶段", content: "安排工程评审阀体公差和 QC 流程。", nextFollowAt: "2026-07-06 10:30", createdAt: "2026-07-04 10:36" },
+    { id: "f11", leadId: "l12", userId: "u03", method: "邮件", stage: "报价阶段", content: "确认节日 SKU 组合，准备含 EN71 证书的报价。", nextFollowAt: "2026-07-06 15:00", createdAt: "2026-07-04 11:52" }
+  ]);
+
+  appendById("customers", [
+    { id: "c04", no: "CUS-2026-0303", name: "AeroMex Precision Parts", siteId: "s01", country: "墨西哥", industry: "工业制造", ownerId: "u02", potentialLevel: "可跟进", tags: ["重点客户", "高潜客户"], leadIds: ["l01"], contractIds: [], transferRecords: [], aiProfile: "墨西哥航空与工业零部件采购商，关注认证、交付与批量稳定性。", createdAt: "2026-07-03" },
+    { id: "c05", no: "CUS-2026-0304", name: "Andes Fleet Supply", siteId: "s04", country: "智利", industry: "汽车零部件", ownerId: "u02", potentialLevel: "潜在", tags: ["高潜客户"], leadIds: ["l05"], contractIds: ["ct02"], transferRecords: [], aiProfile: "南美车队维修供应商，有年度框架采购潜力。", createdAt: "2026-07-03" },
+    { id: "c06", no: "CUS-2026-0305", name: "Casa Global Retail", siteId: "s05", country: "英国", industry: "家居用品", ownerId: "u03", potentialLevel: "潜在", tags: ["新品客户"], leadIds: ["l06"], contractIds: ["ct03"], transferRecords: [], aiProfile: "英国零售渠道采购商，关注私标包装与上架时间。", createdAt: "2026-07-03" },
+    { id: "c07", no: "CUS-2026-0306", name: "KoreaTech Devices", siteId: "s06", country: "韩国", industry: "电子元件", ownerId: "u02", potentialLevel: "可跟进", tags: ["高潜客户"], leadIds: ["l07"], contractIds: ["ct04"], transferRecords: [], aiProfile: "智能设备项目供应商导入阶段，重视规格稳定性和样品响应。", createdAt: "2026-07-03" },
+    { id: "c08", no: "CUS-2026-0307", name: "Medline India", siteId: "s07", country: "印度", industry: "医疗耗材", ownerId: "u03", potentialLevel: "潜在", tags: ["重点客户"], leadIds: ["l08"], contractIds: ["ct05"], transferRecords: [], aiProfile: "医疗耗材渠道商，采购流程偏招标制，关注证书与合规资料。", createdAt: "2026-07-03" },
+    { id: "c09", no: "CUS-2026-0308", name: "TrailMart", siteId: "s08", country: "澳大利亚", industry: "户外装备", ownerId: "u04", potentialLevel: "一般客户", tags: ["价格敏感客户"], leadIds: ["l09"], contractIds: ["ct06"], transferRecords: [], aiProfile: "澳洲户外用品零售商，关注包装、交期和价格区间。", createdAt: "2026-07-03" },
+    { id: "c10", no: "CUS-2026-0309", name: "Italia Foods", siteId: "s09", country: "意大利", industry: "食品包装", ownerId: "u02", potentialLevel: "可跟进", tags: ["长期合作客户"], leadIds: ["l10"], contractIds: ["ct07"], transferRecords: [], aiProfile: "食品包装采购商，重视 FSC 认证和大批量阶梯报价。", createdAt: "2026-07-04" }
+  ]);
+
+  appendById("contacts", [
+    { id: "p03", customerId: "c03", name: "Sarah Jenkins", title: "Sourcing Manager", email: "purchase@playnorth.co", phone: "+1 415 890 2211", whatsapp: "+1 415 890 2211", role: "采购经理", primary: true, aiDetected: true },
+    { id: "p04", customerId: "c04", name: "Elena Rodriguez", title: "Supply Chain Lead", email: "elena@aeromex-parts.com", phone: "+52 55 2012 8890", whatsapp: "", role: "决策人", primary: true, aiDetected: true },
+    { id: "p05", customerId: "c05", name: "Marco Silva", title: "Procurement Lead", email: "procurement@andesfleet.cl", phone: "+56 9 2211 3488", whatsapp: "+56 9 2211 3488", role: "采购经理", primary: true, aiDetected: true },
+    { id: "p06", customerId: "c06", name: "Emma Brown", title: "Category Buyer", email: "buyer@casa-global.co.uk", phone: "+44 7700 900321", whatsapp: "+44 7700 900321", role: "执行联系人", primary: true, aiDetected: true },
+    { id: "p07", customerId: "c07", name: "Daniel Park", title: "Hardware PM", email: "daniel@koreatech.kr", phone: "+82 10 8822 1900", whatsapp: "+82 10 8822 1900", role: "关键联系人", primary: true, aiDetected: true },
+    { id: "p08", customerId: "c08", name: "Priya Nair", title: "Tender Manager", email: "sourcing@medline-in.in", phone: "+91 98765 10234", whatsapp: "+91 98765 10234", role: "决策人", primary: true, aiDetected: true },
+    { id: "p09", customerId: "c09", name: "Noah Wilson", title: "Retail Buyer", email: "noah@trailmart.com.au", phone: "+61 412 900 778", whatsapp: "+61 412 900 778", role: "采购经理", primary: true, aiDetected: true },
+    { id: "p10", customerId: "c10", name: "Sofia Rossi", title: "Packaging Buyer", email: "sofia@italiafoods.it", phone: "+39 347 110 2290", whatsapp: "+39 347 110 2290", role: "执行联系人", primary: true, aiDetected: true }
+  ]);
+
+  appendById("contracts", [
+    { id: "ct02", no: "CON-2026-0082", name: "刹车卡钳支架试产合同", customerId: "c05", leadId: "l05", amount: 38600, signedAt: "2026-07-04", createdAt: "2026-07-04 10:20", status: "已签约", ownerId: "u02", attachments: ["contract-0082.pdf"] },
+    { id: "ct03", no: "CON-2026-0083", name: "厨房收纳盒私标包装合同", customerId: "c06", leadId: "l06", amount: 61200, signedAt: "2026-07-05", createdAt: "2026-07-05 14:05", status: "执行中", ownerId: "u03", attachments: ["contract-0083.pdf"] },
+    { id: "ct04", no: "CON-2026-0084", name: "USB-C 连接器样品合同", customerId: "c07", leadId: "l07", amount: 9200, signedAt: "2026-07-05", createdAt: "2026-07-05 16:30", status: "已签约", ownerId: "u02", attachments: [] },
+    { id: "ct05", no: "CON-2026-0085", name: "丁腈手套投标样品合同", customerId: "c08", leadId: "l08", amount: 18400, signedAt: "2026-07-06", createdAt: "2026-07-06 09:45", status: "执行中", ownerId: "u03", attachments: ["contract-0085.pdf"] },
+    { id: "ct06", no: "CON-2026-0086", name: "户外炊具套装首批合同", customerId: "c09", leadId: "l09", amount: 27500, signedAt: "2026-07-06", createdAt: "2026-07-06 11:10", status: "已完成", ownerId: "u04", attachments: ["contract-0086.pdf"] },
+    { id: "ct07", no: "CON-2026-0087", name: "牛皮纸袋年度框架合同", customerId: "c10", leadId: "l10", amount: 78200, signedAt: "2026-07-07", createdAt: "2026-07-07 10:25", status: "执行中", ownerId: "u02", attachments: ["contract-0087.pdf"] },
+    { id: "ct08", no: "CON-2026-0088", name: "CNC 铝件样品合同", customerId: "c04", leadId: "l01", amount: 12800, signedAt: "2026-07-07", createdAt: "2026-07-07 14:40", status: "已签约", ownerId: "u02", attachments: [] },
+    { id: "ct09", no: "CON-2026-0089", name: "节日毛绒玩具预订单", customerId: "c03", leadId: "l12", amount: 52800, signedAt: "2026-07-08", createdAt: "2026-07-08 09:50", status: "执行中", ownerId: "u03", attachments: ["contract-0089.pdf"] },
+    { id: "ct10", no: "CON-2026-0090", name: "北美零售样品补充协议", customerId: "c01", leadId: "", amount: 6800, signedAt: "2026-07-08", createdAt: "2026-07-08 16:15", status: "已终止", ownerId: "u03", attachments: [] }
+  ]);
+
+  appendById("aiProviders", [
+    { id: "aip03", name: "阿里通义千问", type: "大语言模型", defaultModel: "qwen-plus", status: "启用", updatedAt: "2026-07-01 10:15", config: providerConfig("阿里通义千问", "qwen-plus", true) },
+    { id: "aip04", name: "智谱 AI", type: "大语言模型", defaultModel: "glm-4", status: "启用", updatedAt: "2026-06-30 09:25", config: providerConfig("智谱 AI", "glm-4", true) },
+    { id: "aip05", name: "DeepSeek", type: "大语言模型", defaultModel: "deepseek-chat", status: "启用", updatedAt: "2026-06-29 17:40", config: providerConfig("DeepSeek", "deepseek-chat", true) },
+    { id: "aip06", name: "自定义-销售摘要模型", type: "自定义模型服务", defaultModel: "crm-sales-summary-v1", status: "启用", updatedAt: "2026-06-28 15:30", config: providerConfig("自定义", "crm-sales-summary-v1", true) },
+    { id: "aip07", name: "自定义-企业情报模型", type: "自定义模型服务", defaultModel: "company-intel-v2", status: "启用", updatedAt: "2026-06-27 13:15", config: providerConfig("自定义", "company-intel-v2", true) },
+    { id: "aip08", name: "自定义-风险分析模型", type: "自定义模型服务", defaultModel: "risk-check-v1", status: "停用", updatedAt: "2026-06-26 11:00", config: providerConfig("自定义", "risk-check-v1", false) },
+    { id: "aip09", name: "Azure OpenAI EU", type: "企业模型服务", defaultModel: "gpt-4o", status: "启用", updatedAt: "2026-06-25 16:25", config: providerConfig("Azure OpenAI", "gpt-4o", true) },
+    { id: "aip10", name: "OpenAI Mini 低成本通道", type: "大语言模型", defaultModel: "gpt-4o-mini", status: "启用", updatedAt: "2026-06-24 10:10", config: providerConfig("OpenAI", "gpt-4o-mini", true) }
+  ]);
+
+  mock.customers.forEach(customer => {
+    customer.contractIds = mock.contracts.filter(contract => contract.customerId === customer.id).map(contract => contract.id);
+  });
+})();
+
+(() => {
+  const mock = window.CRM_MOCK;
+  const appendById = (key, rows) => {
+    const existing = new Set((mock[key] || []).map(item => item.id));
+    rows.forEach(row => {
+      if (!existing.has(row.id)) mock[key].push(row);
+    });
+  };
+
+  appendById("users", [
+    { id: "u05", name: "Nina Wang", account: "ninawang", phone: "13800000005", email: "nina@example.com", role: "业务员", status: "启用", siteIds: ["s04"], createdAt: "2026-06-22 09:30", dingTalkStatus: "已绑定", dingTalkAccount: "nina.sales" },
+    { id: "u06", name: "Owen Zhao", account: "owenzhao", phone: "13800000006", email: "owen@example.com", role: "业务员", status: "启用", siteIds: ["s05"], createdAt: "2026-06-23 10:15", dingTalkStatus: "未绑定", dingTalkAccount: "" },
+    { id: "u07", name: "Sophia Lin", account: "sophialin", phone: "13800000007", email: "sophia@example.com", role: "业务员", status: "启用", siteIds: ["s06"], createdAt: "2026-06-24 11:20", dingTalkStatus: "已绑定", dingTalkAccount: "sophia.sales" },
+    { id: "u08", name: "Victor Chen", account: "victorchen", phone: "13800000008", email: "victor@example.com", role: "业务员", status: "启用", siteIds: ["s07"], createdAt: "2026-06-25 14:05", dingTalkStatus: "未绑定", dingTalkAccount: "" },
+    { id: "u09", name: "Ivy Huang", account: "ivyhuang", phone: "13800000009", email: "ivy@example.com", role: "业务员", status: "启用", siteIds: ["s08"], createdAt: "2026-06-26 15:10", dingTalkStatus: "已绑定", dingTalkAccount: "ivy.sales" },
+    { id: "u10", name: "Leo Sun", account: "leosun", phone: "13800000010", email: "leo@example.com", role: "业务员", status: "启用", siteIds: ["s09"], createdAt: "2026-06-27 16:30", dingTalkStatus: "未绑定", dingTalkAccount: "" },
+    { id: "u11", name: "Grace Xu", account: "gracexu", phone: "13800000011", email: "grace@example.com", role: "业务员", status: "启用", siteIds: ["s11"], createdAt: "2026-06-28 09:45", dingTalkStatus: "已绑定", dingTalkAccount: "grace.sales" },
+    { id: "u12", name: "Ryan He", account: "ryanhe", phone: "13800000012", email: "ryan@example.com", role: "业务员", status: "启用", siteIds: ["s12"], createdAt: "2026-06-29 13:20", dingTalkStatus: "未绑定", dingTalkAccount: "" }
+  ]);
+  appendById("authUsers", [
+    { username: "ninawang", email: "nina@example.com", password: "123456", userId: "u05" },
+    { username: "owenzhao", email: "owen@example.com", password: "123456", userId: "u06" },
+    { username: "sophialin", email: "sophia@example.com", password: "123456", userId: "u07" },
+    { username: "victorchen", email: "victor@example.com", password: "123456", userId: "u08" },
+    { username: "ivyhuang", email: "ivy@example.com", password: "123456", userId: "u09" },
+    { username: "leosun", email: "leo@example.com", password: "123456", userId: "u10" },
+    { username: "gracexu", email: "grace@example.com", password: "123456", userId: "u11" },
+    { username: "ryanhe", email: "ryan@example.com", password: "123456", userId: "u12" }
+  ]);
+  mock.dingTalkAccounts = Array.from(new Set([...(mock.dingTalkAccounts || []), "nina.sales", "sophia.sales", "ivy.sales", "grace.sales"]));
+
+  appendById("sites", [
+    { id: "s11", name: "宠物用品跨境站", code: "PET_SUPPLY", domain: "pet.example.com", status: "启用", ownerId: "u11", createdAt: "2026-07-03 09:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s12", name: "办公文具采购站", code: "STATIONERY", domain: "stationery.example.com", status: "启用", ownerId: "u12", createdAt: "2026-07-04 10:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } }
+  ]);
+
+  appendById("leads", [
+    { id: "l13", no: "LEAD-2026-0922", company: "Nordic Office Supply", contact: "Lars Petersen", email: "lars@nordic-office.dk", phone: "+45 31 20 4490", siteId: "s12", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["办公收纳", "文件夹"], purchaseIntent: "信息不足", aiTags: ["办公文具"], manualTags: [], createdAt: "2026-07-04 12:10", updatedAt: "2026-07-04 12:15", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "收件邮箱未绑定用户", poolEnteredAt: "2026-07-04 12:15", aiSummary: "客户询问办公收纳报价，收件账号负责人异常，进入公海池待分配。" },
+    { id: "l14", no: "LEAD-2026-0923", company: "PetJoy Retail", contact: "Chloe Martin", email: "chloe@petjoy.fr", phone: "+33 6 44 21 0098", siteId: "s11", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["宠物牵引绳", "宠物玩具"], purchaseIntent: "价格咨询", aiTags: ["宠物用品"], manualTags: [], createdAt: "2026-07-04 13:05", updatedAt: "2026-07-04 13:12", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 13:12", aiSummary: "客户询问宠物用品组合报价，需分配对应业务员。" },
+    { id: "l15", no: "LEAD-2026-0924", company: "Baltic Tools OU", contact: "Marek Tamm", email: "marek@baltic-tools.ee", phone: "+372 5551 2234", siteId: "s01", channel: "邮件", ownerId: "", status: "无效", stage: "待首响", products: ["工业铰链"], purchaseIntent: "明确采购", aiTags: ["工业制造"], manualTags: [], createdAt: "2026-07-04 14:20", updatedAt: "2026-07-04 14:23", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "超期回收", poolEnteredAt: "2026-07-04 14:23", aiSummary: "工业件询盘超过首响时限，系统回收至公海池。" },
+    { id: "l16", no: "LEAD-2026-0925", company: "Desert Kids Trading", contact: "Omar Saleh", email: "omar@desertkids.ae", phone: "+971 50 334 8812", siteId: "s02", channel: "WhatsApp", ownerId: "", status: "待分配", stage: "待首响", products: ["益智玩具"], purchaseIntent: "明确采购", aiTags: ["中东市场"], manualTags: [], createdAt: "2026-07-04 15:08", updatedAt: "2026-07-04 15:12", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 15:12", aiSummary: "WhatsApp 询盘数量明确，运营回收后等待重新分配。" },
+    { id: "l17", no: "LEAD-2026-0926", company: "Pacific Homeware", contact: "Mia Thompson", email: "mia@pacifichome.nz", phone: "+64 21 770 332", siteId: "s05", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["厨房置物架"], purchaseIntent: "样品评估", aiTags: ["家居用品"], manualTags: [], createdAt: "2026-07-04 16:00", updatedAt: "2026-07-04 16:05", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "负责人已停用", poolEnteredAt: "2026-07-04 16:05", aiSummary: "原负责人不可用，线索进入公海池待重新分配。" },
+    { id: "l18", no: "LEAD-2026-0927", company: "Sana Medical Supply", contact: "Fatima Al Noor", email: "fatima@sanamed.qa", phone: "+974 5521 1190", siteId: "s07", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["一次性口罩"], purchaseIntent: "明确采购", aiTags: ["医疗耗材"], manualTags: [], createdAt: "2026-07-04 16:40", updatedAt: "2026-07-04 16:45", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "收件邮箱未绑定用户", poolEnteredAt: "2026-07-04 16:45", aiSummary: "医疗耗材批量询盘，邮箱绑定异常导致进入公海。" },
+    { id: "l19", no: "LEAD-2026-0928", company: "GreenPack Chile", contact: "Valentina Rojas", email: "valentina@greenpack.cl", phone: "+56 9 7711 3022", siteId: "s09", channel: "邮件", ownerId: "", status: "丢失", stage: "待首响", products: ["环保纸盒"], purchaseIntent: "价格咨询", aiTags: ["包装材料"], manualTags: [], createdAt: "2026-07-04 17:05", updatedAt: "2026-07-04 17:08", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "超期回收", poolEnteredAt: "2026-07-04 17:08", aiSummary: "包装材料询价超期未响应，进入公海待认领。" },
+    { id: "l20", no: "LEAD-2026-0929", company: "Summit Outdoor GmbH", contact: "Felix Bauer", email: "felix@summit-outdoor.de", phone: "+49 171 2233 9090", siteId: "s08", channel: "WhatsApp", ownerId: "", status: "待分配", stage: "待首响", products: ["登山杖", "户外水壶"], purchaseIntent: "明确采购", aiTags: ["户外装备"], manualTags: [], createdAt: "2026-07-04 17:35", updatedAt: "2026-07-04 17:40", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 17:40", aiSummary: "户外装备组合询盘，等待运营分配负责人。" },
+    { id: "l21", no: "LEAD-2026-0930", company: "Nova EV Parts", contact: "Ethan Brooks", email: "ethan@novaev.us", phone: "+1 512 800 2340", siteId: "s10", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["新能源线束"], purchaseIntent: "样品评估", aiTags: ["新能源配件"], manualTags: [], createdAt: "2026-07-04 18:10", updatedAt: "2026-07-04 18:15", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "站点停用待处理", poolEnteredAt: "2026-07-04 18:15", aiSummary: "停用站点收到样品询盘，进入公海池由运营判断是否继续跟进。" }
+  ]);
+})();

@@ -5,7 +5,7 @@ window.CRMLayout = {
     { label: "线索中心", icon: "◇", children: [{ key: "leads", label: "线索列表" }, { key: "publicPool", label: "公海池" }] },
     { label: "客户中心", icon: "□", children: [{ key: "customers", label: "客户列表" }, { key: "contracts", label: "合同中心" }] },
     { label: "分析中心", icon: "▣", children: [{ key: "analyticsSales", label: "销售经营" }, { key: "analyticsAcquisition", label: "获客分析" }, { key: "analyticsCustomer", label: "客户经营" }] },
-    { label: "站点中心", icon: "◎", children: [{ key: "sites", label: "站点管理" }] },
+    { label: "站点中心", icon: "◎", children: [{ key: "sites", label: "站点管理" }, { key: "siteOperationData", label: "站点运营数据" }] },
     { key: "ai", icon: "✦", label: "AI能力管理" },
     { label: "通知管理", icon: "✉", children: [{ key: "notificationCenter", label: "通知中心" }] },
     { label: "系统管理", icon: "⚙", children: [
@@ -14,7 +14,7 @@ window.CRMLayout = {
       { key: "systemMenus", label: "菜单管理" },
       { key: "systemDicts", label: "字典管理" },
       { key: "systemParams", label: "系统参数" },
-      { key: "systemCommunicationConfig", label: "沟通服务协议配置" },
+      { key: "systemCommunicationConfig", label: "服务协议配置" },
       { key: "systemConfig", label: "系统配置" },
       { key: "systemLogs", label: "系统日志" }
     ] }
@@ -92,17 +92,12 @@ window.CRMLayout = {
   },
   ensureNotifications() {
     const routeMap = {
-      "新线索分配": { route: "leads", params: { id: "l01" } },
-      "新客户分配": { route: "customers", params: { id: "c02" } },
-      "跟进阶段变更": { route: "leads", params: { id: "l02" } },
-      "待回复超时": { route: "leads", params: { reply: "pending" } },
-      "线索状态变更": { route: "leads", params: { id: "l01" } },
+      "新线索生成": { route: "leads", params: { id: "l01" } },
       "变更负责人": { route: "customers", params: { id: "c02" } },
-      "合同创建": { route: "contracts", params: {} },
-      "合同状态变更": { route: "contracts", params: {} },
-      "邮件未读数量提醒": { route: "email", params: {} },
-      "邮件未读超时提醒": { route: "email", params: {} },
-      "公海回收": { route: "publicPool", params: {} }
+      "邮件未读/未回数量提醒": { route: "email", params: {} },
+      "邮件未读/未回超时提醒": { route: "email", params: {} },
+      "7 天邮件客户未回复提醒": { route: "email", params: {} },
+      "跟进到期提醒": { route: "leads", params: { overdue: "1" } }
     };
     const times = ["刚刚", "10 分钟前", "28 分钟前", "1 小时前", "2 小时前", "今天 09:40", "昨天 18:22", "昨天 15:08", "昨天 11:30", "2026-07-02 16:20", "2026-07-02 10:05"];
     CRM_MOCK.notifications = Array.isArray(CRM_MOCK.notifications) ? CRM_MOCK.notifications : [];
@@ -260,19 +255,20 @@ window.CRMLayout = {
     CRMUI.modal("修改密码", `
       <div class="form-grid">
         <div class="form-field full"><label>当前密码</label><input type="password" name="oldPassword" required placeholder="请输入当前登录密码"></div>
-        <div class="form-field full"><label>新密码</label><input type="password" name="newPassword" required placeholder="请输入新密码（不少于 6 位）"></div>
+        <div class="form-field full"><label>新密码</label><input type="password" name="newPassword" required placeholder="不少于 8 位，含数字和大小写字母"></div>
         <div class="form-field full"><label>确认新密码</label><input type="password" name="confirmPassword" required placeholder="请再次输入新密码"></div>
       </div>`, form => {
       const oldPwd = form.get("oldPassword") || "";
       const newPwd = form.get("newPassword") || "";
       const confirmPwd = form.get("confirmPassword") || "";
       if (!oldPwd) return CRMUI.toast("请输入当前密码");
-      if (newPwd.length < 6) return CRMUI.toast("新密码不少于 6 位");
+      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(newPwd)) return CRMUI.toast("新密码需不少于 8 位，且包含数字和大小写字母");
       if (newPwd !== confirmPwd) return CRMUI.toast("两次输入的新密码不一致");
       if (newPwd === oldPwd) return CRMUI.toast("新密码不能与当前密码相同");
       CRM_MOCK.currentUser.passwordUpdatedAt = "2026-07-05 22:00";
       CRMUI.closeModal();
-      CRMUI.toast("密码已修改，下次登录请使用新密码");
+      CRMUI.toast("密码已修改，请重新登录");
+      CRMAuth.logout();
     });
   },
   openBindAccountModal() {
@@ -301,7 +297,25 @@ window.CRMLayout = {
   personalEmails() {
     return (CRM_MOCK.personalEmailAccounts || []).filter(item => item.userId === CRM_MOCK.currentUser.id);
   },
+  currentUserSiteIds() {
+    const user = (CRM_MOCK.users || []).find(item => item.id === CRM_MOCK.currentUser.id);
+    return CRM_MOCK.currentUser.sites || CRM_MOCK.currentUser.siteIds || user?.siteIds || [];
+  },
+  currentUserSiteOptions(selected = "") {
+    const authorized = new Set(this.currentUserSiteIds());
+    const sites = (CRM_MOCK.sites || []).filter(site => !authorized.size || authorized.has(site.id));
+    return sites.map(site => `<option value="${site.id}" ${site.id === selected ? "selected" : ""}>${site.name}</option>`).join("");
+  },
   renderPersonalBindBody() {
+    const role = CRM_MOCK.currentUser.role;
+    if (this.personalBindTab === "email" && !["运营专员", "协同人"].includes(role)) {
+      CRMUI.$("#personalBindBody").innerHTML = `<div class="card pad muted">当前角色不支持绑定邮箱。</div>`;
+      return;
+    }
+    if (this.personalBindTab === "whatsapp" && role !== "业务员") {
+      CRMUI.$("#personalBindBody").innerHTML = `<div class="card pad muted">仅业务员可绑定 WhatsApp。</div>`;
+      return;
+    }
     this.personalBindTab === "email" ? this.renderPersonalEmailBinding() : this.renderPersonalWhatsappBinding();
   },
   renderPersonalEmailBinding() {
@@ -310,11 +324,10 @@ window.CRMLayout = {
       <div class="toolbar"><button class="btn primary" type="button" id="newPersonalEmail">新增邮箱</button></div>
       ${CRMUI.table([
         { title: "邮箱地址", render: row => row.email },
-        { title: "默认邮箱", render: row => row.isDefault ? CRMUI.badge("开启") : `<span class="badge gray">否</span>` },
+        { title: "对应站点", render: row => this.siteByPersonalEmail(row.email) },
         { title: "状态", render: row => CRMUI.badge(row.status) },
         { title: "绑定时间", render: row => row.boundAt },
         { title: "操作", render: row => `<button class="btn" type="button" data-personal-email-edit="${row.id}">编辑</button> <button class="btn" type="button" data-personal-email-verify="${row.id}">重新验证</button> ${CRMUI.actionMore([
-          row.isDefault ? "" : `<button type="button" data-personal-email-default="${row.id}">设为默认</button>`,
           `<button type="button" class="danger" data-personal-email-delete="${row.id}">删除</button>`
         ].filter(Boolean))}` }
       ], rows, "暂无绑定邮箱")}
@@ -322,13 +335,16 @@ window.CRMLayout = {
     CRMUI.$("#newPersonalEmail").addEventListener("click", () => this.renderPersonalEmailForm());
     CRMUI.$$("[data-personal-email-edit]").forEach(btn => btn.addEventListener("click", () => this.renderPersonalEmailForm(rows.find(item => item.id === btn.dataset.personalEmailEdit))));
     CRMUI.$$("[data-personal-email-verify]").forEach(btn => btn.addEventListener("click", () => this.verifyPersonalEmail(btn.dataset.personalEmailVerify)));
-    CRMUI.$$("[data-personal-email-default]").forEach(btn => btn.addEventListener("click", () => this.setDefaultPersonalEmail(btn.dataset.personalEmailDefault)));
     CRMUI.$$("[data-personal-email-delete]").forEach(btn => btn.addEventListener("click", () => this.deletePersonalEmail(btn.dataset.personalEmailDelete)));
+  },
+  siteByPersonalEmail(email) {
+    const site = (CRM_MOCK.sites || []).find(item => item.boundEmail === email);
+    return site ? CRMUI.siteName(site.id) : "-";
   },
   renderPersonalEmailForm(account) {
     CRMUI.$("#personalBindBody").innerHTML = `
       <div class="account-bind-flow">
-        <div class="step-row"><span class="step-pill active">1. 填写邮箱</span><span class="step-pill" id="emailVerifyStep">2. 系统验证连接</span><span class="step-pill">3. 完成绑定</span></div>
+        <div class="step-row"><span class="step-pill active">1. 填写邮箱</span><span class="step-pill active">2. 输入授权</span><span class="step-pill" id="emailVerifyStep">3. 完成绑定</span></div>
         <div class="form-grid">
           ${CRMUI.formInput("邮箱地址", "personalEmail", account?.email || "")}
           ${CRMUI.formInput("邮箱授权码", "personalEmailCode", "", "password")}
@@ -356,12 +372,13 @@ window.CRMLayout = {
     const email = CRMUI.$("input[name='personalEmail']").value.trim();
     if (!email) return CRMUI.toast("请填写邮箱地址");
     if (CRMUI.$("#personalEmailVerified").value !== "true") return CRMUI.toast("请先完成邮箱验证");
+    const duplicated = (CRM_MOCK.personalEmailAccounts || []).some(item => item.email === email && item.id !== account?.id);
+    if (duplicated) return CRMUI.toast("该邮箱已被绑定");
     if (account) {
       account.email = email;
       account.status = "已验证";
     } else {
-      const isFirst = this.personalEmails().length === 0;
-      (CRM_MOCK.personalEmailAccounts || (CRM_MOCK.personalEmailAccounts = [])).unshift({ id: `pe${Date.now()}`, userId: CRM_MOCK.currentUser.id, email, isDefault: isFirst, status: "已验证", boundAt: "2026-07-03 18:10" });
+      (CRM_MOCK.personalEmailAccounts || (CRM_MOCK.personalEmailAccounts = [])).unshift({ id: `pe${Date.now()}`, userId: CRM_MOCK.currentUser.id, email, status: "已验证", boundAt: "2026-07-03 18:10" });
     }
     CRMUI.toast("邮箱绑定已保存");
     this.renderPersonalEmailBinding();
@@ -379,8 +396,6 @@ window.CRMLayout = {
   },
   deletePersonalEmail(emailId) {
     CRM_MOCK.personalEmailAccounts = (CRM_MOCK.personalEmailAccounts || []).filter(item => item.id !== emailId);
-    const rows = this.personalEmails();
-    if (rows.length && !rows.some(item => item.isDefault)) rows[0].isDefault = true;
     CRMUI.toast("邮箱绑定已删除");
     this.renderPersonalEmailBinding();
   },

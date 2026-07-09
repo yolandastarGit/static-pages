@@ -1,6 +1,7 @@
 window.CRMAdminPage = {
   render(root, page, routeKey) {
     if (routeKey === "sites") return this.renderSites(root);
+    if (routeKey === "siteOperationData") return this.renderSiteOperationData(root);
     if (routeKey === "notificationCenter") return this.renderNotificationCenter(root);
     if (routeKey === "systemCommunicationConfig") return this.renderCommunicationConfig(root);
     if (routeKey === "systemLogs") return this.renderSystemLogs(root);
@@ -9,16 +10,19 @@ window.CRMAdminPage = {
   },
   renderAi(root) {
     root.innerHTML = `
-      <div class="toolbar">
-        <button class="btn primary" id="newAiProvider">新增 AI 能力</button>
-        <button class="btn" id="refreshAiProvider">刷新</button>
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn primary" id="newAiProvider">新增 AI 能力</button>
+          <button class="btn" id="refreshAiProvider">刷新</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>关键词</span><input id="aiSearch" placeholder="搜索能力名称 / 服务商"></label>
+            <label class="filter-item"><span>状态</span><select id="aiStatus"><option value="">全部状态</option><option>启用</option><option>停用</option></select></label>
+            <div class="filter-actions"><button class="btn" id="aiQuery">查询</button><button class="btn" id="aiReset">重置</button></div>
+          </div>
+        </div>
       </div>
-      <div class="filters card pad search-filter">
-        <label class="filter-item"><span>关键词</span><input id="aiSearch" placeholder="搜索能力名称 / 服务商"></label>
-        <label class="filter-item"><span>状态</span><select id="aiStatus"><option value="">全部状态</option><option>启用</option><option>停用</option></select></label>
-        <div class="filter-actions"><button class="btn" id="aiQuery">查询</button><button class="btn" id="aiReset">重置</button></div>
-      </div>
-      <div class="section-title">AI 能力列表</div>
       <div id="aiProviderTable"></div>
     `;
     this.aiState = { query: "", status: "" };
@@ -145,14 +149,18 @@ window.CRMAdminPage = {
   renderSites(root) {
     this.siteState = { query: "", createTimeStart: "", createTimeEnd: "" };
     root.innerHTML = `
-      <div class="toolbar">
-        <button class="btn primary" id="newSite">新增站点</button>
-        <button class="btn" id="refreshSites">刷新</button>
-      </div>
-      <div class="filters card pad search-filter">
-        <label class="filter-item"><span>关键词</span><input id="siteSearch" placeholder="搜索站点名称或编码"></label>
-        <label class="filter-item"><span>创建时间</span><span class="range-picker"><input type="date" id="siteCreateTimeStart" value="${this.siteState.createTimeStart}"><span class="range-separator">-</span><input type="date" id="siteCreateTimeEnd" value="${this.siteState.createTimeEnd}"></span></label>
-        <div class="filter-actions"><button class="btn" id="siteQuery">查询</button><button class="btn" id="siteReset">重置</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn primary" id="newSite">新增站点</button>
+          <button class="btn" id="refreshSites">刷新</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>关键词</span><input id="siteSearch" placeholder="搜索站点名称或编码"></label>
+            <label class="filter-item"><span>创建时间</span><span class="range-picker"><input type="date" id="siteCreateTimeStart" value="${this.siteState.createTimeStart}"><span class="range-separator">-</span><input type="date" id="siteCreateTimeEnd" value="${this.siteState.createTimeEnd}"></span></label>
+            <div class="filter-actions"><button class="btn" id="siteQuery">查询</button><button class="btn" id="siteReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div id="siteTable"></div>
       <div class="section-title">消息拉取状态</div>
@@ -214,23 +222,213 @@ window.CRMAdminPage = {
     CRMUI.$("#refreshSites").addEventListener("click", () => { CRMUI.toast("站点列表已刷新"); draw(); });
     draw();
   },
+  siteOperatorOptions(value = "") {
+    return (CRM_MOCK.users || [])
+      .filter(user => ["运营专员", "协同人"].includes(user.role) && user.status === "启用")
+      .map(user => `<option value="${user.id}" ${user.id === value ? "selected" : ""}>${user.name} · ${user.role}</option>`)
+      .join("");
+  },
+  siteEmailOptions(operatorId, value = "") {
+    const occupied = new Set((CRM_MOCK.sites || []).map(site => site.boundEmail).filter(email => email && email !== value));
+    return (CRM_MOCK.personalEmailAccounts || [])
+      .filter(account => account.userId === operatorId && account.status !== "已解绑" && !occupied.has(account.email))
+      .map(account => `<option value="${account.email}" ${account.email === value ? "selected" : ""}>${account.email}</option>`)
+      .join("");
+  },
   openSiteConfigModal(site, after) {
     site.config = site.config || { ai: "开启", publicPool: "开启", sync: "自动", recycleDays: 7 };
+    const operatorId = site.boundEmailOwnerId || site.ownerId || "";
     CRMUI.modal("站点配置", `
-      <div class="tabs"><div class="tab active">公海规则</div><div class="tab">AI 规则</div></div>
-      <div class="form-grid">
+      <div class="tabs" id="siteConfigTabs">
+        <div class="tab active" data-site-config-tab="pool">公海规则</div>
+        <div class="tab" data-site-config-tab="ai">AI 规则</div>
+        <div class="tab" data-site-config-tab="email">邮箱绑定</div>
+      </div>
+      <div class="form-grid" data-site-config-panel="pool">
         <div class="form-field"><label>站点名称</label><input value="${site.name}" disabled></div>
         <div class="form-field"><label>站点编码</label><input value="${site.code}" disabled></div>
         ${CRMUI.formSelect("启用自动回收", "publicPool", ["开启", "关闭"].map(v => ({ value: v, label: v })), site.config.publicPool)}
         ${CRMUI.formInput("回收超时时长（天）", "recycleDays", site.config.recycleDays || 7, "number")}
+      </div>
+      <div class="form-grid" data-site-config-panel="ai" hidden>
         ${CRMUI.formSelect("启用 AI 识别", "ai", ["开启", "关闭"].map(v => ({ value: v, label: v })), site.config.ai)}
+      </div>
+      <div class="form-grid" data-site-config-panel="email" hidden>
+        <div class="form-field"><label>运营人员</label><select name="boundEmailOwnerId"><option value="">请选择运营人员</option>${this.siteOperatorOptions(operatorId)}</select></div>
+        <div class="form-field"><label>邮箱</label><select name="boundEmail"><option value="">请选择邮箱</option>${this.siteEmailOptions(operatorId, site.boundEmail || "")}</select></div>
+        <div class="form-field"><label>绑定时间</label><input value="${site.boundEmailAt || "-"}" disabled></div>
       </div>`, form => {
       site.config.ai = form.get("ai");
       site.config.publicPool = form.get("publicPool");
       site.config.recycleDays = Number(form.get("recycleDays") || 7);
+      const nextOwner = form.get("boundEmailOwnerId");
+      const nextEmail = form.get("boundEmail");
+      if (nextEmail) {
+        const duplicated = (CRM_MOCK.sites || []).find(item => item.id !== site.id && item.boundEmail === nextEmail);
+        if (duplicated) return CRMUI.toast("该邮箱已绑定，不可重复绑定");
+        site.boundEmailOwnerId = nextOwner;
+        site.boundEmail = nextEmail;
+        site.boundEmailAt = site.boundEmailAt || "2026-07-09 17:20";
+      } else {
+        site.boundEmailOwnerId = "";
+        site.boundEmail = "";
+        site.boundEmailAt = "";
+      }
       CRMUI.closeModal();
       CRMUI.toast("站点配置已保存");
       after();
+    });
+    CRMUI.$$("[data-site-config-tab]").forEach(tab => tab.addEventListener("click", () => {
+      CRMUI.$$("[data-site-config-tab]").forEach(item => item.classList.remove("active"));
+      tab.classList.add("active");
+      CRMUI.$$("[data-site-config-panel]").forEach(panel => panel.hidden = panel.dataset.siteConfigPanel !== tab.dataset.siteConfigTab);
+    }));
+    CRMUI.$("select[name='boundEmailOwnerId']").addEventListener("change", e => {
+      CRMUI.$("select[name='boundEmail']").innerHTML = `<option value="">请选择邮箱</option>${this.siteEmailOptions(e.target.value, site.boundEmail || "")}`;
+    });
+  },
+  renderSiteOperationData(root) {
+    this.siteOperationState = { siteId: "", periodType: "", periodStart: "", periodEnd: "" };
+    root.innerHTML = `
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn primary" id="newSiteOperation">新增</button>
+          <button class="btn" id="importSiteOperation">批量导入</button>
+          <button class="btn" id="downloadSiteOperationTpl">下载导入模板</button>
+          <button class="btn" id="exportSiteOperation">导出</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>站点</span><select id="siteOperationSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></label>
+            <label class="filter-item"><span>周期类型</span><select id="siteOperationPeriodType"><option value="">全部类型</option><option>月</option><option>周</option></select></label>
+            <label class="filter-item"><span>统计周期</span><span class="range-picker"><input id="siteOperationPeriodStart" placeholder="2026-01 / 2026-W01"><span class="range-separator">-</span><input id="siteOperationPeriodEnd" placeholder="2026-12 / 2026-W52"></span></label>
+            <div class="filter-actions"><button class="btn" id="siteOperationQuery">查询</button><button class="btn" id="siteOperationReset">重置</button></div>
+          </div>
+        </div>
+      </div>
+      <div id="siteOperationTable"></div>
+    `;
+    const bind = () => this.renderSiteOperationTable();
+    CRMUI.$("#siteOperationSite").addEventListener("change", e => { this.siteOperationState.siteId = e.target.value; bind(); });
+    CRMUI.$("#siteOperationPeriodType").addEventListener("change", e => { this.siteOperationState.periodType = e.target.value; bind(); });
+    CRMUI.$("#siteOperationPeriodStart").addEventListener("input", e => { this.siteOperationState.periodStart = e.target.value; bind(); });
+    CRMUI.$("#siteOperationPeriodEnd").addEventListener("input", e => { this.siteOperationState.periodEnd = e.target.value; bind(); });
+    CRMUI.$("#siteOperationQuery").addEventListener("click", bind);
+    CRMUI.$("#siteOperationReset").addEventListener("click", () => {
+      this.siteOperationState = { siteId: "", periodType: "", periodStart: "", periodEnd: "" };
+      CRMUI.$("#siteOperationSite").value = "";
+      CRMUI.$("#siteOperationPeriodType").value = "";
+      CRMUI.$("#siteOperationPeriodStart").value = "";
+      CRMUI.$("#siteOperationPeriodEnd").value = "";
+      bind();
+    });
+    CRMUI.$("#newSiteOperation").addEventListener("click", () => this.openSiteOperationModal());
+    CRMUI.$("#importSiteOperation").addEventListener("click", () => this.openSiteOperationImportModal());
+    CRMUI.$("#downloadSiteOperationTpl").addEventListener("click", () => CRMUI.toast("已下载站点运营数据导入模板"));
+    CRMUI.$("#exportSiteOperation").addEventListener("click", () => CRMUI.toast("站点运营数据导出任务已提交"));
+    bind();
+  },
+  siteOperationRows() {
+    const s = this.siteOperationState || {};
+    return (CRM_MOCK.siteOperationData || []).filter(row => {
+      const bySite = !s.siteId || row.siteId === s.siteId;
+      const byType = !s.periodType || row.periodType === s.periodType;
+      const byStart = !s.periodStart || row.period >= s.periodStart;
+      const byEnd = !s.periodEnd || row.period <= s.periodEnd;
+      return bySite && byType && byStart && byEnd;
+    }).sort((a, b) => String(b.period).localeCompare(String(a.period)));
+  },
+  siteOperationColumns() {
+    return [
+      { title: "站点", render: row => CRMUI.siteName(row.siteId) },
+      { title: "统计周期类型", render: row => row.periodType },
+      { title: "统计周期", render: row => row.period },
+      { title: "广告花费", render: row => this.emptyMetric(row.adSpend) },
+      { title: "网站浏览次数", render: row => this.emptyMetric(row.websiteVisits) },
+      { title: "询盘量", render: row => this.emptyMetric(row.inquiryCount) },
+      { title: "高潜询盘量", render: row => this.emptyMetric(row.highIntentInquiryCount) },
+      { title: "询盘转化率", render: row => this.percentMetric(row.inquiryConversionRate) },
+      { title: "单个询盘成本", render: row => this.emptyMetric(row.costPerInquiry) },
+      { title: "高潜询盘成本", render: row => this.emptyMetric(row.costPerHighIntentInquiry) },
+      { title: "平均访问时长", render: row => this.emptyMetric(row.avgVisitDuration) },
+      { title: "网站跳出率", render: row => this.percentMetric(row.bounceRate) },
+      { title: "GSC 曝光量", render: row => this.emptyMetric(row.gscImpressions) },
+      { title: "GSC 点击次数", render: row => this.emptyMetric(row.gscClicks) },
+      { title: "GSC 出词数", render: row => this.emptyMetric(row.gscKeywords) },
+      { title: "GSC 平均排名", render: row => this.emptyMetric(row.gscAvgPosition) },
+      { title: "操作", render: row => `<button class="btn" data-site-operation-edit="${row.id}">编辑</button> <button class="btn danger" data-site-operation-delete="${row.id}">删除</button>` }
+    ];
+  },
+  emptyMetric(value) {
+    return value === "" || value === undefined || value === null ? "--" : value;
+  },
+  percentMetric(value) {
+    return value === "" || value === undefined || value === null ? "--" : `${value}%`;
+  },
+  renderSiteOperationTable() {
+    CRMUI.$("#siteOperationTable").innerHTML = CRMUI.table(this.siteOperationColumns(), this.siteOperationRows(), "暂无站点运营数据");
+    CRMUI.$$("[data-site-operation-edit]").forEach(btn => btn.addEventListener("click", () => this.openSiteOperationModal(CRM_MOCK.siteOperationData.find(row => row.id === btn.dataset.siteOperationEdit))));
+    CRMUI.$$("[data-site-operation-delete]").forEach(btn => btn.addEventListener("click", () => {
+      CRMUI.modal("删除站点运营数据", `<p>确认删除该周期站点运营数据？</p>`, () => {
+        CRM_MOCK.siteOperationData = (CRM_MOCK.siteOperationData || []).filter(row => row.id !== btn.dataset.siteOperationDelete);
+        CRMUI.closeModal();
+        CRMUI.toast("站点运营数据已删除");
+        this.renderSiteOperationTable();
+      });
+    }));
+  },
+  siteOperationFormFields(row = {}) {
+    const isEdit = Boolean(row.id);
+    return `
+      <div class="form-field"><label>站点</label><select name="siteId" ${isEdit ? "disabled" : ""}>${CRMUI.optionList(CRM_MOCK.sites, row.siteId)}</select></div>
+      ${isEdit ? `<div class="form-field"><label>统计周期类型</label><input value="${row.periodType || "-"}" disabled></div>` : CRMUI.formSelect("统计周期类型", "periodType", ["月", "周"].map(v => ({ value: v, label: v })), row.periodType || "月")}
+      ${isEdit ? `<div class="form-field"><label>统计周期</label><input value="${row.period || "-"}" disabled></div>` : CRMUI.formInput("统计周期", "period", row.period || "", "text")}
+      ${CRMUI.formInput("广告花费", "adSpend", row.adSpend || "", "number")}
+      ${CRMUI.formInput("网站浏览次数", "websiteVisits", row.websiteVisits || "", "number")}
+      ${CRMUI.formInput("询盘量", "inquiryCount", row.inquiryCount || "", "number")}
+      ${CRMUI.formInput("高潜询盘量", "highIntentInquiryCount", row.highIntentInquiryCount || "", "number")}
+      ${CRMUI.formInput("询盘转化率", "inquiryConversionRate", row.inquiryConversionRate || "", "number")}
+      ${CRMUI.formInput("单个询盘成本", "costPerInquiry", row.costPerInquiry || "", "number")}
+      ${CRMUI.formInput("高潜询盘成本", "costPerHighIntentInquiry", row.costPerHighIntentInquiry || "", "number")}
+      ${CRMUI.formInput("平均访问时长", "avgVisitDuration", row.avgVisitDuration || "", "number")}
+      ${CRMUI.formInput("网站跳出率", "bounceRate", row.bounceRate || "", "number")}
+      ${CRMUI.formInput("GSC 曝光量", "gscImpressions", row.gscImpressions || "", "number")}
+      ${CRMUI.formInput("GSC 点击次数", "gscClicks", row.gscClicks || "", "number")}
+      ${CRMUI.formInput("GSC 出词数", "gscKeywords", row.gscKeywords || "", "number")}
+      ${CRMUI.formInput("GSC 平均排名", "gscAvgPosition", row.gscAvgPosition || "", "number")}
+    `;
+  },
+  openSiteOperationModal(row) {
+    CRMUI.modal(row ? "编辑站点运营数据" : "新增站点运营数据", `<div class="form-grid">${this.siteOperationFormFields(row || {})}</div>`, form => {
+      const siteId = row?.siteId || form.get("siteId");
+      const periodType = row?.periodType || form.get("periodType");
+      const period = row?.period || form.get("period");
+      if (!siteId || !periodType || !period) return CRMUI.toast("请完善站点、周期类型和统计周期");
+      const duplicated = (CRM_MOCK.siteOperationData || []).find(item => item.id !== row?.id && item.siteId === siteId && item.periodType === periodType && item.period === period);
+      if (duplicated) return CRMUI.toast("该站点该周期数据已存在，请编辑或使用导入覆盖");
+      const target = row || { id: `sod${Date.now()}` };
+      Object.assign(target, {
+        siteId, periodType, period,
+        adSpend: form.get("adSpend"), websiteVisits: form.get("websiteVisits"), inquiryCount: form.get("inquiryCount"), highIntentInquiryCount: form.get("highIntentInquiryCount"),
+        inquiryConversionRate: form.get("inquiryConversionRate"), costPerInquiry: form.get("costPerInquiry"), costPerHighIntentInquiry: form.get("costPerHighIntentInquiry"),
+        avgVisitDuration: form.get("avgVisitDuration"), bounceRate: form.get("bounceRate"), gscImpressions: form.get("gscImpressions"), gscClicks: form.get("gscClicks"), gscKeywords: form.get("gscKeywords"), gscAvgPosition: form.get("gscAvgPosition")
+      });
+      if (!row) (CRM_MOCK.siteOperationData || (CRM_MOCK.siteOperationData = [])).unshift(target);
+      CRMUI.closeModal();
+      CRMUI.toast("站点运营数据已保存");
+      this.renderSiteOperationTable();
+    });
+  },
+  openSiteOperationImportModal() {
+    CRMUI.modal("批量导入站点运营数据", `
+      <div class="form-grid">
+        <div class="form-field full"><label>导入文件</label><input type="file" name="file" accept=".xlsx,.xls,.csv"></div>
+      </div>
+      <p class="muted">导入字段需与列表字段保持一致，重复周期按行覆盖。</p>
+    `, form => {
+      if (!form.get("file")?.name) return CRMUI.toast("请上传导入文件");
+      CRMUI.closeModal();
+      CRMUI.toast("导入完成：成功 8 条，覆盖 2 条，失败 0 条");
     });
   },
   openSiteModal(site, after) {
@@ -256,10 +454,15 @@ window.CRMAdminPage = {
   renderNotificationCenter(root) {
     this.notificationState = { query: "", status: "" };
     root.innerHTML = `
-      <div class="filters card pad search-filter">
-        <label class="filter-item"><span>关键词</span><input id="notificationSearch" placeholder="搜索通知场景"></label>
-        <label class="filter-item"><span>状态</span><select id="notificationStatus"><option value="">全部状态</option><option>开启</option><option>关闭</option></select></label>
-        <div class="filter-actions"><button class="btn" id="notificationQuery">查询</button><button class="btn" id="notificationReset">重置</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions"></div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>关键词</span><input id="notificationSearch" placeholder="搜索通知场景"></label>
+            <label class="filter-item"><span>状态</span><select id="notificationStatus"><option value="">全部状态</option><option>开启</option><option>关闭</option></select></label>
+            <div class="filter-actions"><button class="btn" id="notificationQuery">查询</button><button class="btn" id="notificationReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div id="notificationTable"></div>
     `;
@@ -368,11 +571,12 @@ window.CRMAdminPage = {
   },
   renderCommunicationConfig(root) {
     const q = CRMRouter.query();
-    const validTabs = ["mail", "dingtalk", "push"];
+    const validTabs = ["mail", "whatsapp", "dingtalk", "push"];
     this.communicationState = { tab: validTabs.includes(q.tab) ? q.tab : "mail" };
     root.innerHTML = `
       <div class="tabs" id="communicationTabs">
         <div class="tab ${this.communicationState.tab === "mail" ? "active" : ""}" data-tab="mail">邮件服务配置</div>
+        <div class="tab ${this.communicationState.tab === "whatsapp" ? "active" : ""}" data-tab="whatsapp">WhatsApp 服务配置</div>
         <div class="tab ${this.communicationState.tab === "dingtalk" ? "active" : ""}" data-tab="dingtalk">钉钉应用配置</div>
         <div class="tab ${this.communicationState.tab === "push" ? "active" : ""}" data-tab="push">消息推送配置</div>
       </div>
@@ -389,6 +593,7 @@ window.CRMAdminPage = {
   renderCommunicationTable() {
     const tab = this.communicationState.tab;
     if (tab === "mail") return this.renderMailServiceConfig();
+    if (tab === "whatsapp") return this.renderWhatsAppServiceConfig();
     if (tab === "dingtalk") return this.renderDingTalkServiceConfig();
     if (tab === "push") return this.renderPushServiceConfig();
   },
@@ -465,6 +670,46 @@ window.CRMAdminPage = {
       this.saveMailServiceConfig(new FormData(e.target));
     });
     CRMUI.$("#syncMailService").addEventListener("click", () => this.syncMailServiceConfig());
+  },
+  renderWhatsAppServiceConfig() {
+    const config = CRM_MOCK.whatsappServiceConfig || (CRM_MOCK.whatsappServiceConfig = { apiEndpoint: "", accessToken: "", webhookUrl: "", enabled: true });
+    CRMUI.$("#communicationTable").innerHTML = `
+      <form class="mail-config-form" id="whatsappServiceForm">
+        <section class="mail-config-section">
+          <div class="mail-section-title"><span>WhatsApp 接入配置</span></div>
+          <div class="mail-config-row">
+            <label>API 端点</label>
+            <input name="apiEndpoint" value="${config.apiEndpoint || ""}">
+          </div>
+          <div class="mail-config-row">
+            <label>Access Token</label>
+            <input name="accessToken" type="password" placeholder="${config.accessToken ? "已配置，留空则不修改" : "请输入 Access Token"}">
+          </div>
+          <div class="mail-config-row">
+            <label>Webhook 地址</label>
+            <input name="webhookUrl" value="${config.webhookUrl || ""}">
+          </div>
+          <div class="mail-config-row compact">
+            <label class="mail-check"><input type="checkbox" name="enabled" ${config.enabled ? "checked" : ""}> 启用 WhatsApp 消息接收</label>
+          </div>
+        </section>
+        <div class="mail-config-actions">
+          <button class="btn primary" type="submit">保存</button>
+          <button class="btn" id="testWhatsappService" type="button">测试连接</button>
+        </div>
+      </form>
+    `;
+    CRMUI.$("#whatsappServiceForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      if (!form.get("apiEndpoint") || !form.get("webhookUrl")) return CRMUI.toast("请完善 WhatsApp 服务配置必填项");
+      config.apiEndpoint = form.get("apiEndpoint");
+      config.webhookUrl = form.get("webhookUrl");
+      config.enabled = form.get("enabled") === "on";
+      if (form.get("accessToken")) config.accessToken = form.get("accessToken");
+      CRMUI.toast("WhatsApp 服务配置已保存");
+    });
+    CRMUI.$("#testWhatsappService").addEventListener("click", () => CRMUI.toast("WhatsApp 服务连接测试通过"));
   },
   validateMailServiceConfig(form) {
     const required = ["imapServer", "imapPort", "smtpServer", "smtpPort", "masterUsername", "authMode", "pullInterval"];
@@ -601,9 +846,10 @@ window.CRMAdminPage = {
   },
   renderEmailAccountTable() {
     const keyword = this.communicationState.query;
-    const rows = (CRM_MOCK.emailAccounts || []).filter(account => `${account.email} ${account.provider} ${account.status} ${account.displayName}`.toLowerCase().includes(keyword));
+    const rows = (CRM_MOCK.emailAccounts || []).filter(account => `${account.email} ${account.provider} ${account.status} ${account.displayName} ${CRMUI.siteName(account.siteId)}`.toLowerCase().includes(keyword));
     CRMUI.$("#communicationTable").innerHTML = CRMUI.table([
       { title: "邮箱账号", render: row => `<strong>${row.email}</strong><div class="small muted">${row.displayName}</div>` },
+      { title: "关联站点", render: row => CRMUI.siteName(row.siteId) },
       { title: "邮箱服务商", render: row => row.provider },
       { title: "SMTP/IMAP 状态", render: row => `<span class="badge gray">SMTP ${row.smtpStatus}</span> <span class="badge gray">IMAP ${row.imapStatus}</span>` },
       { title: "默认账号", render: row => row.isDefault ? CRMUI.badge("开启") : `<span class="badge gray">否</span>` },
@@ -632,12 +878,13 @@ window.CRMAdminPage = {
     return `<div class="step-row">${["填写配置", "连接测试", "保存完成"].map((label, index) => `<span class="step-pill ${index <= current ? "active" : ""}">${index + 1}. ${label}</span>`).join("")}</div>`;
   },
   openEmailAccountModal(account) {
-    const row = account || { email: "", displayName: "", provider: "自定义邮箱", imapHost: "", imapPort: "993", imapSsl: "开启", imapUser: "", imapPassword: "", smtpHost: "", smtpPort: "465", smtpSsl: "开启", smtpUser: "", smtpPassword: "", isDefault: false, status: "启用" };
+    const row = account || { email: "", siteId: "", displayName: "", provider: "自定义邮箱", imapHost: "", imapPort: "993", imapSsl: "开启", imapUser: "", imapPassword: "", smtpHost: "", smtpPort: "465", smtpSsl: "开启", smtpUser: "", smtpPassword: "", isDefault: false, status: "启用" };
     CRMUI.modal(account ? "编辑邮箱" : "新增邮箱", `
       ${this.connectionSteps(account ? 1 : 0)}
       <input type="hidden" name="tested" value="${account ? "true" : "false"}">
       <div class="form-grid">
         ${CRMUI.formInput("邮箱地址", "email", row.email)}
+        <div class="form-field"><label>关联站点</label><select name="siteId"><option value="">请选择关联站点</option>${CRMUI.optionList(CRM_MOCK.sites, row.siteId)}</select></div>
         ${CRMUI.formInput("显示名称", "displayName", row.displayName)}
         ${CRMUI.formInput("邮箱服务商", "provider", row.provider)}
         ${CRMUI.formInput("IMAP Host", "imapHost", row.imapHost)}
@@ -663,10 +910,12 @@ window.CRMAdminPage = {
   },
   saveEmailAccount(account, form) {
     if (form.get("tested") !== "true") return CRMUI.toast("请先完成连接测试");
+    if (!form.get("siteId")) return CRMUI.toast("请选择邮箱关联站点");
     if (!form.get("email") || !form.get("imapHost") || !form.get("smtpHost")) return CRMUI.toast("请完善邮箱地址、IMAP Host 和 SMTP Host");
     const target = account || { id: `mail${Date.now()}`, createdAt: "2026-07-03 17:50" };
     Object.assign(target, {
       email: form.get("email"),
+      siteId: form.get("siteId"),
       displayName: form.get("displayName"),
       provider: form.get("provider"),
       imapHost: form.get("imapHost"),
@@ -728,16 +977,20 @@ window.CRMAdminPage = {
   renderSystemUsers(root) {
     this.userState = { query: "", role: "", status: "", siteId: "", createTimeStart: "", createTimeEnd: "", page: 1, pageSize: 5 };
     root.innerHTML = `
-      <div class="toolbar">
-        <button class="btn primary" id="newSystemUser">新增用户</button>
-      </div>
-      <div class="filters card pad search-filter">
-        <label class="filter-item"><span>关键词</span><input id="systemSearch" placeholder="搜索用户姓名、登录账号、手机号、邮箱"></label>
-        <label class="filter-item"><span>角色</span><select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select></label>
-        <label class="filter-item"><span>站点</span><select id="systemSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></label>
-        <label class="filter-item"><span>状态</span><select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select></label>
-        <label class="filter-item"><span>创建时间</span><span class="range-picker"><input type="date" id="systemCreateTimeStart" value="${this.userState.createTimeStart}"><span class="range-separator">-</span><input type="date" id="systemCreateTimeEnd" value="${this.userState.createTimeEnd}"></span></label>
-        <div class="filter-actions"><button class="btn" id="systemQuery">查询</button><button class="btn" id="systemReset">重置</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn primary" id="newSystemUser">新增用户</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>关键词</span><input id="systemSearch" placeholder="搜索用户姓名、登录账号、手机号、邮箱"></label>
+            <label class="filter-item"><span>角色</span><select id="systemRole"><option value="">全部角色</option>${this.systemUserRoles().map(role => `<option value="${role}">${role}</option>`).join("")}</select></label>
+            <label class="filter-item"><span>站点</span><select id="systemSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></label>
+            <label class="filter-item"><span>状态</span><select id="systemStatus"><option value="">全部状态</option><option>启用</option><option>禁用</option></select></label>
+            <label class="filter-item"><span>创建时间</span><span class="range-picker"><input type="date" id="systemCreateTimeStart" value="${this.userState.createTimeStart}"><span class="range-separator">-</span><input type="date" id="systemCreateTimeEnd" value="${this.userState.createTimeEnd}"></span></label>
+            <div class="filter-actions"><button class="btn" id="systemQuery">查询</button><button class="btn" id="systemReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div id="systemTable"></div>
     `;
@@ -962,12 +1215,16 @@ window.CRMAdminPage = {
       systemLogs: [{ a: "2026-07-02 10:12:09", b: "管理员", c: "配置", d: "更新站点规则" }, { a: "2026-07-02 09:20:11", b: "Chen Hao", c: "新增", d: "录入跟进记录" }]
     }[routeKey] || [];
     root.innerHTML = `
-      <div class="toolbar">
-        <button class="btn primary" id="systemEdit">编辑</button>
-      </div>
-      <div class="filters card pad search-filter">
-        <label class="filter-item"><span>关键词</span><input id="systemSearch" placeholder="搜索${title}"></label>
-        <div class="filter-actions"><button class="btn" id="systemQuery">查询</button><button class="btn" id="systemReset">重置</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions">
+          <button class="btn primary" id="systemEdit">编辑</button>
+        </div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>关键词</span><input id="systemSearch" placeholder="搜索${title}"></label>
+            <div class="filter-actions"><button class="btn" id="systemQuery">查询</button><button class="btn" id="systemReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div id="systemTable"></div>
     `;
@@ -1011,17 +1268,21 @@ window.CRMAdminPage = {
           <div class="dict-list-head">
             <strong id="dictActiveTitle"></strong>
           </div>
-          <div class="dict-filter-bar search-filter">
-            <label class="filter-item"><span>关键词</span><input id="dictItemSearch" placeholder="字典名称 / 字典编码"></label>
-            <label class="filter-item"><span>状态</span><select id="dictItemStatus">
-              <option value="">全部状态</option>
-              <option value="启用">启用</option>
-              <option value="停用">停用</option>
-            </select></label>
-            <div class="filter-actions"><button class="btn primary" id="dictItemSearchBtn">查询</button><button class="btn" id="dictItemSearchReset">重置</button></div>
-          </div>
-          <div class="dict-toolbar">
-            <button class="btn primary" id="dictItemAdd">新增</button>
+          <div class="list-toolbar">
+            <div class="toolbar-actions">
+              <button class="btn primary" id="dictItemAdd">新增</button>
+            </div>
+            <div class="toolbar-filters">
+              <div class="dict-filter-bar search-filter">
+                <label class="filter-item"><span>关键词</span><input id="dictItemSearch" placeholder="字典名称 / 字典编码"></label>
+                <label class="filter-item"><span>状态</span><select id="dictItemStatus">
+                  <option value="">全部状态</option>
+                  <option value="启用">启用</option>
+                  <option value="停用">停用</option>
+                </select></label>
+                <div class="filter-actions"><button class="btn primary" id="dictItemSearchBtn">查询</button><button class="btn" id="dictItemSearchReset">重置</button></div>
+              </div>
+            </div>
           </div>
           <div id="dictItemTable"></div>
         </section>
@@ -1228,10 +1489,15 @@ window.CRMAdminPage = {
     const timeKey = tab === "login" ? "loginTime" : tab === "operate" ? "operateTime" : "changeTime";
     const timeLabel = tab === "login" ? "登录时间" : tab === "operate" ? "操作时间" : "变更时间";
     CRMUI.$("#systemLogBody").innerHTML = `
-      <div class="filters card pad search-filter">
-        <label class="filter-item"><span>关键词</span><input id="logQuery" value="${state.query}" placeholder="搜索关键词"></label>
-        <label class="filter-item"><span>${timeLabel}</span><span class="range-picker"><input type="date" id="logTimeStart" value="${state[`${timeKey}Start`] || ""}"><span class="range-separator">-</span><input type="date" id="logTimeEnd" value="${state[`${timeKey}End`] || ""}"></span></label>
-        <div class="filter-actions"><button class="btn" id="logQueryBtn">查询</button><button class="btn" id="logReset">重置</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions"></div>
+        <div class="toolbar-filters">
+          <div class="filters card pad search-filter">
+            <label class="filter-item"><span>关键词</span><input id="logQuery" value="${state.query}" placeholder="搜索关键词"></label>
+            <label class="filter-item"><span>${timeLabel}</span><span class="range-picker"><input type="date" id="logTimeStart" value="${state[`${timeKey}Start`] || ""}"><span class="range-separator">-</span><input type="date" id="logTimeEnd" value="${state[`${timeKey}End`] || ""}"></span></label>
+            <div class="filter-actions"><button class="btn" id="logQueryBtn">查询</button><button class="btn" id="logReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div id="systemLogTable"></div>
     `;

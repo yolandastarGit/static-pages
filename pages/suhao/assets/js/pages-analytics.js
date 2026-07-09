@@ -10,15 +10,20 @@ window.CRMAnalyticsPage = {
     this.analyticsState.statTimeStart = defaultRange.start;
     this.analyticsState.statTimeEnd = defaultRange.end;
     root.innerHTML = `
-      <div class="filters search-filter">
-        <label class="filter-item"><span>统计时间</span><select id="analyticsRange">
-          ${isCustomer
-            ? `<option>本年</option><option>本月</option><option>本季度</option><option>自定义</option>`
-            : `<option>本月</option><option>本季度</option><option>本年</option><option>今日</option><option>自定义</option>`}
-        </select></label>
-        <label class="filter-item"><span>时间范围</span><span class="range-picker"><input type="date" id="analyticsStatStart" value="${this.analyticsState.statTimeStart}"><span class="range-separator">-</span><input type="date" id="analyticsStatEnd" value="${this.analyticsState.statTimeEnd}"></span></label>
-        <label class="filter-item"><span>站点</span><select id="analyticsSite"><option value="">全部站点</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}">${s.name}</option>`).join("")}</select></label>
-        <div class="filter-actions"><button class="btn primary" id="analyticsQuery">查询</button><button class="btn" id="analyticsReset">重置</button></div>
+      <div class="list-toolbar">
+        <div class="toolbar-actions"></div>
+        <div class="toolbar-filters">
+          <div class="filters search-filter">
+            <label class="filter-item"><span>统计时间</span><select id="analyticsRange">
+              ${isCustomer
+                ? `<option>本年</option><option>本月</option><option>本季度</option><option>自定义</option>`
+                : `<option>本月</option><option>本季度</option><option>本年</option><option>今日</option><option>自定义</option>`}
+            </select></label>
+            <label class="filter-item"><span>时间范围</span><span class="range-picker"><input type="date" id="analyticsStatStart" value="${this.analyticsState.statTimeStart}"><span class="range-separator">-</span><input type="date" id="analyticsStatEnd" value="${this.analyticsState.statTimeEnd}"></span></label>
+            <label class="filter-item"><span>站点</span><select id="analyticsSite"><option value="">全部站点</option>${CRM_MOCK.sites.map(s => `<option value="${s.id}">${s.name}</option>`).join("")}</select></label>
+            <div class="filter-actions"><button class="btn primary" id="analyticsQuery">查询</button><button class="btn" id="analyticsReset">重置</button></div>
+          </div>
+        </div>
       </div>
       <div id="analyticsBody"></div>
     `;
@@ -131,7 +136,7 @@ window.CRMAnalyticsPage = {
       { title: "排名", render: r => r.rank },
       { title: "业务员", render: r => r.name },
       { title: "线索数", render: () => "128" },
-      { title: "转高意向客户数", render: () => "34" },
+      { title: "转客户数", render: () => "34" },
       { title: "成交金额", render: () => "¥860,000" }
     ], rows);
   }

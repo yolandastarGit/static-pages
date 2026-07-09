@@ -5,19 +5,36 @@ window.CRMLoginPage = {
       return;
     }
     document.getElementById("app").innerHTML = `
-      <main class="login-shell login-ai-shell">
-        <section class="login-main">
-          <div class="login-brand">
-            <div class="brand-mark">AI</div>
-            <div>
-              <h1>智能 CRM</h1>
-              <p>统一管理线索、客户、沟通与 AI 能力，让业务团队更快响应每一次机会。</p>
-            </div>
+      <main class="login-shell login-ai-shell soho-login-shell">
+        <section class="login-hero soho-login-hero" aria-label="AI CRM 品牌主视觉">
+          <div class="soho-login-logo">
+            <img src="../assets/img/soho-eb2b-logo.jpg" alt="苏豪通 SOHO EB2B">
           </div>
-          <section class="login-panel">
-            <div class="login-title">
+          <div class="soho-globe-wrap" aria-hidden="true">
+            <div class="soho-globe">
+              <span class="globe-orbit orbit-a"></span>
+              <span class="globe-orbit orbit-b"></span>
+              <span class="globe-orbit orbit-c"></span>
+              <span class="globe-land land-a"></span>
+              <span class="globe-land land-b"></span>
+              <span class="globe-land land-c"></span>
+              <span class="globe-band"></span>
+              <span class="globe-label">AI CRM</span>
+            </div>
+            <div class="soho-data-chip chip-a"><strong>Lead</strong><span>识别</span></div>
+            <div class="soho-data-chip chip-b"><strong>Customer</strong><span>经营</span></div>
+            <div class="soho-data-chip chip-c"><strong>Insight</strong><span>分析</span></div>
+          </div>
+          <div class="soho-hero-copy">
+            <h1>智能连接客户 · 驱动业务增长</h1>
+            <p>AI CRM 企业级客户管理平台</p>
+          </div>
+        </section>
+        <section class="login-main soho-login-main">
+          <section class="login-panel soho-login-panel">
+            <div class="login-title soho-login-title">
+              <span>AI CRM</span>
               <h2>登录系统</h2>
-              <p class="muted">请选择登录方式进入后台</p>
             </div>
             <div class="login-method-tabs">
               <button class="active" type="button" data-login-method="password">账号密码登录</button>
@@ -40,43 +57,8 @@ window.CRMLoginPage = {
                 <button class="btn" type="button" id="refreshDingQr">刷新二维码</button>
               </div>
             </div>
-            <p class="muted small" style="text-align:center;margin-top:14px">© 2026 AI 智能 CRM. All rights reserved.</p>
+            <p class="muted small soho-login-foot">© 2026 AI CRM. All rights reserved.</p>
           </section>
-        </section>
-        <section class="login-hero" aria-label="AI CRM 智能主视觉">
-          <div class="hero-copy">
-            <span class="hero-kicker">AI CRM Platform</span>
-            <h2>AI 驱动企业客户增长</h2>
-            <p>智能连接客户触达、线索识别、销售跟进与经营分析。</p>
-          </div>
-          <div class="hero-network" aria-hidden="true">
-            <span class="hero-line line-a"></span>
-            <span class="hero-line line-b"></span>
-            <span class="hero-line line-c"></span>
-            <span class="hero-node node-a"></span>
-            <span class="hero-node node-b"></span>
-            <span class="hero-node node-c"></span>
-            <span class="hero-node node-d"></span>
-            <div class="hero-core">
-              <span>AI</span>
-              <strong>Customer Intelligence</strong>
-            </div>
-            <div class="hero-card hero-card-a">
-              <small>Lead Score</small>
-              <strong>92</strong>
-              <span>High intent</span>
-            </div>
-            <div class="hero-card hero-card-b">
-              <small>Next Action</small>
-              <strong>Follow up</strong>
-              <span>Email · WhatsApp</span>
-            </div>
-            <div class="hero-card hero-card-c">
-              <small>Risk Level</small>
-              <strong>Low</strong>
-              <span>Company verified</span>
-            </div>
-          </div>
         </section>
       </main>
       <div class="toast" id="toast"></div>

@@ -20,7 +20,7 @@ window.CRMWorkbenchPage = {
       <div class="grid cols-4" style="margin-top:16px">
         ${[
           ["公海池", "回收线索再分配", "publicPool", ""],
-          ["线索列表", "跟进、打标、转高意向客户", "leads", ""],
+          ["线索列表", "跟进、打标、转客户", "leads", ""],
           ["客户列表", "客户资产沉淀", "customers", ""],
           ["合同中心", "成交合同与追溯", "contracts", ""]
         ].map(item => `<div class="card metric" data-quick="${item[2]}" data-query="${item[3]}"><div class="metric-label">${item[0]}</div><div class="metric-foot">${item[1]}</div></div>`).join("")}
