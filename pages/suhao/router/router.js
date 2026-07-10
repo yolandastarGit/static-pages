@@ -6,6 +6,7 @@ window.CRMRouter = {
     customers: "customers.html?view=list",
     contracts: "customers.html?view=contracts",
     email: "email.html",
+    emailCompose: "email.html?view=compose",
     whatsapp: "whatsapp.html",
     analyticsSales: "analytics.html?view=sales",
     analyticsAcquisition: "analytics.html?view=acquisition",
@@ -20,7 +21,6 @@ window.CRMRouter = {
     systemDicts: "ai.html?view=system-dicts",
     systemParams: "ai.html?view=system-params",
     systemCommunicationConfig: "ai.html?view=system-communication-config",
-    systemConfig: "ai.html?view=system-config",
     systemLogs: "ai.html?view=system-logs"
   },
   titles: {
@@ -29,7 +29,8 @@ window.CRMRouter = {
     publicPool: "公海池",
     customers: "客户列表",
     contracts: "合同中心",
-    email: "邮件中心",
+    email: "邮件",
+    emailCompose: "写邮件",
     whatsapp: "WhatsApp",
     analyticsSales: "销售经营",
     analyticsAcquisition: "获客分析",
@@ -43,8 +44,7 @@ window.CRMRouter = {
     systemMenus: "菜单管理",
     systemDicts: "字典管理",
     systemParams: "系统参数",
-    systemCommunicationConfig: "服务协议配置",
-    systemConfig: "系统配置",
+    systemCommunicationConfig: "集成配置",
     systemLogs: "系统日志"
   },
   meta: {
@@ -53,7 +53,8 @@ window.CRMRouter = {
     publicPool: { title: "公海池", page: "leads", parent: "线索中心", keepAlive: true },
     customers: { title: "客户列表", page: "customers", parent: "客户中心", keepAlive: true },
     contracts: { title: "合同中心", page: "customers", parent: "客户中心", keepAlive: true },
-    email: { title: "邮件中心", page: "email", parent: "沟通中心", keepAlive: true },
+    email: { title: "邮件", page: "email", parent: "沟通中心", keepAlive: true },
+    emailCompose: { title: "写邮件", page: "email", parent: "沟通中心", keepAlive: true },
     whatsapp: { title: "WhatsApp", page: "whatsapp", parent: "沟通中心", keepAlive: true },
     analyticsSales: { title: "销售经营", page: "analytics", parent: "分析中心", keepAlive: true },
     analyticsAcquisition: { title: "获客分析", page: "analytics", parent: "分析中心", keepAlive: true },
@@ -67,8 +68,7 @@ window.CRMRouter = {
     systemMenus: { title: "菜单管理", page: "ai", parent: "系统管理", keepAlive: true },
     systemDicts: { title: "字典管理", page: "ai", parent: "系统管理", keepAlive: true },
     systemParams: { title: "系统参数", page: "ai", parent: "系统管理", keepAlive: true },
-    systemCommunicationConfig: { title: "服务协议配置", page: "ai", parent: "系统管理", keepAlive: true },
-    systemConfig: { title: "系统配置", page: "ai", parent: "系统管理", keepAlive: true },
+    systemCommunicationConfig: { title: "集成配置", page: "ai", parent: "系统管理", keepAlive: true },
     systemLogs: { title: "系统日志", page: "ai", parent: "系统管理", keepAlive: true }
   },
   goto(name, params = {}) {
@@ -131,6 +131,7 @@ window.CRMRouter = {
     const map = {
       leads: { pool: "publicPool", list: "leads" },
       customers: { contracts: "contracts", list: "customers" },
+      email: { compose: "emailCompose" },
       analytics: { acquisition: "analyticsAcquisition", customer: "analyticsCustomer", sales: "analyticsSales" },
       ai: {
         sites: "sites",
@@ -143,7 +144,6 @@ window.CRMRouter = {
         "system-dicts": "systemDicts",
         "system-params": "systemParams",
         "system-communication-config": "systemCommunicationConfig",
-        "system-config": "systemConfig",
         "system-logs": "systemLogs"
       }
     };

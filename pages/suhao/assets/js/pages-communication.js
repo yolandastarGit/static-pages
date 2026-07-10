@@ -1,5 +1,9 @@
 window.CRMCommunicationPage = {
-  render(root, page) {
+  render(root, page, routeKey) {
+    if (page === "email" && routeKey === "emailCompose") {
+      this.renderComposeMailPage(root);
+      return;
+    }
     page === "email" ? this.renderEmail(root) : this.renderWhatsApp(root);
   },
   renderEmail(root) {
@@ -39,8 +43,12 @@ window.CRMCommunicationPage = {
       this.renderMailList();
     }));
     CRMUI.$("#mailSearch").addEventListener("input", e => {
-      this.mailState.query = e.target.value.toLowerCase();
-      this.renderMailList();
+      const value = e.target.value.toLowerCase();
+      clearTimeout(this._mailSearchTimer);
+      this._mailSearchTimer = setTimeout(() => {
+        this.mailState.query = value;
+        this.renderMailList();
+      }, 300);
     });
     CRMUI.$("#mailbox").addEventListener("change", e => {
       this.mailState.mailbox = e.target.value;
@@ -61,7 +69,7 @@ window.CRMCommunicationPage = {
       this.renderMailList();
     });
     CRMUI.$("#batchAi").addEventListener("click", () => this.openBatchAiModal());
-    CRMUI.$("#composeMail").addEventListener("click", () => this.openComposeMailModal());
+    CRMUI.$("#composeMail").addEventListener("click", () => this.openComposeMailPage());
     CRMUI.$("#batchReadMail").addEventListener("click", () => this.markSelectedMailsRead());
     CRMUI.$("#batchDeleteMail").addEventListener("click", () => this.openBatchDeleteMailModal());
     this.renderMailList();
@@ -145,11 +153,16 @@ window.CRMCommunicationPage = {
       <div style="line-height:1.8;margin:18px 0">${mail.body}</div>
       <div>${mail.attachments.map(a => `<span class="badge gray">${a}</span>`).join(" ") || `<span class="muted">无附件</span>`}</div>
       <div class="toolbar" style="margin-top:18px">
-        <button class="btn primary" id="generateLead">${mail.leadId ? "查看线索" : "生成线索"}</button>
-        ${["运营专员", "协同人"].includes(CRM_MOCK.currentUser.role) ? `<button class="btn" id="transferMailToSales">转派给业务员</button>` : ""}
-        <button class="btn" id="replyMail">回复</button>
-        <button class="btn" id="forwardMail">转发</button>
-        <button class="btn danger" id="deleteMailDetail">删除</button>
+        ${this.mailState.folder === "trash" ? `
+          <button class="btn primary" id="restoreMail">恢复</button>
+          <button class="btn danger" id="purgeMail">永久删除</button>
+        ` : `
+          <button class="btn primary" id="generateLead">${mail.leadId ? "查看线索" : "生成线索"}</button>
+          ${["运营专员", "协同人"].includes(CRM_MOCK.currentUser.role) ? `<button class="btn" id="transferMailToSales">转派给业务员</button>` : ""}
+          <button class="btn" id="replyMail">回复</button>
+          <button class="btn" id="forwardMail">转发</button>
+          <button class="btn danger" id="deleteMailDetail">删除</button>
+        `}
       </div>
     `;
     const profile = this.companyProfileForMail(mail);
@@ -166,13 +179,18 @@ window.CRMCommunicationPage = {
       <button class="btn" id="copyAi">复制总结</button>
     `;
     CRMUI.$("#copyAi").addEventListener("click", () => CRMUI.toast("AI 总结已复制"));
+    if (this.mailState.folder === "trash") {
+      CRMUI.$("#restoreMail").addEventListener("click", () => this.restoreMails([mail.id]));
+      CRMUI.$("#purgeMail").addEventListener("click", () => this.openPurgeMailModal([mail.id]));
+      return;
+    }
     CRMUI.$("#generateLead").addEventListener("click", () => {
       if (mail.leadId) CRMRouter.goto("leads", { id: mail.leadId });
       else this.openGenerateLeadModal(mail);
     });
     CRMUI.$("#transferMailToSales")?.addEventListener("click", () => this.openMailTransferModal(mail));
-    CRMUI.$("#replyMail").addEventListener("click", () => CRMUI.toast("已打开回复编辑状态"));
-    CRMUI.$("#forwardMail").addEventListener("click", () => CRMUI.toast("已打开转发编辑状态"));
+    CRMUI.$("#replyMail").addEventListener("click", () => this.openComposeMailPage({ mode: "reply", mailId: mail.id }));
+    CRMUI.$("#forwardMail").addEventListener("click", () => this.openComposeMailPage({ mode: "forward", mailId: mail.id }));
     CRMUI.$("#deleteMailDetail").addEventListener("click", () => this.openDeleteMailModal(mail.id));
   },
   openMailTransferModal(mail) {
@@ -198,21 +216,50 @@ window.CRMCommunicationPage = {
       this.renderMailDetail();
     });
   },
-  openComposeMailModal(mail = {}) {
-    CRMUI.modal("写邮件", `
-      <div class="form-grid">
-        <div class="form-field"><label>发件人</label><select name="from">${CRM_MOCK.mailboxes.map(m => `<option>${m}</option>`).join("")}</select></div>
-        ${CRMUI.formInput("收件人", "to", mail.to || "")}
-        ${CRMUI.formInput("抄送", "cc", "")}
-        ${CRMUI.formInput("密送", "bcc", "")}
-        ${CRMUI.formInput("主题", "subject", mail.subject || "")}
-        <div class="form-field full"><label>正文</label><textarea name="body">${mail.body || ""}</textarea></div>
-        <div class="form-field full"><label>附件</label><input name="attachment" type="file" multiple></div>
-      </div>`, form => {
-      if (!form.get("to") && !form.get("subject") && !form.get("body")) return CRMUI.toast("收件人/主题/正文至少填写一项");
-      CRMUI.closeModal();
+  openComposeMailPage(params = {}) {
+    CRMRouter.goto("emailCompose", params);
+  },
+  renderComposeMailPage(root) {
+    const params = this.currentRouteParams();
+    const sourceMail = params.mailId ? CRM_MOCK.emails.find(mail => mail.id === params.mailId) : null;
+    const isReply = params.mode === "reply" && sourceMail;
+    const isForward = params.mode === "forward" && sourceMail;
+    const subject = isReply ? `Re: ${sourceMail.subject.replace(/^Re:\s*/i, "")}` : isForward ? `Fwd: ${sourceMail.subject.replace(/^Fwd:\s*/i, "")}` : "";
+    const to = isReply ? sourceMail.from : "";
+    const body = isForward ? `\n\n---------- 转发邮件 ----------\n发件人：${sourceMail.from}\n时间：${sourceMail.time}\n主题：${sourceMail.subject}\n\n${sourceMail.body}` : "";
+    root.innerHTML = `
+      <div class="card pad">
+        <div class="detail-title">${isReply ? "回复邮件" : isForward ? "转发邮件" : "写邮件"}</div>
+        <form id="composeMailForm" class="form-grid" style="margin-top:16px">
+          <div class="form-field"><label>发件人</label><select name="from">${(CRM_MOCK.mailboxes || []).map(mailbox => `<option>${mailbox}</option>`).join("")}</select></div>
+          ${CRMUI.formInput("收件人", "to", to)}
+          ${CRMUI.formInput("抄送", "cc", "")}
+          ${CRMUI.formInput("密送", "bcc", "")}
+          ${CRMUI.formInput("主题", "subject", subject)}
+          <div class="form-field full"><label>正文</label><textarea name="body" style="min-height:260px">${body}</textarea></div>
+          <div class="form-field full"><label>附件</label><input name="attachment" type="file" multiple></div>
+        </form>
+        <div class="toolbar" style="justify-content:flex-end;margin-top:18px">
+          <button class="btn" id="saveMailDraft" type="button">保存草稿</button>
+          <button class="btn" id="cancelComposeMail" type="button">取消</button>
+          <button class="btn primary" id="sendComposeMail" type="button">发送</button>
+        </div>
+      </div>
+    `;
+    CRMUI.$("#sendComposeMail").addEventListener("click", () => {
+      const form = new FormData(CRMUI.$("#composeMailForm"));
+      if (!form.get("to")) return CRMUI.toast("请填写收件人");
+      if (!form.get("subject")) return CRMUI.toast("请填写邮件主题");
       CRMUI.toast("发送成功");
+      CRMRouter.goto("email");
     });
+    CRMUI.$("#saveMailDraft").addEventListener("click", () => CRMUI.toast("草稿已保存"));
+    CRMUI.$("#cancelComposeMail").addEventListener("click", () => CRMRouter.goto("email"));
+  },
+  currentRouteParams() {
+    const activeUrl = window.CRMWorkspace?.activeTab?.()?.url || window.location.href;
+    const query = activeUrl.split("?")[1] || "";
+    return Object.fromEntries(new URLSearchParams(query).entries());
   },
   markSelectedMailsRead() {
     const ids = Array.from(this.mailState.batchSelected);
@@ -317,46 +364,94 @@ window.CRMCommunicationPage = {
     const button = CRMUI.$("#batchDeleteMail");
     if (!button) return;
     button.hidden = this.mailState.batchSelected.size < 2;
-    button.textContent = `批量删除${this.mailState.batchSelected.size >= 2 ? `（${this.mailState.batchSelected.size}）` : ""}`;
+    const count = this.mailState.batchSelected.size >= 2 ? `（${this.mailState.batchSelected.size}）` : "";
+    button.textContent = this.mailState.folder === "trash" ? `永久删除${count}` : `批量删除${count}`;
   },
   openDeleteMailModal(mailId) {
     CRMUI.modal("删除邮件", `
-      <p>确定删除该邮件吗？</p>
-      <p class="muted">删除后不可恢复。</p>
+      <p>确定将该邮件移至垃圾箱吗？</p>
+      <p class="muted">可在垃圾箱中恢复；永久删除需二次确认。</p>
     `, () => {
       this.deleteMails([mailId]);
     });
-    CRMUI.$("#modalForm button[type='submit']").textContent = "确认删除";
+    CRMUI.$("#modalForm button[type='submit']").textContent = "移至垃圾箱";
   },
   openBatchDeleteMailModal() {
     const ids = Array.from(this.mailState.batchSelected);
     if (!ids.length) return CRMUI.toast("请选择至少一封邮件");
+    if (this.mailState.folder === "trash") {
+      return this.openPurgeMailModal(ids);
+    }
     CRMUI.modal("批量删除", `
       <p>已选择 <strong>${ids.length}</strong> 封邮件。</p>
-      <p class="muted">是否确认删除？</p>
+      <p class="muted">将移至垃圾箱，可稍后恢复。</p>
     `, () => {
       this.deleteMails(ids);
     });
-    CRMUI.$("#modalForm button[type='submit']").textContent = "确认删除";
+    CRMUI.$("#modalForm button[type='submit']").textContent = "移至垃圾箱";
+  },
+  openPurgeMailModal(ids) {
+    CRMUI.modal("永久删除", `
+      <p>已选择 <strong>${ids.length}</strong> 封邮件。</p>
+      <p class="muted">永久删除后不可恢复，确认继续？</p>
+    `, () => {
+      this.purgeMails(ids);
+    });
+    CRMUI.$("#modalForm button[type='submit']").textContent = "永久删除";
   },
   deleteMails(ids) {
     try {
       const idSet = new Set(ids);
-      const before = CRM_MOCK.emails.length;
-      CRM_MOCK.emails = CRM_MOCK.emails.filter(mail => !idSet.has(mail.id));
-      if (CRM_MOCK.emails.length === before) throw new Error("未找到需要删除的邮件");
+      let moved = 0;
+      CRM_MOCK.emails.forEach(mail => {
+        if (!idSet.has(mail.id) || mail.folder === "trash") return;
+        mail.previousFolder = mail.folder;
+        mail.folder = "trash";
+        moved += 1;
+      });
+      if (!moved) throw new Error("未找到需要删除的邮件");
       ids.forEach(id => this.mailState.batchSelected.delete(id));
       if (idSet.has(this.mailState.selected)) {
-        const next = this.getFilteredMails()[0] || CRM_MOCK.emails[0];
+        const next = this.getFilteredMails()[0] || CRM_MOCK.emails.find(mail => mail.folder === this.mailState.folder);
         this.mailState.selected = next?.id || "";
       }
       CRMUI.closeModal();
-      CRMUI.toast(ids.length > 1 ? "邮件已批量删除" : "邮件已删除");
+      CRMUI.toast(ids.length > 1 ? "已批量移至垃圾箱" : "已移至垃圾箱");
       this.renderMailTabs();
       this.renderMailList();
     } catch (error) {
       CRMUI.toast(`删除失败：${error.message || "请稍后重试"}`);
     }
+  },
+  restoreMails(ids) {
+    const idSet = new Set(ids);
+    let restored = 0;
+    CRM_MOCK.emails.forEach(mail => {
+      if (!idSet.has(mail.id) || mail.folder !== "trash") return;
+      mail.folder = mail.previousFolder || "inbox";
+      delete mail.previousFolder;
+      restored += 1;
+    });
+    if (!restored) return CRMUI.toast("未找到可恢复的邮件");
+    ids.forEach(id => this.mailState.batchSelected.delete(id));
+    CRMUI.toast(ids.length > 1 ? "已批量恢复" : "邮件已恢复");
+    this.renderMailTabs();
+    this.renderMailList();
+  },
+  purgeMails(ids) {
+    const idSet = new Set(ids);
+    const before = CRM_MOCK.emails.length;
+    CRM_MOCK.emails = CRM_MOCK.emails.filter(mail => !(idSet.has(mail.id) && mail.folder === "trash"));
+    if (CRM_MOCK.emails.length === before) return CRMUI.toast("未找到可永久删除的邮件");
+    ids.forEach(id => this.mailState.batchSelected.delete(id));
+    if (idSet.has(this.mailState.selected)) {
+      const next = this.getFilteredMails()[0];
+      this.mailState.selected = next?.id || "";
+    }
+    CRMUI.closeModal();
+    CRMUI.toast("邮件已永久删除");
+    this.renderMailTabs();
+    this.renderMailList();
   },
   renderMailTabs() {
     const tabs = [["inbox", "收件箱"], ["sent", "已发送"], ["draft", "草稿箱"], ["trash", "垃圾箱"]];
@@ -496,25 +591,47 @@ window.CRMCommunicationPage = {
     pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
     return pdf;
   },
+  canOperateWhatsApp() {
+    return CRM_MOCK.currentUser.role === "业务员";
+  },
+  canViewWhatsApp() {
+    return ["业务员", "运营专员", "协同人", "系统管理员"].includes(CRM_MOCK.currentUser.role);
+  },
+  isWhatsAppReadOnly() {
+    return !this.canOperateWhatsApp();
+  },
+  allowedWhatsAppSiteIds() {
+    if (CRM_MOCK.currentUser.role === "系统管理员") return null;
+    const user = CRM_MOCK.users.find(item => item.id === CRM_MOCK.currentUser.id) || CRM_MOCK.currentUser;
+    return user.siteIds || CRM_MOCK.currentUser.sites || [];
+  },
+  whatsappConversationsForUser() {
+    const allowed = this.allowedWhatsAppSiteIds();
+    return (CRM_MOCK.whatsappConversations || []).filter(conversation => !allowed || allowed.includes(conversation.siteId));
+  },
   renderWhatsApp(root) {
-    if (CRM_MOCK.currentUser.role !== "业务员") {
-      root.innerHTML = `<div class="card pad muted">当前角色不支持绑定或查看 WhatsApp 会话。</div>`;
+    if (!this.canViewWhatsApp()) {
+      root.innerHTML = `<div class="card pad muted">当前角色不支持查看 WhatsApp 会话。</div>`;
       return;
     }
-    this.chatState = { selected: CRM_MOCK.whatsappConversations[0].id, query: "", lastMessageTimeStart: "", lastMessageTimeEnd: "" };
-    const account = this.personalWhatsappAccount();
-    if (!account) {
-      root.innerHTML = `
-        <div class="card pad account-empty">
-          <div class="section-title">未绑定 WhatsApp 账号</div>
-          <p class="muted">一个用户仅允许绑定一个 WhatsApp 账号。绑定后即可查看并同步 WhatsApp 会话。</p>
-          <button class="btn primary" id="bindWhatsappAccount" type="button">绑定 WhatsApp</button>
-        </div>
-      `;
-      CRMUI.$("#bindWhatsappAccount").addEventListener("click", () => this.renderWhatsAppBindFlow(root));
-      return;
+    const conversations = this.whatsappConversationsForUser();
+    if (this.canOperateWhatsApp()) {
+      const account = this.personalWhatsappAccount();
+      if (!account) {
+        root.innerHTML = `
+          <div class="card pad account-empty">
+            <div class="section-title">未绑定 WhatsApp 账号</div>
+            <p class="muted">一个用户仅允许绑定一个 WhatsApp 账号。绑定后即可查看并同步 WhatsApp 会话。</p>
+            <button class="btn primary" id="bindWhatsappAccount" type="button">绑定 WhatsApp</button>
+          </div>
+        `;
+        CRMUI.$("#bindWhatsappAccount").addEventListener("click", () => this.renderWhatsAppBindFlow(root));
+        return;
+      }
     }
+    this.chatState = { selected: conversations[0]?.id || "", query: "", lastMessageTimeStart: "", lastMessageTimeEnd: "" };
     root.innerHTML = `
+      ${this.isWhatsAppReadOnly() ? `<div class="card pad muted" style="margin-bottom:12px">只读模式：当前角色可查看授权范围内业务员的 WhatsApp 会话，不可发送或回复消息。</div>` : ""}
       <div class="list-toolbar">
         <div class="toolbar-actions">
           <button class="btn" id="refreshChat">刷新</button>
@@ -534,8 +651,12 @@ window.CRMCommunicationPage = {
       </div>
     `;
     CRMUI.$("#chatSearch").addEventListener("input", e => {
-      this.chatState.query = e.target.value.toLowerCase();
-      this.renderChatList();
+      const value = e.target.value.toLowerCase();
+      clearTimeout(this._chatSearchTimer);
+      this._chatSearchTimer = setTimeout(() => {
+        this.chatState.query = value;
+        this.renderChatList();
+      }, 300);
     });
     CRMUI.$("#chatTimeStart").addEventListener("change", e => { this.chatState.lastMessageTimeStart = e.target.value; this.renderChatList(); });
     CRMUI.$("#chatTimeEnd").addEventListener("change", e => { this.chatState.lastMessageTimeEnd = e.target.value; this.renderChatList(); });
@@ -583,7 +704,7 @@ window.CRMCommunicationPage = {
   renderChatList() {
     const start = this.chatState.lastMessageTimeStart || "";
     const end = this.chatState.lastMessageTimeEnd || "";
-    const list = CRM_MOCK.whatsappConversations.filter(c => {
+    const list = this.whatsappConversationsForUser().filter(c => {
       const text = `${c.name} ${c.company} ${c.messages.map(m => m.text).join(" ")}`.toLowerCase();
       // 最近消息时间：取会话最近一条消息时间，按日期粒度比较；空值不限制
       const msgDate = String(c.lastMessageTime || "").slice(0, 10);
@@ -591,6 +712,9 @@ window.CRMCommunicationPage = {
       const byEnd = !end || msgDate <= end;
       return text.includes(this.chatState.query) && byStart && byEnd;
     });
+    if (!list.find(item => item.id === this.chatState.selected)) {
+      this.chatState.selected = list[0]?.id || "";
+    }
     CRMUI.$("#chatList").innerHTML = this.renderContactList(list);
     CRMUI.$$("[data-chat]").forEach(el => el.addEventListener("click", () => {
       this.chatState.selected = el.dataset.chat;
@@ -630,11 +754,18 @@ window.CRMCommunicationPage = {
   },
   renderChatDetail() {
     const c = CRM_MOCK.whatsappConversations.find(item => item.id === this.chatState.selected);
+    if (!c) {
+      CRMUI.$("#chatBody").innerHTML = `<div class="muted">请选择一条会话</div>`;
+      CRMUI.$("#chatInfo").innerHTML = "";
+      return;
+    }
     const profile = this.companyProfileForWhatsApp(c);
+    const readOnly = this.isWhatsAppReadOnly();
+    const canGenerateLead = this.canOperateWhatsApp() || CRM_MOCK.currentUser.role === "系统管理员";
     CRMUI.$("#chatBody").innerHTML = `
-      <div class="detail-title">${c.name}</div><p class="muted">${c.company} · ${c.phone}</p>
+      <div class="detail-title">${c.name}</div><p class="muted">${c.company} · ${c.phone}${c.siteId ? ` · ${CRMUI.siteName(c.siteId)}` : ""}</p>
       <div class="chat-body">${c.messages.map(m => `<div class="bubble ${m.from === "me" ? "me" : ""}">${m.text}<div class="small">${m.time}</div></div>`).join("")}</div>
-      <div class="chat-input"><textarea id="chatInput" style="flex:1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea><button class="btn" id="uploadChatImage">上传图片</button><button class="btn" id="uploadChatFile">上传文件</button><button class="btn primary" id="sendMsg">发送</button></div>
+      ${readOnly ? `<p class="muted small">只读查看，不可回复或发送消息。</p>` : `<div class="chat-input"><textarea id="chatInput" style="flex:1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea><button class="btn" id="uploadChatImage">上传图片</button><button class="btn" id="uploadChatFile">上传文件</button><button class="btn primary" id="sendMsg">发送</button></div>`}
     `;
     CRMUI.$("#chatInfo").innerHTML = `
       <div class="card-title">AI 智能分析</div>
@@ -647,22 +778,24 @@ window.CRMCommunicationPage = {
         warning: profile?.risk?.summary || "未发现明显安全风险。"
       })}
       <div class="toolbar">
-        <button class="btn primary" id="chatLead">${c.leadId ? "查看线索详情" : "生成线索"}</button>
+        ${canGenerateLead ? `<button class="btn primary" id="chatLead">${c.leadId ? "查看线索详情" : "生成线索"}</button>` : ""}
         ${c.customerId ? `<button class="btn" id="chatCustomer">查看客户</button>` : ""}
       </div>
     `;
-    const send = () => {
-      const input = CRMUI.$("#chatInput");
-      if (!input.value.trim()) return;
-      c.messages.push({ id: `wm${Date.now()}`, from: "me", text: input.value.trim(), time: "刚刚" });
-      input.value = "";
-      this.renderChatDetail();
-    };
-    CRMUI.$("#sendMsg").addEventListener("click", send);
-    CRMUI.$("#chatInput").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
-    CRMUI.$("#uploadChatImage").addEventListener("click", () => CRMUI.toast("已打开图片上传入口"));
-    CRMUI.$("#uploadChatFile").addEventListener("click", () => CRMUI.toast("已打开文件上传入口"));
-    CRMUI.$("#chatLead").addEventListener("click", () => c.leadId ? CRMRouter.goto("leads", { id: c.leadId }) : this.openWhatsappGenerateLeadModal(c));
+    if (!readOnly) {
+      const send = () => {
+        const input = CRMUI.$("#chatInput");
+        if (!input.value.trim()) return;
+        c.messages.push({ id: `wm${Date.now()}`, from: "me", text: input.value.trim(), time: "刚刚" });
+        input.value = "";
+        this.renderChatDetail();
+      };
+      CRMUI.$("#sendMsg").addEventListener("click", send);
+      CRMUI.$("#chatInput").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+      CRMUI.$("#uploadChatImage").addEventListener("click", () => CRMUI.toast("已打开图片上传入口"));
+      CRMUI.$("#uploadChatFile").addEventListener("click", () => CRMUI.toast("已打开文件上传入口"));
+    }
+    CRMUI.$("#chatLead")?.addEventListener("click", () => c.leadId ? CRMRouter.goto("leads", { id: c.leadId }) : this.openWhatsappGenerateLeadModal(c));
     const customerBtn = CRMUI.$("#chatCustomer");
     if (customerBtn) customerBtn.addEventListener("click", () => CRMRouter.goto("customers", { id: c.customerId }));
   },
