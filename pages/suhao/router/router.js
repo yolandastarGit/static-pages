@@ -2,8 +2,11 @@ window.CRMRouter = {
   routes: {
     workbench: "workbench.html",
     leads: "leads.html?view=list",
+    leadDetail: "leads.html?view=detail",
     publicPool: "leads.html?view=pool",
+    followLogs: "leads.html?view=follow-logs",
     customers: "customers.html?view=list",
+    customerDetail: "customers.html?view=detail",
     contracts: "customers.html?view=contracts",
     email: "email.html",
     emailCompose: "email.html?view=compose",
@@ -26,8 +29,11 @@ window.CRMRouter = {
   titles: {
     workbench: "工作台",
     leads: "线索列表",
+    leadDetail: "线索详情",
     publicPool: "公海池",
+    followLogs: "跟进日志",
     customers: "客户列表",
+    customerDetail: "客户详情",
     contracts: "合同中心",
     email: "邮件",
     emailCompose: "写邮件",
@@ -38,7 +44,7 @@ window.CRMRouter = {
     sites: "站点管理",
     siteOperationData: "站点运营数据",
     ai: "AI 能力管理",
-    notificationCenter: "通知中心",
+    notificationCenter: "通知场景",
     systemUsers: "用户管理",
     systemRoles: "角色管理",
     systemMenus: "菜单管理",
@@ -50,8 +56,11 @@ window.CRMRouter = {
   meta: {
     workbench: { title: "工作台", page: "workbench", fixed: true, keepAlive: true },
     leads: { title: "线索列表", page: "leads", parent: "线索中心", keepAlive: true },
+    leadDetail: { title: "线索详情", page: "leads", parent: "线索中心", keepAlive: true },
     publicPool: { title: "公海池", page: "leads", parent: "线索中心", keepAlive: true },
+    followLogs: { title: "跟进日志", page: "leads", parent: "线索中心", keepAlive: true },
     customers: { title: "客户列表", page: "customers", parent: "客户中心", keepAlive: true },
+    customerDetail: { title: "客户详情", page: "customers", parent: "客户中心", keepAlive: true },
     contracts: { title: "合同中心", page: "customers", parent: "客户中心", keepAlive: true },
     email: { title: "邮件", page: "email", parent: "沟通中心", keepAlive: true },
     emailCompose: { title: "写邮件", page: "email", parent: "沟通中心", keepAlive: true },
@@ -62,7 +71,7 @@ window.CRMRouter = {
     sites: { title: "站点管理", page: "ai", parent: "站点中心", keepAlive: true },
     siteOperationData: { title: "站点运营数据", page: "ai", parent: "站点中心", keepAlive: true },
     ai: { title: "AI 能力管理", page: "ai", keepAlive: true },
-    notificationCenter: { title: "通知中心", page: "ai", parent: "通知管理", keepAlive: true },
+    notificationCenter: { title: "通知场景", page: "ai", parent: "通知管理", keepAlive: true },
     systemUsers: { title: "用户管理", page: "ai", parent: "系统管理", keepAlive: true },
     systemRoles: { title: "角色管理", page: "ai", parent: "系统管理", keepAlive: true },
     systemMenus: { title: "菜单管理", page: "ai", parent: "系统管理", keepAlive: true },
@@ -115,11 +124,20 @@ window.CRMRouter = {
   createRoute(name, params = {}) {
     const meta = this.meta[name] || { title: this.titles[name] || name, page: this.pageForKey(name), keepAlive: true };
     const url = this.routeUrl(name, params);
+    let title = meta.title || this.titles[name] || name;
+    if (name === "leadDetail" && params.id && window.CRM_MOCK?.leads) {
+      const lead = CRM_MOCK.leads.find(item => item.id === params.id);
+      if (lead?.no) title = `线索 ${lead.no}`;
+    }
+    if (name === "customerDetail" && params.id && window.CRM_MOCK?.customers) {
+      const customer = CRM_MOCK.customers.find(item => item.id === params.id);
+      if (customer?.name) title = `客户 ${customer.name}`;
+    }
     return {
       id: this.routeIdentity(name, params),
       key: name,
       page: meta.page || this.pageForKey(name),
-      title: meta.title || this.titles[name] || name,
+      title,
       parent: meta.parent || "",
       fixed: Boolean(meta.fixed),
       keepAlive: meta.keepAlive !== false,
@@ -129,8 +147,8 @@ window.CRMRouter = {
   currentKey(basePage) {
     const view = this.query().view;
     const map = {
-      leads: { pool: "publicPool", list: "leads" },
-      customers: { contracts: "contracts", list: "customers" },
+      leads: { pool: "publicPool", list: "leads", detail: "leadDetail", "follow-logs": "followLogs" },
+      customers: { contracts: "contracts", list: "customers", detail: "customerDetail" },
       email: { compose: "emailCompose" },
       analytics: { acquisition: "analyticsAcquisition", customer: "analyticsCustomer", sales: "analyticsSales" },
       ai: {

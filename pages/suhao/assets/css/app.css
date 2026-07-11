@@ -652,6 +652,92 @@ nav {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* 详情页基础数据：三列紧凑 Descriptions（Ant Design Pro / 若依风格） */
+.detail-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.detail-page-eyebrow {
+  margin-bottom: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.detail-page-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.detail-card {
+  padding: 14px 16px;
+}
+
+.detail-card-tabs {
+  margin-top: 12px;
+}
+
+.detail-section-title {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.detail-card .detail-section-title + .detail-desc + .detail-section-title,
+.detail-card .detail-desc + .detail-section-title {
+  margin-top: 14px;
+}
+
+.detail-desc {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 10px;
+}
+
+.detail-desc > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-desc .muted {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.detail-desc strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.detail-card-tabs .tabs {
+  margin-bottom: 10px;
+}
+
+.lead-profile-stack .detail-section-title {
+  margin-top: 14px;
+}
+
+.lead-profile-stack .detail-section-title:first-child {
+  margin-top: 0;
+}
+
+.lead-profile-stack .ai-info-grid {
+  margin-top: 4px;
+}
+
 .metric {
   position: relative;
   min-height: 112px;
@@ -1083,6 +1169,18 @@ nav {
   gap: 16px;
 }
 
+.account-bind-modal {
+  width: min(760px, calc(100vw - 48px));
+}
+
+.account-bind-modal .modal-foot {
+  display: none;
+}
+
+.bind-flow-hint {
+  margin-top: -8px;
+}
+
 .account-empty {
   display: grid;
   gap: 10px;
@@ -1497,6 +1595,216 @@ a {
 .badge.violet { color: var(--violet); background: var(--violet-weak); border-color: #dfd4fb; }
 .badge.cyan { color: #078981; background: var(--cyan-weak); border-color: #c8efeb; }
 .badge.gray { color: #526070; background: #f1f4f8; border-color: #e3e8ef; }
+
+/* 角色状态开关（对齐系统管理·角色列表） */
+.status-switch {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  cursor: pointer;
+  background: #c9d3df;
+  transition: background .2s ease;
+  vertical-align: middle;
+}
+.status-switch.on {
+  background: #2f8f6b;
+}
+.status-switch:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.status-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .18);
+  transition: transform .2s ease;
+}
+.status-switch.on::after {
+  transform: translateX(22px);
+}
+.role-name-link {
+  color: var(--brand);
+  font-weight: 650;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
+.role-name-link:hover {
+  text-decoration: underline;
+}
+.btn.soft-green {
+  color: #1f7a4d;
+  background: #e8f8ef;
+  border-color: #c9efd9;
+}
+.btn.soft-red {
+  color: var(--red);
+  background: var(--red-weak);
+  border-color: #ffcaca;
+}
+.btn.soft-amber {
+  color: #c76405;
+  background: var(--amber-weak);
+  border-color: #ffe1ad;
+}
+.btn.soft-cyan {
+  color: #078981;
+  background: var(--cyan-weak);
+  border-color: #c8efeb;
+}
+
+.menu-tree-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+.menu-tree-toggle {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  background: transparent;
+  color: #667788;
+  padding: 0;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  flex: 0 0 18px;
+}
+.menu-tree-toggle.is-leaf {
+  visibility: hidden;
+  pointer-events: none;
+}
+.menu-tree-icon {
+  width: 18px;
+  text-align: center;
+  color: #667788;
+  flex: 0 0 18px;
+}
+.menu-sort-input {
+  width: 64px;
+  height: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--line, #d8e0ea);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+/* 写邮件 · 富文本编辑工具栏（§7.6.2） */
+.compose-mail-page .detail-title { margin-bottom: 12px; }
+.compose-mail-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.compose-recipients,
+.compose-subject { display: grid; gap: 10px; }
+.compose-cc-toggle { margin-top: -4px; }
+.btn.linkish {
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  padding: 0;
+  height: auto;
+  box-shadow: none;
+  font-weight: 650;
+}
+.btn.linkish:hover { background: transparent; text-decoration: underline; }
+.compose-cc-fields { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.compose-editor-wrap {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #fff;
+}
+.compose-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-faint);
+  background: #f7f9fc;
+}
+.compose-tool {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #24324a;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.compose-tool:hover { background: #fff; border-color: var(--line-soft); }
+.compose-tool-select {
+  height: 30px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #fff;
+  color: #24324a;
+  font-size: 12px;
+  padding: 0 6px;
+}
+.compose-tool-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--line-soft);
+}
+.compose-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+.compose-color input[type="color"] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.compose-editor-body {
+  min-height: 280px;
+  max-height: 52vh;
+  overflow: auto;
+  padding: 14px 16px;
+  outline: none;
+  line-height: 1.6;
+  color: #1f2a37;
+}
+.compose-editor-body:empty:before,
+.compose-editor-body[data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #98a2b3;
+}
+.compose-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.compose-from { min-width: 240px; flex: 1; }
+.compose-from input[readonly] {
+  background: #f5f7fa;
+  color: #526070;
+  cursor: default;
+}
+.compose-from small.muted { display: block; margin-top: 6px; }
+.compose-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 .tabs {
   display: flex;
@@ -2392,7 +2700,8 @@ hr {
   .grid.cols-2,
   .grid.cols-3,
   .grid.cols-4,
-  .metric-grid-6 {
+  .metric-grid-6,
+  .detail-desc {
     grid-template-columns: 1fr;
   }
 
@@ -3225,6 +3534,11 @@ tbody tr:hover td {
   box-shadow: none;
 }
 
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .table-wrap {
   background: #fff;
 }
@@ -3245,6 +3559,47 @@ th {
 
 td {
   color: #1f2937;
+}
+
+.system-config-table table {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.system-config-table th,
+.system-config-table td {
+  white-space: normal;
+}
+
+.system-config-table th:nth-child(1),
+.system-config-table td:nth-child(1) {
+  width: 22%;
+}
+
+.system-config-table th:nth-child(2),
+.system-config-table td:nth-child(2) {
+  width: 18%;
+}
+
+.system-config-table th:nth-child(3),
+.system-config-table td:nth-child(3) {
+  width: 34%;
+}
+
+.system-config-table th:nth-child(4),
+.system-config-table td:nth-child(4) {
+  width: 10%;
+}
+
+.system-config-table th:nth-child(5),
+.system-config-table td:nth-child(5) {
+  width: 16%;
+}
+
+.system-config-table td:nth-child(2) code,
+.system-config-table td:nth-child(4),
+.system-config-table td:nth-child(5) {
+  white-space: nowrap;
 }
 
 tbody tr:hover td {
@@ -3870,7 +4225,9 @@ tbody tr:hover td {
   width: min(360px, 100%);
 }
 
-.multi-select summary {
+.multi-select-trigger {
+  position: relative;
+  width: 100%;
   min-height: 34px;
   display: flex;
   align-items: center;
@@ -3881,16 +4238,24 @@ tbody tr:hover td {
   background: #fff;
   color: var(--text);
   cursor: pointer;
-  list-style: none;
+  text-align: left;
+  font: inherit;
 }
 
-.multi-select summary::-webkit-details-marker {
-  display: none;
-}
-
-.multi-select[open] summary {
+.multi-select.open .multi-select-trigger,
+.multi-select-trigger:focus-visible {
   border-color: #8ab0ff;
   box-shadow: 0 0 0 3px rgba(18, 99, 241, 0.1);
+  outline: none;
+}
+
+.multi-select-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
 
 .multi-select-placeholder {
@@ -3918,11 +4283,12 @@ tbody tr:hover td {
   right: 10px;
   color: var(--muted);
   font-size: 12px;
+  pointer-events: none;
 }
 
 .multi-select-menu {
   position: absolute;
-  z-index: 25;
+  z-index: 40;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
@@ -3945,6 +4311,7 @@ tbody tr:hover td {
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
+  user-select: none;
 }
 
 .multi-select-option:hover {
@@ -3955,6 +4322,7 @@ tbody tr:hover td {
   width: 14px;
   height: 14px;
   margin: 0;
+  flex: 0 0 auto;
 }
 
 .radio-group {
@@ -4249,7 +4617,7 @@ tbody tr:hover td {
 }
 
 .soho-login-panel .login-form {
-  gap: 18px;
+  gap: 16px;
 }
 
 .soho-login-panel .form-field label {
@@ -4275,6 +4643,32 @@ tbody tr:hover td {
   background: linear-gradient(180deg, #22a2f3 0%, #168be0 100%);
   border-color: #168be0;
   box-shadow: 0 12px 28px rgba(22, 139, 224, 0.22);
+}
+
+.login-demo-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px dashed #c9d7e6;
+  border-radius: 9px;
+  background: #f7fbff;
+  color: #526173;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.login-demo-tip button {
+  border: 0;
+  background: transparent;
+  color: #1677c7;
+  font: inherit;
+  cursor: pointer;
+}
+
+.login-demo-tip button:hover {
+  color: #0e5c9e;
 }
 
 .soho-login-panel .login-submit:hover {

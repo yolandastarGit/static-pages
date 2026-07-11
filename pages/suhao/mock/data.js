@@ -8,16 +8,24 @@ window.CRM_MOCK = {
     sites: ["s01", "s02"]
   },
   authUsers: [
+    { username: "sysadmin", email: "sysadmin@example.com", password: "123456", userId: "u00" },
     { username: "admin", email: "demo@example.com", password: "123456", userId: "u01" },
     { username: "chenhao", email: "chenhao@example.com", password: "123456", userId: "u02" },
     { username: "mialiu", email: "mia@example.com", password: "123456", userId: "u03" },
     { username: "alexxu", email: "alex@example.com", password: "123456", userId: "u04" }
   ],
   users: [
+    { id: "u00", name: "系统管理员", account: "sysadmin", phone: "13800000000", email: "sysadmin@example.com", role: "系统管理员", status: "启用", siteIds: ["s01", "s02", "s03"], createdAt: "2026-05-01 09:00", dingTalkStatus: "已绑定", dingTalkAccount: "sysadmin.dingtalk" },
     { id: "u01", name: "管理员", account: "admin", phone: "13800000001", email: "demo@example.com", role: "运营专员", status: "启用", siteIds: ["s01", "s02"], createdAt: "2026-06-01 09:00", dingTalkStatus: "已绑定", dingTalkAccount: "admin.dingtalk" },
     { id: "u02", name: "Chen Hao", account: "chenhao", phone: "13800000002", email: "chenhao@example.com", role: "业务员", status: "启用", siteIds: ["s01"], createdAt: "2026-06-08 10:20", dingTalkStatus: "已绑定", dingTalkAccount: "chenhao.sales" },
     { id: "u03", name: "Mia Liu", account: "mialiu", phone: "13800000003", email: "mia@example.com", role: "业务员", status: "启用", siteIds: ["s02"], createdAt: "2026-06-12 14:35", dingTalkStatus: "未绑定", dingTalkAccount: "" },
     { id: "u04", name: "Alex Xu", account: "alexxu", phone: "13800000004", email: "alex@example.com", role: "协同人", status: "启用", siteIds: ["s01", "s02", "s03"], createdAt: "2026-06-20 16:10", dingTalkStatus: "未绑定", dingTalkAccount: "" }
+  ],
+  roles: [
+    { id: 1, name: "系统管理员", code: "admin", dataScope: "全部数据权限", sort: 1, status: "启用", createdAt: "2026-05-01 09:00:00", builtin: true, protected: true },
+    { id: 2, name: "运营专员", code: "supervisor", dataScope: "负责站点数据权限", sort: 2, status: "启用", createdAt: "2026-05-01 09:00:00", builtin: true, protected: false },
+    { id: 3, name: "业务员", code: "sales", dataScope: "仅本人数据权限", sort: 3, status: "启用", createdAt: "2026-05-01 09:00:00", builtin: true, protected: false },
+    { id: 4, name: "协同人", code: "collaborator", dataScope: "授权站点数据权限", sort: 4, status: "启用", createdAt: "2026-05-01 09:00:00", builtin: true, protected: false }
   ],
   dingTalkAccounts: ["admin.dingtalk", "chenhao.sales", "mia.sales", "alex.region"],
   sites: [
@@ -149,8 +157,8 @@ window.CRM_MOCK = {
     pullInterval: 1800
   },
   personalEmailAccounts: [
-    { id: "pe01", userId: "u01", email: "demo@example.com", status: "已验证", boundAt: "2026-06-30 10:12" },
-    { id: "pe02", userId: "u01", email: "demo.work@example.com", status: "已验证", boundAt: "2026-07-01 09:20" }
+    { id: "pe01", userId: "u01", email: "demo@example.com", status: "已绑定", boundAt: "2026-06-30 10:12" },
+    { id: "pe02", userId: "u01", email: "demo.work@example.com", status: "已绑定", boundAt: "2026-07-01 09:20" }
   ],
   dingTalkServiceConfig: {
     appKey: "ding_********",
@@ -183,15 +191,26 @@ window.CRM_MOCK = {
     { id: "sod10", siteId: "s02", periodType: "周", period: "2026-W27", adSpend: 2400, websiteVisits: 9620, inquiryCount: 38, highIntentInquiryCount: 12, inquiryConversionRate: 4.0, costPerInquiry: 63.16, costPerHighIntentInquiry: 200, avgVisitDuration: 149, bounceRate: 40.4, gscImpressions: 34800, gscClicks: 1390, gscKeywords: 350, gscAvgPosition: 21.2 }
   ],
   paramSettings: [
-    { id: "ps01", name: "登录超时时长", code: "session_timeout", value: "1440 分钟（24 小时）", desc: "用户无操作自动退出登录的时长", effect: "下次登录生效" },
-    { id: "ps02", name: "密码最小长度", code: "password_min_length", value: "8 位", desc: "密码长度最小值", effect: "立即生效" },
-    { id: "ps03", name: "密码复杂度", code: "password_complexity", value: "数字+大小写字母", desc: "密码字符类型要求", effect: "立即生效" },
-    { id: "ps04", name: "列表默认每页条数", code: "list_page_size", value: "20 条", desc: "列表页默认每页条数", effect: "立即生效" },
-    { id: "ps05", name: "单次导出上限", code: "export_max_rows", value: "10000 条", desc: "列表导出最大行数限制", effect: "立即生效" },
-    { id: "ps06", name: "首次登录强制改密", code: "first_login_change_password", value: "开启", desc: "新建/重置密码后首次登录是否强制改密", effect: "下次登录生效" },
-    { id: "ps07", name: "单端登录限制", code: "single_login", value: "关闭", desc: "是否限制同一账号同时只能在一处登录", effect: "立即生效" },
-    { id: "ps08", name: "会话刷新间隔", code: "session_refresh_interval", value: "5 分钟", desc: "Token 续期间隔", effect: "下次登录生效" },
-    { id: "ps09", name: "个人目标金额", code: "personal_target_amount", value: "0（无目标）", desc: "业务员的销售目标金额（系统级默认值，0 表示无目标）", effect: "立即生效" }
+    { id: "ps01", group: "login", name: "登录超时时长", code: "session_timeout", value: "1440 分钟", desc: "无操作自动退出时长（下次登录生效）", effect: "下次登录生效" },
+    { id: "ps01b", group: "login", name: "登录失败锁定次数", code: "login_fail_lock_threshold", value: "5 次", desc: "MVP 不做；二期：连续登录失败达该次数锁定账号；0 表示不锁定", effect: "立即生效", deferred: true },
+    { id: "ps01c", group: "login", name: "账号锁定时长", code: "login_lock_duration", value: "30 分钟", desc: "MVP 不做；二期：触发锁定后禁止登录的时长", effect: "立即生效", deferred: true },
+    { id: "ps07", group: "login", name: "单端登录限制", code: "single_login", value: "关闭", desc: "MVP 不做；二期：开启后同一账号仅允许单设备在线", effect: "下次登录生效", deferred: true },
+    { id: "ps08", group: "login", name: "会话刷新间隔", code: "session_refresh_interval", value: "5 分钟", desc: "MVP 不做；二期：Token 续期间隔", effect: "下次登录生效", deferred: true },
+    { id: "ps02", group: "password", name: "密码最小长度", code: "password_min_length", value: "8 位", desc: "密码长度最小值", effect: "立即生效" },
+    { id: "ps03", group: "password", name: "密码复杂度", code: "password_complexity", value: "数字+大小写字母", desc: "密码字符类型要求", effect: "立即生效" },
+    { id: "ps06", group: "password", name: "首次登录强制改密", code: "first_login_change_password", value: "关闭", desc: "MVP 不做；二期支持系统管理员手动开启，开启后下次登录生效", effect: "下次登录生效", deferred: true },
+    { id: "ps04", group: "general", name: "列表默认每页条数", code: "list_page_size", value: "20 条", desc: "列表页默认每页条数", effect: "立即生效" },
+    { id: "ps05", group: "general", name: "单次导出上限", code: "export_max_rows", value: "10000 条", desc: "列表导出最大行数限制", effect: "立即生效" }
+  ],
+  businessRuleSettings: [
+    { id: "br01b", name: "未跟进自动回收天数", value: "14 天", desc: "MVP 不做；二期：待跟进/跟进中超时自动回收公海（公海回收最高优先级）", effect: "立即生效", deferred: true },
+    { id: "br04", name: "渠道定义规则", value: "系统默认", desc: "获客分析消息渠道分类映射（邮件/WhatsApp）", effect: "立即生效" },
+    { id: "br04b", name: "客户活跃度判定天数", value: "90 天", desc: "客户在该天数内有跟进/消息互动记为活跃，超过记为沉默；用于客户经营·客户活跃度分析", effect: "立即生效" },
+    { id: "br05", name: "AI 功能启用", value: "开启", desc: "AI 总开关；关闭后消息意向分析、AI 自动提取企业信息等全部停用，不自动识别询盘、不自动创建线索，转人工兜底创建", effect: "立即生效" },
+    { id: "br06", name: "钉钉推送启用", value: "开启", desc: "关闭后不再发送钉钉推送", effect: "立即生效" }
+  ],
+  leadDedupSettings: [
+    { id: "ld01", name: "转派参考匹配键", value: "站点 + 客户原始发件邮箱", desc: "仅邮件转派用于锁定同人/默认选人提示；不是建线索合并键；入库一邮件一线索", effect: "立即生效" }
   ],
   systemConfig: [
     { id: "sc01", name: "AI 能力总开关", code: "aiMaster", value: true, desc: "全局启用/停用 AI 能力。关闭后 AI 能力管理页仍可见，但所有 AI 业务场景不再调用 AI。" },
@@ -539,6 +558,7 @@ window.CRM_MOCK = {
       contact: "Elena Rodriguez",
       email: "elena@aeromex-parts.com",
       phone: "+52 55 2012 8890",
+      whatsapp: "",
       siteId: "s01",
       channel: "邮件",
       ownerId: "u02",
@@ -548,7 +568,9 @@ window.CRM_MOCK = {
       purchaseIntent: "明确采购",
       aiTags: ["高增长潜力", "批量采购"],
       manualTags: ["拉美市场"],
-      createdAt: "2026-06-28 10:42",
+      focusPoints: ["价格", "交期"],
+      remark: "客户关注认证与交期，下周样品沟通。",
+      createdAt: "2026-07-02 10:42",
       updatedAt: "2026-07-02 11:10",
       lastFollowAt: "2026-07-02 11:10",
       nextFollowAt: "2026-07-04 10:00",
@@ -619,18 +641,65 @@ window.CRM_MOCK = {
       purchaseIntent: "复购扩展",
       aiTags: ["复购询盘"],
       manualTags: ["欧洲市场"],
-      createdAt: "2026-05-18 13:22",
-      updatedAt: "2026-06-20 10:10",
-      lastFollowAt: "2026-06-20 10:10",
+      createdAt: "2026-07-03 13:22",
+      updatedAt: "2026-07-05 10:10",
+      lastFollowAt: "2026-07-05 10:10",
       nextFollowAt: "2026-07-08 10:00",
       customerId: "c02",
       aiSummary: "老客户复购，已通过合同完成成交闭环，可进入客户经营。"
+    },
+    {
+      id: "l05",
+      no: "LEAD-2026-0915",
+      company: "Nordic Home Co.",
+      contact: "Erik Johansson",
+      email: "erik@nordichome.se",
+      phone: "+46 70 123 4567",
+      whatsapp: "",
+      siteId: "s01",
+      channel: "官网询盘",
+      ownerId: "u02",
+      status: "待跟进",
+      stage: "待首响",
+      products: ["家居五金"],
+      purchaseIntent: "",
+      aiTags: ["新询盘"],
+      manualTags: [],
+      focusPoints: ["价格"],
+      remark: "",
+      createdAt: "2026-07-08 09:15",
+      updatedAt: "2026-07-08 09:15",
+      lastFollowAt: "",
+      nextFollowAt: "",
+      customerId: "",
+      aiSummary: "官网表单询盘，待首响。"
     }
   ],
   followLogs: [
-    { id: "f01", leadId: "l01", userId: "u02", method: "邮件", stage: "需求确认", content: "已回复客户，确认图纸版本、材料牌号和认证要求。", nextFollowAt: "2026-07-04 10:00", createdAt: "2026-07-02 11:10" },
-    { id: "f02", leadId: "l02", userId: "u03", method: "电话", stage: "报价阶段", content: "客户希望今天收到 5000/10000 件阶梯报价。", nextFollowAt: "2026-07-03 14:00", createdAt: "2026-07-02 09:20" },
-    { id: "f03", leadId: "l04", userId: "u02", method: "备注", stage: "谈判阶段", content: "录入合同 CON-2026-0081。", nextFollowAt: "2026-07-08 10:00", createdAt: "2026-06-20 10:10" }
+    // —— l01 Aeromex：全生命周期示例（创建 / 状态 / 负责人 / 编辑 / 多渠道跟进）——
+    { id: "f01", leadId: "l01", userId: "u02", method: "邮件", stage: "需求确认", content: "已回复客户，确认图纸版本、材料牌号和认证要求。", focusPoints: ["交期", "质量认证"], nextFollowAt: "2026-07-04 10:00", attachments: ["图纸确认邮件.pdf"], createdAt: "2026-07-02 11:10" },
+    { id: "f01b", leadId: "l01", userId: "u02", method: "电话", stage: "已联系", content: "首通电话，客户确认 Q3 采购窗口，需下周前提供样品政策。", focusPoints: ["交期", "价格"], nextFollowAt: "2026-07-03 16:00", attachments: [], createdAt: "2026-07-02 10:55" },
+    { id: "f01c", leadId: "l01", userId: "u02", method: "备注", stage: "已联系", content: "关注点由[价格]变更为[价格、交期]；备注由[-]变更为[客户关注认证与交期，下周样品沟通。]", focusPoints: ["价格", "交期"], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 10:50" },
+    { id: "f01d", leadId: "l01", userId: "u02", method: "备注", stage: "待首响", content: "状态由[待跟进]变更为[跟进中]（首次录入跟进）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 10:48" },
+    { id: "f01e", leadId: "l01", userId: "u01", method: "备注", stage: "待首响", content: "由[管理员]变更至[Chen Hao]：工业站询盘交由业务员跟进。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 10:45" },
+    { id: "f01f", leadId: "l01", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）：来源邮件询盘 CNC 铝件与工业壳体。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 10:42" },
+    // —— l02 PlayNorth：跟进 + 转客户相关备注 ——
+    { id: "f02", leadId: "l02", userId: "u03", method: "电话", stage: "报价阶段", content: "客户希望今天收到 5000/10000 件阶梯报价。", focusPoints: ["价格"], nextFollowAt: "2026-07-03 14:00", attachments: [], createdAt: "2026-07-02 09:20" },
+    { id: "f02b", leadId: "l02", userId: "u03", method: "邮件", stage: "需求确认", content: "发送 EN71 认证清单与私标包装参考图，待客户确认活动节点。", focusPoints: ["质量认证"], nextFollowAt: "2026-07-02 18:00", attachments: ["EN71清单.pdf", "包装参考.jpg"], createdAt: "2026-07-01 17:40" },
+    { id: "f02c", leadId: "l02", userId: "u03", method: "备注", stage: "需求确认", content: "状态由[待跟进]变更为[跟进中]（首次录入跟进）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-01 17:05" },
+    { id: "f02d", leadId: "l02", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）：PlayNorth 节日礼品询盘。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-01 16:18" },
+    // —— l03 Gulf Retail：公海回收维度 ——
+    { id: "f03a", leadId: "l03", userId: "u01", method: "备注", stage: "待首响", content: "运营专员手动回收至公海：原负责人暂无档期跟进，回收待重新分配。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 09:35" },
+    { id: "f03b", leadId: "l03", userId: "u03", method: "WhatsApp", stage: "待首响", content: "客户确认 8000 件、25cm、10 月前交付；待报价方案。", focusPoints: ["交期", "价格"], nextFollowAt: "2026-07-03 11:00", attachments: [], createdAt: "2026-07-02 09:20" },
+    { id: "f03c", leadId: "l03", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（WhatsApp AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 09:31" },
+    // —— l04 Meyer：合同 / 成交闭环 ——
+    { id: "f03", leadId: "l04", userId: "u02", method: "备注", stage: "谈判阶段", content: "录入合同 CON-2026-0081。", focusPoints: [], nextFollowAt: "2026-07-08 10:00", attachments: ["CON-2026-0081.pdf"], createdAt: "2026-06-20 10:10" },
+    { id: "f04a", leadId: "l04", userId: "u02", method: "备注", stage: "谈判阶段", content: "状态由[已转客户]变更为[已成交]（关联已签约合同）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-06-20 10:08" },
+    { id: "f04b", leadId: "l04", userId: "u02", method: "会议", stage: "谈判阶段", content: "与客户确认复购批次价格与 8 月交付排期，双方认可历史合同条款延续。", focusPoints: ["价格", "交期"], nextFollowAt: "2026-06-22 10:00", attachments: ["会议纪要.docx"], createdAt: "2026-06-18 15:30" },
+    { id: "f04c", leadId: "l04", userId: "u02", method: "WhatsApp", stage: "报价阶段", content: "客户询问历史合同单价与交期，已同步报价草案。", focusPoints: ["价格"], nextFollowAt: "2026-06-16 09:00", attachments: [], createdAt: "2026-06-15 11:20" },
+    { id: "f04d", leadId: "l04", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（WhatsApp AI 自动识别有效询盘）：复购询盘。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 13:22" },
+    // —— l05 Nordic 官网询盘：仅创建 ——
+    { id: "f05a", leadId: "l05", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（官网询盘表单接入）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-08 09:15" }
   ],
   customers: [
     {
@@ -689,11 +758,11 @@ window.CRM_MOCK = {
     { id: "p02", customerId: "c01", name: "Olivia Smith", title: "Buyer", email: "olivia@northwind.example", phone: "+1 408 222 1000", whatsapp: "", role: "执行联系人", primary: true, aiDetected: false }
   ],
   contracts: [
-    { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", createdAt: "2026-06-16 10:30", status: "执行中", ownerId: "u02", attachments: ["contract-0081.pdf"] }
+    { id: "ct01", no: "CON-2026-0081", name: "五金支架年度采购合同", customerId: "c02", leadId: "l04", amount: 45200, signedAt: "2026-06-16", createdAt: "2026-06-16 10:30", status: "已签约", ownerId: "u02", attachments: ["contract-0081.pdf"] }
   ],
   aiConfig: {
     api: {
-      apiKey: "sk-********",
+      apiKey: "sk-proj-demo1234567890",
       baseUrl: "https://api.openai.com/v1",
       model: "gpt-4o",
       secret: "",
@@ -717,7 +786,7 @@ window.CRM_MOCK = {
       updatedAt: "2026-07-02 16:20",
       config: {
         api: {
-          apiKey: "sk-********",
+          apiKey: "sk-proj-demo1234567890",
           baseUrl: "https://api.openai.com/v1",
           model: "gpt-4o",
           secret: "",
@@ -768,7 +837,7 @@ window.CRM_MOCK = {
     { id: "op01", user: "管理员", type: "新增", object: "线索", objectName: "LEAD-2026-0911", content: "新增线索", ip: "192.168.1.10", operateTime: "2026-07-08 10:12:09" },
     { id: "op02", user: "Chen Hao", type: "编辑", object: "线索", objectName: "LEAD-2026-0911", content: "录入跟进记录", ip: "192.168.1.21", operateTime: "2026-07-08 09:20:11" },
     { id: "op03", user: "管理员", type: "导出", object: "客户", objectName: "客户列表", content: "导出当前筛选结果 CSV", ip: "192.168.1.10", operateTime: "2026-07-07 16:40:55" },
-    { id: "op04", user: "Mia Liu", type: "编辑", object: "合同", objectName: "CON-2026-0081", content: "合同状态 已签约→执行中", ip: "10.0.0.32", operateTime: "2026-07-06 11:15:20" }
+    { id: "op04", user: "Mia Liu", type: "编辑", object: "合同", objectName: "CON-2026-0081", content: "合同状态 已签约→失效", ip: "10.0.0.32", operateTime: "2026-07-06 11:15:20" }
   ],
   configChangeLogs: [
     { id: "cf01", user: "管理员", type: "配置更新", item: "公海回收超时时长", before: "7 天", after: "14 天", ip: "192.168.1.10", changeTime: "2026-07-08 11:05:18" },
@@ -879,14 +948,26 @@ window.CRM_MOCK = {
   ]);
 
   appendById("followLogs", [
-    { id: "f04", leadId: "l05", userId: "u02", method: "WhatsApp", stage: "待首响", content: "客户询问 PPAP Level 3 能力，已要求补充图纸版本。", nextFollowAt: "2026-07-05 10:00", createdAt: "2026-07-03 09:48" },
-    { id: "f05", leadId: "l06", userId: "u03", method: "邮件", stage: "报价阶段", content: "发送私标包装报价草稿，待补充 shelf-ready box 费用。", nextFollowAt: "2026-07-05 15:00", createdAt: "2026-07-03 16:20" },
-    { id: "f06", leadId: "l07", userId: "u02", method: "WhatsApp", stage: "打样阶段", content: "客户申请 20 pcs 样品，已准备规格书和样品政策。", nextFollowAt: "2026-07-04 16:00", createdAt: "2026-07-03 11:31" },
-    { id: "f07", leadId: "l08", userId: "u03", method: "WhatsApp", stage: "需求确认", content: "客户要求 CE 与 ISO 证书扫描件，已转给品控确认。", nextFollowAt: "2026-07-04 11:00", createdAt: "2026-07-03 13:55" },
-    { id: "f08", leadId: "l09", userId: "u04", method: "WhatsApp", stage: "需求确认", content: "确认户外炊具套装颜色组合和零售盒方案。", nextFollowAt: "2026-07-05 09:30", createdAt: "2026-07-03 15:22" },
-    { id: "f09", leadId: "l10", userId: "u02", method: "WhatsApp", stage: "报价阶段", content: "客户确认 FSC 证书为必需项，准备 5 万与 10 万阶梯报价。", nextFollowAt: "2026-07-05 14:30", createdAt: "2026-07-04 08:58" },
-    { id: "f10", leadId: "l11", userId: "u02", method: "电话", stage: "打样阶段", content: "安排工程评审阀体公差和 QC 流程。", nextFollowAt: "2026-07-06 10:30", createdAt: "2026-07-04 10:36" },
-    { id: "f11", leadId: "l12", userId: "u03", method: "邮件", stage: "报价阶段", content: "确认节日 SKU 组合，准备含 EN71 证书的报价。", nextFollowAt: "2026-07-06 15:00", createdAt: "2026-07-04 11:52" }
+    { id: "f06", leadId: "l07", userId: "u02", method: "WhatsApp", stage: "打样阶段", content: "客户申请 20 pcs 样品，已准备规格书和样品政策。", focusPoints: ["交期"], nextFollowAt: "2026-07-04 16:00", attachments: ["规格书.pdf"], createdAt: "2026-07-03 11:31" },
+    { id: "f06b", leadId: "l07", userId: "u02", method: "备注", stage: "打样阶段", content: "标签新增[样品评估、电子元件]。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 11:28" },
+    { id: "f06c", leadId: "l07", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 11:25" },
+    { id: "f05", leadId: "l06", userId: "u03", method: "邮件", stage: "报价阶段", content: "发送私标包装报价草稿，待补充 shelf-ready box 费用。", focusPoints: ["价格"], nextFollowAt: "2026-07-05 15:00", attachments: ["报价草稿.xlsx"], createdAt: "2026-07-03 16:20" },
+    { id: "f05b", leadId: "l06", userId: "u03", method: "备注", stage: "报价阶段", content: "状态由[待跟进]变更为[跟进中]（首次录入跟进）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 10:20" },
+    { id: "f05c", leadId: "l06", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 10:05" },
+    { id: "f07", leadId: "l08", userId: "u03", method: "WhatsApp", stage: "需求确认", content: "客户要求 CE 与 ISO 证书扫描件，已转给品控确认。", focusPoints: ["质量认证"], nextFollowAt: "2026-07-04 11:00", attachments: [], createdAt: "2026-07-03 13:55" },
+    { id: "f07b", leadId: "l08", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 13:40" },
+    { id: "f08", leadId: "l09", userId: "u04", method: "WhatsApp", stage: "需求确认", content: "确认户外炊具套装颜色组合和零售盒方案。", focusPoints: ["价格"], nextFollowAt: "2026-07-05 09:30", attachments: [], createdAt: "2026-07-03 15:22" },
+    { id: "f08b", leadId: "l09", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（WhatsApp AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-03 15:18" },
+    { id: "f09", leadId: "l10", userId: "u02", method: "WhatsApp", stage: "报价阶段", content: "客户确认 FSC 证书为必需项，准备 5 万与 10 万阶梯报价。", focusPoints: ["质量认证", "价格"], nextFollowAt: "2026-07-05 14:30", attachments: [], createdAt: "2026-07-04 08:58" },
+    { id: "f09b", leadId: "l10", userId: "u01", method: "备注", stage: "报价阶段", content: "由[管理员]从公海分配至[Chen Hao]。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-04 08:55" },
+    { id: "f09c", leadId: "l10", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-04 08:50" },
+    { id: "f10", leadId: "l11", userId: "u02", method: "电话", stage: "打样阶段", content: "安排工程评审阀体公差和 QC 流程。", focusPoints: ["质量认证"], nextFollowAt: "2026-07-06 10:30", attachments: ["阀体图纸.step"], createdAt: "2026-07-04 10:36" },
+    { id: "f10b", leadId: "l11", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-04 10:32" },
+    { id: "f11", leadId: "l12", userId: "u03", method: "邮件", stage: "报价阶段", content: "确认节日 SKU 组合，准备含 EN71 证书的报价。", focusPoints: ["质量认证", "交期"], nextFollowAt: "2026-07-06 15:00", attachments: ["EN71证书.pdf"], createdAt: "2026-07-04 11:52" },
+    { id: "f11b", leadId: "l12", userId: "u03", method: "备注", stage: "报价阶段", content: "更新了客户画像。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-04 11:50" },
+    { id: "f11c", leadId: "l12", userId: "u00", method: "备注", stage: "待首响", content: "系统创建线索（邮件 AI 自动识别有效询盘）。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-04 11:46" },
+    // l02 转客户事件备注（演示多维度）
+    { id: "f02e", leadId: "l02", userId: "u03", method: "备注", stage: "报价阶段", content: "线索已转化为客户 CUS-2026-0302（PlayNorth Retail）；状态由[跟进中]变更为[已转客户]。", focusPoints: [], nextFollowAt: "", attachments: [], createdAt: "2026-07-02 09:25" }
   ]);
 
   appendById("customers", [
@@ -912,14 +993,14 @@ window.CRM_MOCK = {
 
   appendById("contracts", [
     { id: "ct02", no: "CON-2026-0082", name: "刹车卡钳支架试产合同", customerId: "c05", leadId: "l05", amount: 38600, signedAt: "2026-07-04", createdAt: "2026-07-04 10:20", status: "已签约", ownerId: "u02", attachments: ["contract-0082.pdf"] },
-    { id: "ct03", no: "CON-2026-0083", name: "厨房收纳盒私标包装合同", customerId: "c06", leadId: "l06", amount: 61200, signedAt: "2026-07-05", createdAt: "2026-07-05 14:05", status: "执行中", ownerId: "u03", attachments: ["contract-0083.pdf"] },
+    { id: "ct03", no: "CON-2026-0083", name: "厨房收纳盒私标包装合同", customerId: "c06", leadId: "l06", amount: 61200, signedAt: "2026-07-05", createdAt: "2026-07-05 14:05", status: "已签约", ownerId: "u03", attachments: ["contract-0083.pdf"] },
     { id: "ct04", no: "CON-2026-0084", name: "USB-C 连接器样品合同", customerId: "c07", leadId: "l07", amount: 9200, signedAt: "2026-07-05", createdAt: "2026-07-05 16:30", status: "已签约", ownerId: "u02", attachments: [] },
-    { id: "ct05", no: "CON-2026-0085", name: "丁腈手套投标样品合同", customerId: "c08", leadId: "l08", amount: 18400, signedAt: "2026-07-06", createdAt: "2026-07-06 09:45", status: "执行中", ownerId: "u03", attachments: ["contract-0085.pdf"] },
-    { id: "ct06", no: "CON-2026-0086", name: "户外炊具套装首批合同", customerId: "c09", leadId: "l09", amount: 27500, signedAt: "2026-07-06", createdAt: "2026-07-06 11:10", status: "已完成", ownerId: "u04", attachments: ["contract-0086.pdf"] },
-    { id: "ct07", no: "CON-2026-0087", name: "牛皮纸袋年度框架合同", customerId: "c10", leadId: "l10", amount: 78200, signedAt: "2026-07-07", createdAt: "2026-07-07 10:25", status: "执行中", ownerId: "u02", attachments: ["contract-0087.pdf"] },
+    { id: "ct05", no: "CON-2026-0085", name: "丁腈手套投标样品合同", customerId: "c08", leadId: "l08", amount: 18400, signedAt: "2026-07-06", createdAt: "2026-07-06 09:45", status: "已签约", ownerId: "u03", attachments: ["contract-0085.pdf"] },
+    { id: "ct06", no: "CON-2026-0086", name: "户外炊具套装首批合同", customerId: "c09", leadId: "l09", amount: 27500, signedAt: "2026-07-06", createdAt: "2026-07-06 11:10", status: "已签约", ownerId: "u04", attachments: ["contract-0086.pdf"] },
+    { id: "ct07", no: "CON-2026-0087", name: "牛皮纸袋年度框架合同", customerId: "c10", leadId: "l10", amount: 78200, signedAt: "2026-07-07", createdAt: "2026-07-07 10:25", status: "已签约", ownerId: "u02", attachments: ["contract-0087.pdf"] },
     { id: "ct08", no: "CON-2026-0088", name: "CNC 铝件样品合同", customerId: "c04", leadId: "l01", amount: 12800, signedAt: "2026-07-07", createdAt: "2026-07-07 14:40", status: "已签约", ownerId: "u02", attachments: [] },
-    { id: "ct09", no: "CON-2026-0089", name: "节日毛绒玩具预订单", customerId: "c03", leadId: "l12", amount: 52800, signedAt: "2026-07-08", createdAt: "2026-07-08 09:50", status: "执行中", ownerId: "u03", attachments: ["contract-0089.pdf"] },
-    { id: "ct10", no: "CON-2026-0090", name: "北美零售样品补充协议", customerId: "c01", leadId: "", amount: 6800, signedAt: "2026-07-08", createdAt: "2026-07-08 16:15", status: "已终止", ownerId: "u03", attachments: [] }
+    { id: "ct09", no: "CON-2026-0089", name: "节日毛绒玩具预订单", customerId: "c03", leadId: "l12", amount: 52800, signedAt: "2026-07-08", createdAt: "2026-07-08 09:50", status: "已签约", ownerId: "u03", attachments: ["contract-0089.pdf"] },
+    { id: "ct10", no: "CON-2026-0090", name: "北美零售样品补充协议", customerId: "c01", leadId: "", amount: 6800, signedAt: "2026-07-08", createdAt: "2026-07-08 16:15", status: "失效", ownerId: "u03", attachments: [] }
   ]);
 
   appendById("aiProviders", [

@@ -23,7 +23,7 @@ window.CRMUI = {
     const color = {
       "启用": "green", "停用": "gray", "禁用": "gray", "待分配": "amber", "待跟进": "cyan", "跟进中": "blue", "已转客户": "violet",
       "已成交": "green", "无效": "gray", "丢失": "red",
-      "执行中": "blue", "已签约": "green", "已完成": "green", "已终止": "red", "已作废": "gray",
+      "执行中": "blue", "已签约": "green", "已完成": "green", "已终止": "red", "已作废": "gray", "失效": "gray",
       "开启": "green", "关闭": "gray", "已绑定": "green", "未绑定": "gray"
     }[text] || "gray";
     return `<span class="badge ${color}">${text}</span>`;
@@ -110,13 +110,50 @@ window.CRMUI = {
     return `<div class="form-field"><label>${label}</label><select name="${name}">${options.map(o => `<option value="${o.value}" ${o.value === value ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>`;
   },
   multiSelect(name, options, values = []) {
-    const selected = new Set(values);
-    const selectedLabels = options.filter(o => selected.has(o.value)).map(o => o.label);
-    const summary = selectedLabels.length ? selectedLabels.map(text => `<span class="multi-select-tag">${text}</span>`).join("") : `<span class="multi-select-placeholder">请选择</span>`;
-    return `<details class="multi-select"><summary>${summary}<span class="multi-select-arrow">⌄</span></summary><div class="multi-select-menu">${options.map(o => `<label class="multi-select-option"><input type="checkbox" name="${name}" value="${o.value}" ${selected.has(o.value) ? "checked" : ""}>${o.label}</label>`).join("")}</div></details>`;
+    const selected = new Set((values || []).map(String));
+    const selectedLabels = options.filter(o => selected.has(String(o.value))).map(o => o.label);
+    const summary = selectedLabels.length
+      ? selectedLabels.map(text => `<span class="multi-select-tag">${this.escapeHtml(text)}</span>`).join("")
+      : `<span class="multi-select-placeholder">请选择</span>`;
+    const menu = options.map(o => {
+      const value = String(o.value ?? "");
+      const checked = selected.has(value) ? "checked" : "";
+      return `<label class="multi-select-option"><input type="checkbox" name="${name}" value="${this.escapeHtml(value)}" ${checked}><span>${this.escapeHtml(o.label)}</span></label>`;
+    }).join("");
+    return `
+      <div class="multi-select" data-multi-select>
+        <button type="button" class="multi-select-trigger" data-multi-select-trigger aria-expanded="false">
+          <span class="multi-select-summary">${summary}</span>
+          <span class="multi-select-arrow">⌄</span>
+        </button>
+        <div class="multi-select-menu" hidden data-multi-select-menu>${menu}</div>
+      </div>
+    `;
   },
   formMultiSelect(label, name, options, values = []) {
     return `<div class="form-field"><label>${label}</label>${this.multiSelect(name, options, values)}</div>`;
+  },
+  escapeHtml(text) {
+    return String(text ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  },
+  refreshMultiSelectSummary(root) {
+    const select = root?.closest?.("[data-multi-select]") || root;
+    if (!select) return;
+    const summary = select.querySelector(".multi-select-summary");
+    if (!summary) return;
+    const checked = Array.from(select.querySelectorAll('input[type="checkbox"]:checked'));
+    if (!checked.length) {
+      summary.innerHTML = `<span class="multi-select-placeholder">请选择</span>`;
+      return;
+    }
+    summary.innerHTML = checked.map(input => {
+      const label = input.closest("label")?.querySelector("span")?.textContent?.trim() || input.value;
+      return `<span class="multi-select-tag">${this.escapeHtml(label)}</span>`;
+    }).join("");
   },
   actionMore(items) {
     return `<span class="action-more"><button class="btn action-more-trigger" type="button" data-action-more-trigger>更多 <span>⌄</span></button><div class="action-more-menu" hidden>${items.join("")}</div></span>`;
@@ -157,7 +194,40 @@ window.CRMUI = {
     menu.style.setProperty("--action-more-top", `${top}px`);
   };
 
+  const closeMultiSelects = except => {
+    document.querySelectorAll("[data-multi-select].open").forEach(select => {
+      if (select === except) return;
+      select.classList.remove("open");
+      const trigger = select.querySelector("[data-multi-select-trigger]");
+      const menu = select.querySelector("[data-multi-select-menu]");
+      if (trigger) trigger.setAttribute("aria-expanded", "false");
+      if (menu) menu.hidden = true;
+    });
+  };
+
   document.addEventListener("click", event => {
+    const multiTrigger = event.target.closest("[data-multi-select-trigger]");
+    if (multiTrigger) {
+      event.preventDefault();
+      event.stopPropagation();
+      const select = multiTrigger.closest("[data-multi-select]");
+      const menu = select?.querySelector("[data-multi-select-menu]");
+      if (!select || !menu) return;
+      const willOpen = menu.hidden;
+      closeMultiSelects(select);
+      closeActionMore();
+      menu.hidden = !willOpen;
+      select.classList.toggle("open", willOpen);
+      multiTrigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      return;
+    }
+
+    if (event.target.closest("[data-multi-select-menu]")) {
+      // 勾选时保持展开，仅阻止冒泡关闭
+      event.stopPropagation();
+      return;
+    }
+
     const trigger = event.target.closest("[data-action-more-trigger]");
     if (trigger) {
       event.preventDefault();
@@ -167,6 +237,7 @@ window.CRMUI = {
       if (!more || !menu) return;
       const willOpen = menu.hidden;
       closeActionMore(more);
+      closeMultiSelects();
       if (willOpen) {
         more._actionMoreMenu = menu;
         document.body.appendChild(menu);
@@ -183,8 +254,23 @@ window.CRMUI = {
     }
 
     if (!event.target.closest(".action-more")) closeActionMore();
+    if (!event.target.closest("[data-multi-select]")) closeMultiSelects();
   });
 
-  window.addEventListener("resize", () => closeActionMore());
-  window.addEventListener("scroll", () => closeActionMore(), true);
+  document.addEventListener("change", event => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== "checkbox") return;
+    const select = input.closest("[data-multi-select]");
+    if (!select) return;
+    window.CRMUI.refreshMultiSelectSummary(select);
+  });
+
+  window.addEventListener("resize", () => {
+    closeActionMore();
+    closeMultiSelects();
+  });
+  window.addEventListener("scroll", () => {
+    closeActionMore();
+    closeMultiSelects();
+  }, true);
 })();

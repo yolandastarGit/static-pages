@@ -138,7 +138,7 @@ window.CRMWorkspace = {
     document.title = `${tab.title} - AI 智能 CRM`;
     const breadcrumb = document.getElementById("breadcrumb");
     if (breadcrumb) breadcrumb.innerHTML = this.breadcrumb(tab).map(item => `<span>${item}</span>`).join("<span class=\"breadcrumb-sep\">/</span>");
-    CRMLayout.updateSidebar(tab.key);
+    CRMLayout.updateSidebar(["leadDetail", "followLogs", "publicPool"].includes(tab.key) ? "leads" : (tab.key === "customerDetail" ? "customers" : tab.key));
   },
   breadcrumb(tab) {
     return ["首页", tab.parent, tab.title].filter(Boolean);
