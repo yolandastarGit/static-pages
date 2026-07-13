@@ -29,8 +29,8 @@ window.CRM_MOCK = {
   ],
   dingTalkAccounts: ["admin.dingtalk", "chenhao.sales", "mia.sales", "alex.region"],
   sites: [
-    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-12 09:00", boundEmailOwnerId: "u01", boundEmail: "demo@example.com", boundEmailAt: "2026-07-01 09:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-20 14:30", boundEmailOwnerId: "u01", boundEmail: "demo.work@example.com", boundEmailAt: "2026-07-01 09:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s01", name: "工业事业部官网", code: "INDUSTRIAL", domain: "industrial.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-12 09:00", boundEmailOwnerId: "u01", boundEmail: "sales@industrial.example.com", boundEmailAt: "2026-07-01 09:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s02", name: "玩具出口独立站", code: "TOYS", domain: "toys.example.com", status: "启用", ownerId: "u01", createdAt: "2026-05-20 14:30", boundEmailOwnerId: "u01", boundEmail: "info@toys.example.com", boundEmailAt: "2026-07-01 09:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
     { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", createdAt: "2026-06-25 16:10", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ],
   dictionaries: [
@@ -157,8 +157,8 @@ window.CRM_MOCK = {
     pullInterval: 1800
   },
   personalEmailAccounts: [
-    { id: "pe01", userId: "u01", email: "demo@example.com", status: "已绑定", boundAt: "2026-06-30 10:12" },
-    { id: "pe02", userId: "u01", email: "demo.work@example.com", status: "已绑定", boundAt: "2026-07-01 09:20" }
+    { id: "pe01", userId: "u01", email: "sales@industrial.example.com", status: "已绑定", boundAt: "2026-06-30 10:12" },
+    { id: "pe02", userId: "u01", email: "info@toys.example.com", status: "已绑定", boundAt: "2026-07-01 09:20" }
   ],
   dingTalkServiceConfig: {
     appKey: "ding_********",
@@ -208,9 +208,6 @@ window.CRM_MOCK = {
     { id: "br04b", name: "客户活跃度判定天数", value: "90 天", desc: "客户在该天数内有跟进/消息互动记为活跃，超过记为沉默；用于客户经营·客户活跃度分析", effect: "立即生效" },
     { id: "br05", name: "AI 功能启用", value: "开启", desc: "AI 总开关；关闭后消息意向分析、AI 自动提取企业信息等全部停用，不自动识别询盘、不自动创建线索，转人工兜底创建", effect: "立即生效" },
     { id: "br06", name: "钉钉推送启用", value: "开启", desc: "关闭后不再发送钉钉推送", effect: "立即生效" }
-  ],
-  leadDedupSettings: [
-    { id: "ld01", name: "转派参考匹配键", value: "站点 + 客户原始发件邮箱", desc: "仅邮件转派用于锁定同人/默认选人提示；不是建线索合并键；入库一邮件一线索", effect: "立即生效" }
   ],
   systemConfig: [
     { id: "sc01", name: "AI 能力总开关", code: "aiMaster", value: true, desc: "全局启用/停用 AI 能力。关闭后 AI 能力管理页仍可见，但所有 AI 业务场景不再调用 AI。" },
@@ -890,12 +887,12 @@ window.CRM_MOCK = {
   });
 
   appendById("sites", [
-    { id: "s04", name: "汽车零部件独立站", code: "AUTO_PARTS", domain: "auto-parts.example.com", status: "启用", ownerId: "u02", createdAt: "2026-05-28 10:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s05", name: "家居用品 B2B 站", code: "HOME_B2B", domain: "home.example.com", status: "启用", ownerId: "u03", createdAt: "2026-06-02 09:20", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s06", name: "电子元件询盘站", code: "ELECTRONICS", domain: "electronics.example.com", status: "启用", ownerId: "u02", createdAt: "2026-06-06 11:15", config: { ai: "开启", publicPool: "关闭", sync: "自动" } },
-    { id: "s07", name: "医疗耗材海外站", code: "MEDICAL", domain: "medical.example.com", status: "启用", ownerId: "u03", createdAt: "2026-06-10 15:40", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
-    { id: "s08", name: "户外装备采购站", code: "OUTDOOR", domain: "outdoor.example.com", status: "启用", ownerId: "u04", createdAt: "2026-06-16 10:05", config: { ai: "开启", publicPool: "开启", sync: "手动" } },
-    { id: "s09", name: "包装材料询价站", code: "PACKAGING", domain: "packaging.example.com", status: "启用", ownerId: "u02", createdAt: "2026-06-21 14:10", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s04", name: "汽车零部件独立站", code: "AUTO_PARTS", domain: "auto-parts.example.com", status: "启用", ownerId: "u02", createdAt: "2026-05-28 10:30", boundEmailOwnerId: "u01", boundEmail: "quotes@auto-parts.example.com", boundEmailAt: "2026-07-01 10:00", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s05", name: "家居用品 B2B 站", code: "HOME_B2B", domain: "home.example.com", status: "启用", ownerId: "u03", createdAt: "2026-06-02 09:20", boundEmailOwnerId: "u01", boundEmail: "inquiry@home.example.com", boundEmailAt: "2026-07-01 10:10", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s06", name: "电子元件询盘站", code: "ELECTRONICS", domain: "electronics.example.com", status: "启用", ownerId: "u02", createdAt: "2026-06-06 11:15", boundEmailOwnerId: "u01", boundEmail: "sales@electronics.example.com", boundEmailAt: "2026-07-01 10:20", config: { ai: "开启", publicPool: "关闭", sync: "自动" } },
+    { id: "s07", name: "医疗耗材海外站", code: "MEDICAL", domain: "medical.example.com", status: "启用", ownerId: "u03", createdAt: "2026-06-10 15:40", boundEmailOwnerId: "u01", boundEmail: "orders@medical.example.com", boundEmailAt: "2026-07-01 10:30", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
+    { id: "s08", name: "户外装备采购站", code: "OUTDOOR", domain: "outdoor.example.com", status: "启用", ownerId: "u04", createdAt: "2026-06-16 10:05", boundEmailOwnerId: "u01", boundEmail: "contact@outdoor.example.com", boundEmailAt: "2026-07-01 10:40", config: { ai: "开启", publicPool: "开启", sync: "手动" } },
+    { id: "s09", name: "包装材料询价站", code: "PACKAGING", domain: "packaging.example.com", status: "启用", ownerId: "u02", createdAt: "2026-06-21 14:10", boundEmailOwnerId: "u01", boundEmail: "rfq@packaging.example.com", boundEmailAt: "2026-07-01 10:50", config: { ai: "开启", publicPool: "开启", sync: "自动" } },
     { id: "s10", name: "新能源配件展示站", code: "ENERGY", domain: "energy.example.com", status: "停用", ownerId: "u04", createdAt: "2026-06-30 17:25", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ]);
 

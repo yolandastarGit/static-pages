@@ -228,7 +228,7 @@ window.CRMCrmPage = {
         { title: "入池时间", render: l => l.poolEnteredAt || l.createdAt },
         { title: "入池原因", render: l => l.poolReason || "运营专员手动回收" },
         { title: "意向产品", render: l => l.products.join("、") },
-        { title: "操作", render: l => `${this.canRecycle() && this.isPoolAssignableLead(l) ? `<button class="btn" data-pool-assign="${l.id}">分配</button> <button class="btn" data-pool-exception="${l.id}">标记异常</button>` : ""} ${!this.isPoolAssignableLead(l) ? `<span class="muted">已终态</span>` : ""} <button class="btn" data-pool-detail="${l.id}">查看详情</button>` }
+        { title: "操作", render: l => `${this.canRecycle() && this.isPoolAssignableLead(l) ? `<button class="btn" data-pool-assign="${l.id}">分配</button> <button class="btn" data-pool-exception="${l.id}">标记异常</button>` : ""} <button class="btn" data-pool-detail="${l.id}">查看详情</button>` }
       ], rows, "公海池暂无线索");
       CRMUI.$$("[data-pool-check]").forEach(el => el.addEventListener("change", () => {
         if (el.disabled) return;
@@ -771,7 +771,7 @@ window.CRMCrmPage = {
     const profile = this.companyProfileForLead(lead);
     const Comm = window.CRMCommunicationPage;
     if (!profile || !Comm) {
-      return `<p class="muted">暂无客户画像数据，该线索为手动创建，暂无 AI 提取的企业信息</p>`;
+      return `<p class="muted">暂无客户画像数据</p>`;
     }
     return `
       <div class="lead-profile-stack">
@@ -1023,7 +1023,7 @@ window.CRMCrmPage = {
           lastFollowAt: "",
           nextFollowAt: "",
           customerId: "",
-          aiSummary: "手动创建线索，暂无 AI 分析。"
+          aiSummary: "暂无 AI 分析"
         });
         CRMUI.toast("线索已新增");
       }
@@ -1885,7 +1885,7 @@ window.CRMCrmPage = {
         </div>
       `;
     }
-    return `<p class="muted">当前客户暂无客户画像。暂无企业工商信息、过往参展信息与企业风险提示（未关联 AI 分析或尚未同步结构化画像）。</p>`;
+    return `<p class="muted">暂无客户画像数据</p>`;
   },
   companyProfileForCustomer(customer) {
     if (!customer) return null;
@@ -1936,7 +1936,7 @@ window.CRMCrmPage = {
           potentialLevel: form.get("potentialLevel") || "可跟进"
         });
       } else {
-        const newCustomer = { id: `c${Date.now()}`, no: `CUS-2026-${Math.floor(Math.random() * 9000 + 1000)}`, name: form.get("name") || "新客户", siteId: form.get("siteId"), country: form.get("country") || "-", industry: form.get("industry") || "-", ownerId: CRM_MOCK.currentUser.id, potentialLevel: form.get("potentialLevel") || "可跟进", tags: [], leadIds: [], contractIds: [], transferRecords: [], aiProfile: "暂无 AI 客户画像数据，该客户通过手动创建，未关联 AI 分析。", createdAt: "2026-07-02" };
+        const newCustomer = { id: `c${Date.now()}`, no: `CUS-2026-${Math.floor(Math.random() * 9000 + 1000)}`, name: form.get("name") || "新客户", siteId: form.get("siteId"), country: form.get("country") || "-", industry: form.get("industry") || "-", ownerId: CRM_MOCK.currentUser.id, potentialLevel: form.get("potentialLevel") || "可跟进", tags: [], leadIds: [], contractIds: [], transferRecords: [], aiProfile: "暂无客户画像数据", createdAt: "2026-07-02" };
         const leadId = form.get("leadId");
         if (leadId) {
           newCustomer.leadIds.push(leadId);

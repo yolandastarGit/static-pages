@@ -188,7 +188,7 @@ window.CRMAdminPage = {
         { title: "站点 ID", render: s => s.id },
         { title: "站点域名", render: s => s.domain },
         { title: "状态", render: s => CRMUI.badge(s.status) },
-        { title: "回收规则", render: () => "二期预留" },
+        { title: "回收规则", render: () => "手动回收" },
         { title: "绑定运营人员", render: s => this.siteOperatorName(s.boundEmailOwnerId || s.ownerId) },
         { title: "主邮箱", render: s => s.boundEmail || "-" },
         { title: "操作", render: s => `<button class="btn" data-site-edit="${s.id}">编辑</button> <button class="btn" data-site-toggle="${s.id}">${s.status === "启用" ? "停用" : "启用"}</button>` }
@@ -408,7 +408,7 @@ window.CRMAdminPage = {
         <div class="form-field"><label>绑定运营人员</label><select name="boundEmailOwnerId"><option value="">请选择运营人员</option>${this.siteOperatorOptions(operatorId)}</select></div>
         <div class="form-field"><label>主邮箱</label><select name="boundEmail"><option value="">请选择主邮箱</option>${this.siteEmailOptions(operatorId, site?.boundEmail || "")}</select></div>
         ${CRMUI.formSelect("启用 AI 识别", "ai", ["开启", "关闭"].map(v => ({ value: v, label: v })), aiValue)}
-        <div class="form-field full"><label>回收规则</label><input value="二期预留：站点级自动回收本期不可配置" disabled><small class="muted">公海回收本期仅支持运营专员手动回收</small></div>
+        <div class="form-field full"><label>回收规则</label><input value="手动回收" disabled><small class="muted">公海回收仅支持运营专员手动处理</small></div>
       </div>`, form => {
       const name = (form.get("name") || "").trim();
       const domain = (form.get("domain") || "").trim();
@@ -1308,7 +1308,7 @@ window.CRMAdminPage = {
       CRMUI.$("#menuSearch").value = "";
       draw();
     });
-    CRMUI.$("#menuAdd").addEventListener("click", () => CRMUI.toast("MVP 预置菜单，暂不支持新增（二期）"));
+    CRMUI.$("#menuAdd").addEventListener("click", () => CRMUI.toast("系统菜单暂不支持新增"));
     CRMUI.$("#menuEdit").addEventListener("click", () => {
       if (!this.menuState.selectedId) return CRMUI.toast("请先选择要修改的菜单");
       this.openMenuModal(CRM_MOCK.systemMenus.find(m => m.id === this.menuState.selectedId));
@@ -1424,12 +1424,12 @@ window.CRMAdminPage = {
       this.openMenuModal(CRM_MOCK.systemMenus.find(m => m.id === btn.dataset.menuEdit));
     }));
     CRMUI.$$("[data-menu-add-child]").forEach(btn => btn.addEventListener("click", () => {
-      CRMUI.toast("MVP 预置菜单，暂不支持新增子菜单（二期）");
+      CRMUI.toast("系统菜单暂不支持新增子菜单");
     }));
     CRMUI.$$("[data-menu-del]").forEach(btn => btn.addEventListener("click", () => {
       const menu = CRM_MOCK.systemMenus.find(m => m.id === btn.dataset.menuDel);
       if (!menu) return;
-      if (menu.builtin) return CRMUI.toast("预置菜单不可删除（MVP）");
+      if (menu.builtin) return CRMUI.toast("系统内置菜单不可删除");
       CRMUI.modal("删除菜单", `<p>确认删除菜单「${menu.name}」？</p>`, () => {
         CRM_MOCK.systemMenus = CRM_MOCK.systemMenus.filter(m => m.id !== menu.id && m.parentId !== menu.id);
         CRMUI.closeModal();
@@ -1458,7 +1458,7 @@ window.CRMAdminPage = {
         ${CRMUI.formInput("权限标识", "perm", menu.perm === "-" ? "" : menu.perm)}
         ${CRMUI.formInput("显示顺序", "sort", menu.sort, "number")}
         ${CRMUI.formSelect("可见", "visible", visibleOpts, menu.visible || "显示")}
-        <div class="form-field full"><small class="muted">MVP 预置菜单树随版本固化；可改名称/排序/可见等展示项，结构增删见二期。</small></div>
+        <div class="form-field full"><small class="muted">系统内置菜单仅支持维护名称、排序、权限标识和可见状态。</small></div>
       </div>
     `, form => {
       const name = (form.get("name") || "").trim();
@@ -1510,7 +1510,7 @@ window.CRMAdminPage = {
       CRMUI.$("#roleStatus").value = "";
       draw();
     });
-    CRMUI.$("#roleAdd").addEventListener("click", () => CRMUI.toast("MVP 预置角色，暂不支持新增（二期）"));
+    CRMUI.$("#roleAdd").addEventListener("click", () => CRMUI.toast("系统角色暂不支持新增"));
     CRMUI.$("#roleEdit").addEventListener("click", () => this.openSelectedRoleEdit());
     CRMUI.$("#roleDelete").addEventListener("click", () => this.deleteSelectedRoles());
     CRMUI.$("#roleExport").addEventListener("click", () => CRMUI.toast("角色列表导出任务已提交"));
@@ -1597,7 +1597,7 @@ window.CRMAdminPage = {
     const ids = [...(this.roleState.selected || [])];
     if (!ids.length) return CRMUI.toast("请先勾选要删除的角色");
     const targets = CRM_MOCK.roles.filter(r => ids.includes(String(r.id)));
-    if (targets.some(r => r.protected || r.builtin)) return CRMUI.toast("预置角色不可删除（MVP）");
+    if (targets.some(r => r.protected || r.builtin)) return CRMUI.toast("系统内置角色不可删除");
     CRMUI.modal("删除角色", `<p>确认删除已选 ${targets.length} 个角色？</p>`, () => {
       CRM_MOCK.roles = CRM_MOCK.roles.filter(r => !ids.includes(String(r.id)));
       this.roleState.selected = new Set();
@@ -1609,7 +1609,7 @@ window.CRMAdminPage = {
   deleteRoleById(id) {
     const role = CRM_MOCK.roles.find(r => String(r.id) === String(id));
     if (!role) return;
-    if (role.protected || role.builtin) return CRMUI.toast("预置角色不可删除（MVP）");
+    if (role.protected || role.builtin) return CRMUI.toast("系统内置角色不可删除");
     CRMUI.modal("删除角色", `<p>确认删除角色「${role.name}」？</p>`, () => {
       CRM_MOCK.roles = CRM_MOCK.roles.filter(r => String(r.id) !== String(id));
       this.roleState.selected?.delete(String(id));
@@ -1630,7 +1630,7 @@ window.CRMAdminPage = {
         ${CRMUI.formSelect("数据权限", "dataScope", scopeOpts, role.dataScope)}
         ${CRMUI.formInput("显示顺序", "sort", role.sort, "number")}
         <div class="form-field"><label>创建时间</label><input value="${role.createdAt}" disabled></div>
-        ${locked ? `<div class="form-field full"><small class="muted">${role.protected ? "系统管理员为内置保护角色，不可降权/停用/删除。" : "当前为只读查看。"}</small></div>` : `<div class="form-field full"><small class="muted">MVP 预置角色：可改名称/顺序/数据权限展示；权限字符建议保持稳定。</small></div>`}
+        ${locked ? `<div class="form-field full"><small class="muted">${role.protected ? "系统管理员为内置保护角色，不可降权/停用/删除。" : "当前为只读查看。"}</small></div>` : `<div class="form-field full"><small class="muted">系统内置角色仅支持维护名称、顺序和数据权限展示。</small></div>`}
       </div>
     `, form => {
       if (readonly) return CRMUI.closeModal();
@@ -1996,7 +1996,7 @@ window.CRMAdminPage = {
     const tab = this.paramState.tab;
     const body = CRMUI.$("#systemParamBody");
     if (!body) return;
-    // MVP：明确标记 deferred/二期的参数不展示（数据仍保留于 mock，二期可回滚）
+    // 仅展示当前可配置参数，未启用参数保留在 mock 数据中。
     const items = (CRM_MOCK.paramSettings || []).filter(item => !item.deferred);
     const byTab = {
       login: item => item.group === "login" || ["session_timeout", "login_fail_lock_threshold", "login_lock_duration", "single_login", "session_refresh_interval"].includes(item.code),
@@ -2007,8 +2007,6 @@ window.CRMAdminPage = {
     if (tab === "business") {
       body.innerHTML = `
         <div id="businessRuleSettingsTable"></div>
-        <div class="section-title" style="margin-top:16px">转派参考匹配（非建线索去重）</div>
-        <div id="transferMatchSettingsTable"></div>
       `;
       const rules = (CRM_MOCK.businessRuleSettings || []).filter(item => !item.deferred);
       CRMUI.$("#businessRuleSettingsTable").innerHTML = CRMUI.table([
@@ -2018,15 +2016,7 @@ window.CRMAdminPage = {
         { title: "生效时间", render: item => item.effect },
         { title: "操作", render: item => `<button class="btn" data-business-rule-edit="${item.id}">编辑</button>` }
       ], rules, "暂无业务规则");
-      CRMUI.$("#transferMatchSettingsTable").innerHTML = CRMUI.table([
-        { title: "配置项", render: item => `<strong>${item.name}</strong>` },
-        { title: "当前配置", render: item => item.value },
-        { title: "说明", render: item => `<span class="muted">${item.desc}</span>` },
-        { title: "生效时间", render: item => item.effect },
-        { title: "操作", render: item => `<button class="btn" data-transfer-match-edit="${item.id}">编辑</button>` }
-      ], CRM_MOCK.leadDedupSettings || [], "暂无转派参考匹配配置");
       CRMUI.$$("[data-business-rule-edit]").forEach(el => el.addEventListener("click", () => this.openBusinessRuleModal(el.dataset.businessRuleEdit, redraw)));
-      CRMUI.$$("[data-transfer-match-edit]").forEach(el => el.addEventListener("click", () => this.openTransferMatchModal(el.dataset.transferMatchEdit, redraw)));
       return;
     }
     const rows = items.filter(byTab[tab] || (() => false));
@@ -2074,23 +2064,6 @@ window.CRMAdminPage = {
       item.value = value;
       CRMUI.closeModal();
       CRMUI.toast(`业务规则「${item.name}」已保存`);
-      redraw();
-    });
-  },
-  openTransferMatchModal(itemId, redraw) {
-    const item = (CRM_MOCK.leadDedupSettings || []).find(i => i.id === itemId);
-    if (!item) return;
-    CRMUI.modal(`编辑转派参考匹配 - ${item.name}`, `
-      <div class="form-grid">
-        <div class="form-field full"><label>配置项</label><input value="${item.name}" disabled></div>
-        <div class="form-field full"><label>当前配置</label><input name="value" value="${item.value}" required></div>
-        <div class="form-field full"><label>说明</label><input value="${item.desc}" disabled></div>
-      </div>`, form => {
-      const value = (form.get("value") || "").trim();
-      if (!value) return CRMUI.toast("请填写配置值");
-      item.value = value;
-      CRMUI.closeModal();
-      CRMUI.toast(`转派参考匹配「${item.name}」已保存`);
       redraw();
     });
   }

@@ -391,10 +391,9 @@ window.CRMCommunicationPage = {
         <form id="composeMailForm" class="compose-mail-form">
           <div class="compose-recipients">
             ${CRMUI.formInput("收件人", "to", to)}
-            <div class="compose-cc-toggle"><button type="button" class="btn linkish" id="toggleComposeCc">抄送 / 密送</button></div>
+            <div class="compose-cc-toggle"><button type="button" class="btn linkish" id="toggleComposeCc">抄送</button></div>
             <div id="composeCcFields" class="compose-cc-fields" hidden>
               ${CRMUI.formInput("抄送", "cc", "")}
-              ${CRMUI.formInput("密送", "bcc", "")}
             </div>
           </div>
           <div class="compose-subject">
@@ -1017,7 +1016,7 @@ window.CRMCommunicationPage = {
     CRMUI.$("#chatBody").innerHTML = `
       <div class="detail-title">${c.name}</div><p class="muted">${c.company} · ${c.phone}${c.siteId ? ` · ${CRMUI.siteName(c.siteId)}` : ""}</p>
       <div class="chat-body">${c.messages.map(m => `<div class="bubble ${m.from === "me" ? "me" : ""}">${m.text}<div class="small">${m.time}</div></div>`).join("")}</div>
-      ${readOnly ? `<p class="muted small">只读查看，不可回复或发送消息。</p>` : `<div class="chat-input"><textarea id="chatInput" style="flex:1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea><button class="btn" id="uploadChatImage">上传图片</button><button class="btn" id="uploadChatFile">上传文件</button><button class="btn primary" id="sendMsg">发送</button></div>`}
+      ${readOnly ? `<p class="muted small" title="当前会话不可回复或发送消息">只读会话</p>` : `<div class="chat-input"><textarea id="chatInput" style="flex:1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea><button class="btn" id="uploadChatImage">上传图片</button><button class="btn" id="uploadChatFile">上传文件</button><button class="btn primary" id="sendMsg">发送</button></div>`}
     `;
     CRMUI.$("#chatInfo").innerHTML = `
       <div class="card-title">AI 智能分析</div>

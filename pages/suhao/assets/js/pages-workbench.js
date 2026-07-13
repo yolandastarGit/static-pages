@@ -16,23 +16,23 @@ window.CRMWorkbenchPage = {
         </div>
         <div class="wb-grid wb-grid-5">
           ${this.workCard({ title: "待回复线索", value: "23", action: "查看线索", route: "leads", query: "reply=pending", tone: "blue", icon: "message" })}
-          ${this.workCard({ title: "邮件未读", value: "16", action: "查看邮件（未读）", route: "email", query: "unread=1", tone: "green", icon: "mail" })}
-          ${this.workCard({ title: "跟进超时", value: "8", action: "查看线索（下次跟进<今日）", route: "leads", query: "overdue=1", tone: "orange", icon: "clock" })}
-          ${this.workCard({ title: "新增线索", value: "15", action: "查看线索（按创建时间）", route: "leads", query: "created=today", tone: "purple", icon: "userPlus" })}
+          ${this.workCard({ title: "邮件未读", value: "16", action: "查看未读邮件", route: "email", query: "unread=1", tone: "green", icon: "mail" })}
+          ${this.workCard({ title: "跟进超时", value: "8", action: "查看超时线索", route: "leads", query: "overdue=1", tone: "orange", icon: "clock" })}
+          ${this.workCard({ title: "新增线索", value: "15", action: "查看新增线索", route: "leads", query: "created=today", tone: "purple", icon: "userPlus" })}
           ${this.workCard({ title: "待分配", value: "12", action: "进入公海池", route: "publicPool", query: "", tone: "cyan", icon: "users", badge: "运营/协同/管理员" })}
         </div>
 
         <div class="section-title wb-title">我的业务</div>
         <div class="wb-grid wb-grid-3">
           ${this.workCard({ title: "在跟线索", value: "128", action: "查看线索", route: "leads", query: "", tone: "blue", icon: "file" })}
-          ${this.workCard({ title: "高意向线索", value: "48", action: "查看线索（阶段过滤）", route: "leads", query: "stage=highIntent", tone: "green", icon: "target" })}
+          ${this.workCard({ title: "高意向线索", value: "48", action: "查看高意向线索", route: "leads", query: "stage=highIntent", tone: "green", icon: "target" })}
           ${this.workCard({ title: "负责客户", value: "86", action: "查看客户", route: "customers", query: "", tone: "blue", icon: "user" })}
         </div>
 
         <div class="section-title wb-title">异常提醒</div>
         <div class="wb-grid wb-grid-4">
-          ${this.workCard({ title: "无效线索", value: "4", action: "查看线索（状态=无效）", route: "leads", query: "status=无效", tone: "red", icon: "alert" })}
-          ${this.workCard({ title: "丢失线索", value: "2", action: "查看线索（状态=丢失）", route: "leads", query: "status=丢失", tone: "red", icon: "alert" })}
+          ${this.workCard({ title: "无效线索", value: "4", action: "查看无效线索", route: "leads", query: "status=无效", tone: "red", icon: "alert" })}
+          ${this.workCard({ title: "丢失线索", value: "2", action: "查看丢失线索", route: "leads", query: "status=丢失", tone: "red", icon: "alert" })}
           ${this.workCard({ title: "异常站点", value: "3", action: "进入站点管理", route: "sites", query: "", tone: "red", icon: "server", badge: "管理员/运营/协同" })}
           ${this.workCard({ title: "AI 服务不可用", value: "—", action: "前往AI能力管理（管理员）", route: "ai", query: "", tone: "gray", icon: "bot", badge: "全部" })}
         </div>

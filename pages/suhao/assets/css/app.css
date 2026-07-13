@@ -742,7 +742,7 @@ nav {
   position: relative;
   min-height: 112px;
   padding: 20px;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
@@ -793,6 +793,87 @@ nav {
   margin-top: 10px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.help-tooltip {
+  position: relative;
+  z-index: 5;
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  margin-left: 4px;
+  border-radius: 50%;
+  color: #8c8c8c;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 750;
+  cursor: default;
+  vertical-align: text-bottom;
+}
+
+.help-tooltip::before,
+.help-tooltip::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .14s ease, transform .14s ease, visibility .14s ease;
+}
+
+.help-tooltip::before {
+  content: "";
+  bottom: calc(100% + 3px);
+  width: 8px;
+  height: 8px;
+  background: rgba(17, 24, 39, 0.96);
+  transform: translate(-50%, 2px) rotate(45deg);
+  z-index: 81;
+}
+
+.help-tooltip::after {
+  content: attr(data-tip);
+  bottom: calc(100% + 7px);
+  width: max-content;
+  min-width: 160px;
+  max-width: min(280px, 72vw);
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(17, 24, 39, 0.96);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(7, 18, 37, 0.16);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 500;
+  text-align: left;
+  white-space: normal;
+  transform: translate(-50%, 2px);
+  z-index: 80;
+}
+
+.help-tooltip:hover,
+.help-tooltip:focus-visible {
+  color: var(--brand);
+}
+
+.help-tooltip:hover::before,
+.help-tooltip:hover::after,
+.help-tooltip:focus-visible::before,
+.help-tooltip:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0) rotate(45deg);
+}
+
+.help-tooltip:hover::after,
+.help-tooltip:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
+.help-tooltip:focus-visible {
+  outline: 2px solid rgba(18, 99, 241, 0.28);
+  outline-offset: 2px;
 }
 
 .toolbar,

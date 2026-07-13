@@ -31,7 +31,6 @@ window.CRMAnalyticsPage = {
             <label class="filter-item"><span>时间范围</span><span class="range-picker"><input type="date" id="analyticsStatStart" value="${this.analyticsState.statTimeStart}"><span class="range-separator">-</span><input type="date" id="analyticsStatEnd" value="${this.analyticsState.statTimeEnd}"></span></label>
             `}
             ${this.showSiteFilter(tab) ? `<label class="filter-item" ${isSales ? `style="width:186px;grid-template-columns:auto 1fr"` : ""}><span>站点</span><select id="analyticsSite"><option value="">全部站点</option>${this.siteOptions()}</select></label>` : ""}
-            ${tab === "customer" ? `<span class="muted" style="margin-left:auto">业务员视图默认仅统计本人客户，自动隐藏站点筛选 ⓘ</span>` : ""}
             ${isSales ? "" : `<div class="filter-actions"><button class="btn primary" id="analyticsQuery">查询</button><button class="btn" id="analyticsReset">重置</button>${tab === "acquisition" || tab === "customer" ? `<button class="btn" id="analyticsCollapse" type="button">收起⌃</button>` : ""}</div>`}
           </div>
         </div>
@@ -200,10 +199,14 @@ window.CRMAnalyticsPage = {
     if (tab === "customer") this.renderCustomer();
   },
   metricGrid(cards, columns = 4) {
+    const cardLabel = card => {
+      const tip = card.tip ? this.helpTip(card.tip) : "";
+      return `${card.label}${tip}`;
+    };
     if (columns === 7) {
       return `<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px">${cards.map(card => `
         <div class="card metric" style="min-height:100px;padding:16px 14px">
-          <div class="metric-label">${card.label}</div>
+          <div class="metric-label">${cardLabel(card)}</div>
           <div class="metric-value" style="font-size:${String(card.value).length > 8 ? 18 : 25}px;white-space:nowrap">${card.value}</div>
           <div class="metric-foot">${card.foot || ""}</div>
         </div>
@@ -212,11 +215,15 @@ window.CRMAnalyticsPage = {
     const cls = columns === 6 ? "grid metric-grid-6" : `grid cols-${columns}`;
     return `<div class="${cls}">${cards.map(card => `
       <div class="card metric">
-        <div class="metric-label">${card.label}</div>
+        <div class="metric-label">${cardLabel(card)}</div>
         <div class="metric-value">${card.value}</div>
         <div class="metric-foot">${card.foot || ""}</div>
       </div>
     `).join("")}</div>`;
+  },
+  helpTip(text) {
+    const tip = CRMUI.escapeHtml(text);
+    return `<span class="help-tooltip" data-tip="${tip}" tabindex="0" aria-label="${tip}">ⓘ</span>`;
   },
   pct(numerator, denominator) {
     if (!denominator) return "--";
@@ -470,12 +477,12 @@ window.CRMAnalyticsPage = {
       return { product, inquiry, leads: leadCount };
     });
     const cards = [
-      { label: "消息总量", value: String(messages.length), foot: `统计区间 ${this.analyticsState.statTimeStart} ~ ${this.analyticsState.statTimeEnd}` },
-      { label: "生成线索数", value: String(validMessages.length), foot: "AI/人工判定有效并生成线索" },
-      { label: "无效消息数", value: String(invalidCount), foot: "未生成线索的无效消息" },
-      { label: "线索生成率", value: this.pct(validMessages.length, messages.length), foot: "生成线索数 / 消息总量" },
-      { label: "待判定数", value: String(pendingCount), foot: "AI 未完成或待人工判定" },
-      { label: "覆盖国家数", value: String(countries.size), foot: "去重国家/地区" }
+      { label: "消息总量", value: String(messages.length), foot: `统计周期：${this.analyticsState.statTimeStart} ~ ${this.analyticsState.statTimeEnd}` },
+      { label: "生成线索数", value: String(validMessages.length), tip: "AI 或人工判定有效并成功生成的线索数量" },
+      { label: "无效消息数", value: String(invalidCount), tip: "未生成线索的无效消息数量" },
+      { label: "线索生成率", value: this.pct(validMessages.length, messages.length), tip: "生成线索数占消息总量的比例" },
+      { label: "待判定数", value: String(pendingCount), tip: "AI 未完成或需要人工判定的消息数量" },
+      { label: "覆盖国家数", value: String(countries.size), tip: "按国家/地区去重后的数量" }
     ];
     CRMUI.$("#analyticsBody").innerHTML = `
       ${this.metricGrid(cards, 6)}
@@ -706,8 +713,8 @@ window.CRMAnalyticsPage = {
       </div>
       <div style="display:grid;grid-template-columns:1.15fr .95fr 1.35fr;gap:14px;margin-top:14px;align-items:stretch">
         <div class="card pad"><div class="card-title">客户标签分布</div><div class="chart-box" style="height:260px"><canvas id="customerTagChart"></canvas></div></div>
-        <div class="card pad"><div class="card-title">客户活跃度</div><div class="chart-box" style="height:260px"><canvas id="customerActiveChart"></canvas></div><p class="muted" style="margin:4px 0 0">ⓘ 活跃阈值：90天内有跟进或消息互动</p></div>
-        <div class="card pad"><div class="card-title">客户关注点分布</div><div class="chart-box" style="height:260px"><canvas id="customerFocusChart"></canvas></div><p class="muted" style="margin:4px 0 0">ⓘ 按客户名下线索关注点聚合去重后计客户数；与获客分析（线索维）并存</p></div>
+        <div class="card pad"><div class="card-title">客户活跃度 ${this.helpTip("90天内有跟进或消息互动的客户")}</div><div class="chart-box" style="height:260px"><canvas id="customerActiveChart"></canvas></div></div>
+        <div class="card pad"><div class="card-title">客户关注点分布 ${this.helpTip("按客户名下线索关注点统计客户数量")}</div><div class="chart-box" style="height:260px"><canvas id="customerFocusChart"></canvas></div></div>
       </div>
     `;
     this.renderCustomerReferenceLine("customerNewTrendChart", data.newTrend);
