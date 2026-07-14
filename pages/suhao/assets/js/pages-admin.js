@@ -16,38 +16,45 @@ window.CRMAdminPage = {
           <button class="btn" id="refreshAiProvider">刷新</button>
         </div>
         <div class="toolbar-filters">
-          <div class="filters card pad search-filter">
+          <div class="filters card pad search-filter" style="grid-template-columns:repeat(4,minmax(0,1fr))">
             <label class="filter-item"><span>关键词</span><input id="aiSearch" placeholder="搜索能力名称 / 服务商"></label>
             <label class="filter-item"><span>状态</span><select id="aiStatus"><option value="">全部状态</option><option>启用</option><option>停用</option></select></label>
+            <label class="filter-item"><span>业务关联</span><select id="aiBusinessScene"><option value="">全部场景</option>${this.aiBusinessScenes().map(scene => `<option value="${scene}">${scene}</option>`).join("")}</select></label>
             <div class="filter-actions"><button class="btn" id="aiQuery">查询</button><button class="btn" id="aiReset">重置</button></div>
           </div>
         </div>
       </div>
       <div id="aiProviderTable"></div>
     `;
-    this.aiState = { query: "", status: "" };
+    this.aiState = { query: "", status: "", businessScene: "" };
     this.renderAiProviderTable();
     CRMUI.$("#newAiProvider").addEventListener("click", () => this.openAiConfigModal());
     CRMUI.$("#refreshAiProvider").addEventListener("click", () => { CRMUI.toast("AI 能力列表已刷新"); this.renderAiProviderTable(); });
     CRMUI.$("#aiSearch").addEventListener("input", e => { this.aiState.query = e.target.value.toLowerCase(); this.renderAiProviderTable(); });
     CRMUI.$("#aiStatus").addEventListener("change", e => { this.aiState.status = e.target.value; this.renderAiProviderTable(); });
+    CRMUI.$("#aiBusinessScene").addEventListener("change", e => { this.aiState.businessScene = e.target.value; this.renderAiProviderTable(); });
     CRMUI.$("#aiQuery").addEventListener("click", () => this.renderAiProviderTable());
     CRMUI.$("#aiReset").addEventListener("click", () => {
-      this.aiState = { query: "", status: "" };
+      this.aiState = { query: "", status: "", businessScene: "" };
       CRMUI.$("#aiSearch").value = "";
       CRMUI.$("#aiStatus").value = "";
+      CRMUI.$("#aiBusinessScene").value = "";
       this.renderAiProviderTable();
     });
   },
   renderAiProviderTable() {
     const providers = (CRM_MOCK.aiProviders || []).filter(row => {
-      const text = `${row.capabilityName || row.name} ${row.name} ${row.defaultModel}`.toLowerCase();
-      return text.includes(this.aiState?.query || "") && (!this.aiState?.status || row.status === this.aiState.status);
+      const scenes = this.aiBusinessSceneValues(row);
+      const text = `${row.capabilityName || row.name} ${row.name} ${row.defaultModel} ${scenes.join(" ")}`.toLowerCase();
+      return text.includes(this.aiState?.query || "")
+        && (!this.aiState?.status || row.status === this.aiState.status)
+        && (!this.aiState?.businessScene || scenes.includes(this.aiState.businessScene));
     });
     CRMUI.$("#aiProviderTable").innerHTML = CRMUI.table([
       { title: "能力名称", render: row => row.capabilityName || `${row.name} 意向分析` },
       { title: "AI 服务商", render: row => row.name },
       { title: "AI 模型", render: row => row.defaultModel },
+      { title: "业务关联", render: row => this.renderAiBusinessScenes(row) },
       { title: "API 端点", render: row => row.config?.api?.baseUrl || "-" },
       { title: "状态", render: row => CRMUI.badge(row.status) },
       { title: "创建时间", render: row => row.createdAt || row.updatedAt },
@@ -71,16 +78,49 @@ window.CRMAdminPage = {
   aiConfigTemplate() {
     return JSON.parse(JSON.stringify(CRM_MOCK.aiConfig));
   },
+  aiBusinessScenes() {
+    return CRM_MOCK.aiBusinessScenes || ["邮件意向分析", "WhatsApp 意向分析", "AI 自动提取企业信息", "批量 AI 提炼"];
+  },
+  aiBusinessSceneValues(provider = {}) {
+    const scenes = provider.businessScene ?? provider.businessScenes ?? [];
+    return Array.isArray(scenes) ? scenes.filter(Boolean) : String(scenes || "").split(/[,，]/).map(item => item.trim()).filter(Boolean);
+  },
+  occupiedAiBusinessScenes(currentProviderId = "") {
+    return (CRM_MOCK.aiProviders || []).reduce((map, item) => {
+      if (item.id === currentProviderId) return map;
+      this.aiBusinessSceneValues(item).forEach(scene => { if (!map[scene]) map[scene] = item; });
+      return map;
+    }, {});
+  },
+  aiBusinessSceneOptions(provider) {
+    const occupied = this.occupiedAiBusinessScenes(provider?.id);
+    return this.aiBusinessScenes().map(scene => {
+      const owner = occupied[scene];
+      return {
+        value: scene,
+        label: owner ? `${scene}（已占用）` : scene,
+        disabled: Boolean(owner),
+        title: owner ? `已被「${owner.capabilityName || owner.name}」占用` : ""
+      };
+    });
+  },
+  renderAiBusinessScenes(row) {
+    const scenes = this.aiBusinessSceneValues(row);
+    return scenes.length ? scenes.map(scene => `<span class="badge blue">${scene}</span>`).join(" ") : "-";
+  },
   openAiConfigModal(provider) {
     const isEdit = Boolean(provider);
     const config = provider?.config || this.aiConfigTemplate();
-    const providerOpts = (CRM_MOCK.aiProviderOptions || []).map(v => ({ value: v, label: v }));
-    const currentProvider = provider?.name || (CRM_MOCK.aiProviderOptions || [])[0] || "";
+    const providerNames = CRM_MOCK.aiProviderOptions || [];
+    const providerOpts = providerNames.map(v => ({ value: v, label: v }));
+    const currentProvider = provider?.name && providerNames.includes(provider.name) ? provider.name : (provider ? "自定义" : providerNames[0] || "");
     const modelOpts = (CRM_MOCK.aiModelOptions?.[currentProvider] || []).map(v => ({ value: v, label: v }));
     const isCustomProvider = currentProvider === "自定义";
+    const selectedScenes = this.aiBusinessSceneValues(provider);
     CRMUI.modal(isEdit ? `${provider.name} 配置` : "新增 AI 配置", `
       <div class="form-grid">
         ${CRMUI.formInput("能力名称", "capabilityName", provider?.capabilityName || `${provider?.name || "AI"} 意向分析`)}
+        ${CRMUI.formMultiSelect("业务关联", "businessScene", this.aiBusinessSceneOptions(provider), selectedScenes)}
         ${CRMUI.formSelect("AI 服务商", "name", providerOpts, currentProvider)}
         ${CRMUI.formSelect("启用状态", "status", ["启用", "停用"].map(value => ({ value, label: value })), provider?.status || "启用")}
         ${isEdit ? `<div class="form-field"><label>API Key</label><input name="apiKey" type="password" value="" placeholder="留空则不修改，当前：${this.maskApiKey(config.api.apiKey)}"></div>` : CRMUI.formInput("API Key", "apiKey", "", "password")}
@@ -93,6 +133,11 @@ window.CRMAdminPage = {
       if (!providerName || !form.get("baseUrl") || !model) return CRMUI.toast("请完善 AI 服务商、API Key、Base URL 和 AI 模型");
       const apiKey = form.get("apiKey") || (isEdit ? config.api.apiKey : "");
       if (!apiKey) return CRMUI.toast("请填写 API Key");
+      const businessScene = form.getAll("businessScene").filter(Boolean);
+      if (!businessScene.length) return CRMUI.toast("请选择业务关联");
+      const occupied = this.occupiedAiBusinessScenes(provider?.id);
+      const occupiedScene = businessScene.find(scene => occupied[scene]);
+      if (occupiedScene) return CRMUI.toast(`「${occupiedScene}」已被其它 AI 能力占用`);
       const nextConfig = {
         api: {
           apiKey,
@@ -112,6 +157,7 @@ window.CRMAdminPage = {
       const nextProvider = provider || { id: `aip${Date.now()}` };
       nextProvider.name = providerName;
       nextProvider.capabilityName = form.get("capabilityName");
+      nextProvider.businessScene = businessScene;
       nextProvider.type = "大语言模型";
       nextProvider.defaultModel = model;
       nextProvider.status = form.get("status");

@@ -4399,6 +4399,16 @@ tbody tr:hover td {
   background: #f4f7fb;
 }
 
+.multi-select-option-disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  background: #f7f9fc;
+}
+
+.multi-select-option-disabled:hover {
+  background: #f7f9fc;
+}
+
 .multi-select-option input[type="checkbox"] {
   width: 14px;
   height: 14px;

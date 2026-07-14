@@ -118,7 +118,10 @@ window.CRMUI = {
     const menu = options.map(o => {
       const value = String(o.value ?? "");
       const checked = selected.has(value) ? "checked" : "";
-      return `<label class="multi-select-option"><input type="checkbox" name="${name}" value="${this.escapeHtml(value)}" ${checked}><span>${this.escapeHtml(o.label)}</span></label>`;
+      const disabled = o.disabled ? "disabled" : "";
+      const title = o.title ? ` title="${this.escapeHtml(o.title)}"` : "";
+      const cls = o.disabled ? " multi-select-option-disabled" : "";
+      return `<label class="multi-select-option${cls}"${title}><input type="checkbox" name="${name}" value="${this.escapeHtml(value)}" ${checked} ${disabled}><span>${this.escapeHtml(o.label)}</span></label>`;
     }).join("");
     return `
       <div class="multi-select" data-multi-select>

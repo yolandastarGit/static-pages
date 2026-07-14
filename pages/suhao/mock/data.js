@@ -130,6 +130,7 @@ window.CRM_MOCK = {
     "DeepSeek": ["deepseek-chat", "deepseek-reasoner"],
     "自定义": []
   },
+  aiBusinessScenes: ["邮件意向分析", "WhatsApp 意向分析", "AI 自动提取企业信息", "批量 AI 提炼"],
   mailAuthModes: ["MASTER_PASSWORD（子邮箱授权码）", "OAUTH2", "XOAUTH2", "LOGIN", "PLAIN"],
   purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
   notificationChannels: ["站内信", "钉钉"],
@@ -779,6 +780,7 @@ window.CRM_MOCK = {
       name: "OpenAI",
       type: "大语言模型",
       defaultModel: "gpt-4o",
+      businessScene: ["邮件意向分析", "WhatsApp 意向分析"],
       status: "启用",
       updatedAt: "2026-07-02 16:20",
       config: {
@@ -1005,7 +1007,7 @@ window.CRM_MOCK = {
     { id: "aip04", name: "智谱 AI", type: "大语言模型", defaultModel: "glm-4", status: "启用", updatedAt: "2026-06-30 09:25", config: providerConfig("智谱 AI", "glm-4", true) },
     { id: "aip05", name: "DeepSeek", type: "大语言模型", defaultModel: "deepseek-chat", status: "启用", updatedAt: "2026-06-29 17:40", config: providerConfig("DeepSeek", "deepseek-chat", true) },
     { id: "aip06", name: "自定义-销售摘要模型", type: "自定义模型服务", defaultModel: "crm-sales-summary-v1", status: "启用", updatedAt: "2026-06-28 15:30", config: providerConfig("自定义", "crm-sales-summary-v1", true) },
-    { id: "aip07", name: "自定义-企业情报模型", type: "自定义模型服务", defaultModel: "company-intel-v2", status: "启用", updatedAt: "2026-06-27 13:15", config: providerConfig("自定义", "company-intel-v2", true) },
+    { id: "aip07", name: "自定义-企业情报模型", type: "自定义模型服务", defaultModel: "company-intel-v2", businessScene: ["AI 自动提取企业信息"], status: "启用", updatedAt: "2026-06-27 13:15", config: providerConfig("自定义", "company-intel-v2", true) },
     { id: "aip08", name: "自定义-风险分析模型", type: "自定义模型服务", defaultModel: "risk-check-v1", status: "停用", updatedAt: "2026-06-26 11:00", config: providerConfig("自定义", "risk-check-v1", false) },
     { id: "aip09", name: "Azure OpenAI EU", type: "企业模型服务", defaultModel: "gpt-4o", status: "启用", updatedAt: "2026-06-25 16:25", config: providerConfig("Azure OpenAI", "gpt-4o", true) },
     { id: "aip10", name: "OpenAI Mini 低成本通道", type: "大语言模型", defaultModel: "gpt-4o-mini", status: "启用", updatedAt: "2026-06-24 10:10", config: providerConfig("OpenAI", "gpt-4o-mini", true) }
