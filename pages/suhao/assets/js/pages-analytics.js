@@ -147,7 +147,9 @@ window.CRMAnalyticsPage = {
     return ["已签约"].includes(contract.status);
   },
   highIntentStages() {
-    return ["打样阶段", "报价阶段", "谈判阶段"];
+    const dict = (CRM_MOCK.dictionaries || []).find(d => d.code === "followStage");
+    const items = (dict?.items || []).filter(item => item.status !== "停用" && item.countAsHighIntent);
+    return items.map(item => item.name);
   },
   isHighIntent(lead) {
     return this.highIntentStages().includes(lead.stage);
@@ -737,7 +739,7 @@ window.CRMAnalyticsPage = {
         amount: [120, 180, 250, 210, 330, 410, 512, null, null, null, null, null]
       },
       level: [
-        { name: "可跟进", value: 5268 },
+        { name: "高潜客户", value: 5268 },
         { name: "潜在客户", value: 4187 },
         { name: "一般客户", value: 3390 }
       ],

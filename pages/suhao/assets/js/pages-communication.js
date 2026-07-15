@@ -305,7 +305,7 @@ window.CRMCommunicationPage = {
         ${CRMUI.formSelect("负责人", "ownerId", this.ownerOptions(me.id), me.id)}
         ${CRMUI.formInput("意向产品", "products", products)}
         ${CRMUI.formMultiSelect("线索标签", "tags", (CRM_MOCK.dictionaries.find(d => d.code === "leadTag")?.items || []).map(i => ({ value: i.name, label: i.name })), tagSeed)}
-        ${CRMUI.formMultiSelect("关注点", "focusPoints", (CRM_MOCK.dictionaries.find(d => d.code === "customerFocus")?.items || []).map(i => ({ value: i.name, label: i.name })), [])}
+        ${CRMUI.formMultiSelect("关注点", "focusPoints", (CRM_MOCK.dictionaries.find(d => d.code === "customerFocus")?.items || []).filter(i => i.status !== "停用").map(i => ({ value: i.name, label: i.displayGroup ? `${i.displayGroup} / ${i.name}` : i.name })), [])}
         <div class="form-field full"><label>备注</label><textarea name="remark"></textarea></div>
         <div class="form-field full"><small class="muted">${aiOk ? "已按 AI/消息信息预填，可修改。" : "AI 不可用或无分析结果：业务字段未预填，请手动填写；站点/来源/负责人已默认带入。"}</small></div>
       </div>`, form => {
@@ -1071,7 +1071,7 @@ window.CRMCommunicationPage = {
         ${CRMUI.formSelect("负责人", "ownerId", this.ownerOptions(me.id), me.id)}
         ${CRMUI.formInput("意向产品", "products", aiOk ? (conversation.aiIntentProduct || "") : "")}
         ${CRMUI.formMultiSelect("线索标签", "tags", (CRM_MOCK.dictionaries.find(d => d.code === "leadTag")?.items || []).map(i => ({ value: i.name, label: i.name })), tagSeed)}
-        ${CRMUI.formMultiSelect("关注点", "focusPoints", (CRM_MOCK.dictionaries.find(d => d.code === "customerFocus")?.items || []).map(i => ({ value: i.name, label: i.name })), [])}
+        ${CRMUI.formMultiSelect("关注点", "focusPoints", (CRM_MOCK.dictionaries.find(d => d.code === "customerFocus")?.items || []).filter(i => i.status !== "停用").map(i => ({ value: i.name, label: i.displayGroup ? `${i.displayGroup} / ${i.name}` : i.name })), [])}
         <div class="form-field full"><label>备注</label><textarea name="remark"></textarea></div>
         <div class="form-field full"><small class="muted">${aiOk ? "已按 AI/消息信息预填；来源/站点/负责人可改（如改为官网询盘）。" : "AI 不可用或无分析结果：业务字段未预填；电话只读，站点/来源/负责人已默认带入可改。"}</small></div>
       </div>`, form => {

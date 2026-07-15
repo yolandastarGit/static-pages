@@ -34,101 +34,201 @@ window.CRM_MOCK = {
     { id: "s03", name: "品牌展示站", code: "BRAND", domain: "brand.example.com", status: "停用", ownerId: "u04", createdAt: "2026-06-25 16:10", config: { ai: "关闭", publicPool: "关闭", sync: "手动" } }
   ],
   dictionaries: [
-    { id: "dict-follow-stage", code: "followStage", name: "跟进阶段", domain: "线索域", items: [
-      { id: "fs1", code: "待首响", name: "待首响", sort: 1, status: "启用", allowHighIntent: false },
-      { id: "fs2", code: "已联系", name: "已联系", sort: 2, status: "启用", allowHighIntent: false },
-      { id: "fs3", code: "需求确认", name: "需求确认", sort: 3, status: "启用", allowHighIntent: false },
-      { id: "fs4", code: "打样阶段", name: "打样阶段", sort: 4, status: "启用", allowHighIntent: true },
-      { id: "fs5", code: "报价阶段", name: "报价阶段", sort: 5, status: "启用", allowHighIntent: true },
-      { id: "fs6", code: "谈判阶段", name: "谈判阶段", sort: 6, status: "启用", allowHighIntent: true }
+    { id: "dict-source-channel", code: "sourceChannel", name: "来源渠道", domain: "客户域", tier: "business", sort: 10, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "sc1", code: "email", name: "邮件", sort: 10, status: "启用", builtin: true },
+      { id: "sc2", code: "website_inquiry", name: "官网询盘", sort: 20, status: "启用", builtin: true },
+      { id: "sc3", code: "organic_inquiry", name: "自然询盘", sort: 30, status: "启用", builtin: true },
+      { id: "sc4", code: "whatsapp", name: "WhatsApp", sort: 40, status: "启用", builtin: true },
+      { id: "sc5", code: "exhibition", name: "展会", sort: 50, status: "启用", builtin: true },
+      { id: "sc6", code: "customer_referral", name: "客户转介绍", sort: 60, status: "启用", builtin: true },
+      { id: "sc7", code: "other", name: "其他", sort: 999, status: "启用", builtin: true }
     ]},
-    { id: "dict-follow-method", code: "followMethod", name: "跟进方式", domain: "线索域", items: [
-      { id: "fm1", code: "电话", name: "电话", sort: 1, status: "启用" },
-      { id: "fm2", code: "邮件", name: "邮件", sort: 2, status: "启用" },
-      { id: "fm3", code: "WhatsApp", name: "WhatsApp", sort: 3, status: "启用" },
-      { id: "fm4", code: "会议", name: "会议", sort: 4, status: "启用" },
-      { id: "fm5", code: "备注", name: "备注", sort: 5, status: "启用" }
+    { id: "dict-entry-method", code: "entryMethod", name: "录入方式", domain: "系统域", tier: "system", sort: 20, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "em1", code: "manual_create", name: "手动新建", sort: 10, status: "启用", builtin: true },
+      { id: "em2", code: "batch_import", name: "批量导入", sort: 20, status: "启用", builtin: true },
+      { id: "em3", code: "inquiry_conversion", name: "询盘转入", sort: 30, status: "启用", builtin: true },
+      { id: "em4", code: "api_sync", name: "API 同步", sort: 40, status: "启用", builtin: true },
+      { id: "em5", code: "system_generated", name: "系统生成", sort: 50, status: "启用", builtin: true }
     ]},
-    { id: "dict-customer-level", code: "customerLevel", name: "客户潜质分级", domain: "客户域", items: [
-      { id: "cl1", code: "可跟进", name: "可跟进", sort: 1, status: "启用" },
-      { id: "cl2", code: "潜在", name: "潜在", sort: 2, status: "启用" },
-      { id: "cl3", code: "一般客户", name: "一般客户", sort: 3, status: "启用" }
+    { id: "dict-follow-stage", code: "followStage", name: "跟进阶段", domain: "线索域", tier: "business", sort: 30, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "fs1", code: "awaiting_first_response", name: "待首响", sort: 10, status: "启用", builtin: true, allowConvertToCustomer: false, countAsHighIntent: false },
+      { id: "fs2", code: "contacted", name: "已联系", sort: 20, status: "启用", builtin: true, allowConvertToCustomer: false, countAsHighIntent: false },
+      { id: "fs3", code: "need_confirmed", name: "需求确认", sort: 30, status: "启用", builtin: true, allowConvertToCustomer: false, countAsHighIntent: false },
+      { id: "fs4", code: "sampling", name: "打样阶段", sort: 40, status: "启用", builtin: true, allowConvertToCustomer: true, countAsHighIntent: true },
+      { id: "fs5", code: "quotation", name: "报价阶段", sort: 50, status: "启用", builtin: true, allowConvertToCustomer: true, countAsHighIntent: true },
+      { id: "fs6", code: "negotiation", name: "谈判阶段", sort: 60, status: "启用", builtin: true, allowConvertToCustomer: true, countAsHighIntent: true }
     ]},
-    { id: "dict-customer-tag", code: "customerTag", name: "客户标签", domain: "客户域", items: [
-      { id: "ct1", code: "重点客户", name: "重点客户", sort: 1, status: "启用" },
-      { id: "ct2", code: "高潜客户", name: "高潜客户", sort: 2, status: "启用" },
-      { id: "ct3", code: "复购客户", name: "复购客户", sort: 3, status: "启用" },
-      { id: "ct4", code: "长期合作客户", name: "长期合作客户", sort: 4, status: "启用" },
-      { id: "ct5", code: "待维护客户", name: "待维护客户", sort: 5, status: "启用" },
-      { id: "ct6", code: "价格敏感客户", name: "价格敏感客户", sort: 6, status: "启用" },
-      { id: "ct7", code: "新品客户", name: "新品客户", sort: 7, status: "启用" },
-      { id: "ct8", code: "已流失风险客户", name: "已流失风险客户", sort: 8, status: "启用" }
+    { id: "dict-follow-method", code: "followMethod", name: "跟进方式", domain: "线索域", tier: "business", sort: 40, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "fm1", code: "phone", name: "电话", sort: 10, status: "启用", builtin: true },
+      { id: "fm2", code: "email", name: "邮件", sort: 20, status: "启用", builtin: true },
+      { id: "fm3", code: "whatsapp", name: "WhatsApp", sort: 30, status: "启用", builtin: true },
+      { id: "fm4", code: "meeting", name: "会议", sort: 40, status: "启用", builtin: true },
+      { id: "fm5", code: "online_meeting", name: "线上会议", sort: 50, status: "启用", builtin: true },
+      { id: "fm6", code: "offline_visit", name: "线下拜访", sort: 60, status: "启用", builtin: true },
+      { id: "fm7", code: "note", name: "备注", sort: 70, status: "启用", builtin: true },
+      { id: "fm8", code: "other", name: "其他", sort: 999, status: "启用", builtin: true }
     ]},
-    { id: "dict-lead-tag", code: "leadTag", name: "线索手动标签", domain: "线索域", items: [
-      { id: "lt1", code: "北美市场", name: "北美市场", sort: 1, status: "启用" },
-      { id: "lt2", code: "欧洲市场", name: "欧洲市场", sort: 2, status: "启用" },
-      { id: "lt3", code: "东南亚市场", name: "东南亚市场", sort: 3, status: "启用" },
-      { id: "lt4", code: "中东市场", name: "中东市场", sort: 4, status: "启用" },
-      { id: "lt5", code: "拉美市场", name: "拉美市场", sort: 5, status: "启用" },
-      { id: "lt6", code: "老客户介绍", name: "老客户介绍", sort: 6, status: "启用" },
-      { id: "lt7", code: "展会线索", name: "展会线索", sort: 7, status: "启用" },
-      { id: "lt8", code: "大额采购", name: "大额采购", sort: 8, status: "启用" },
-      { id: "lt9", code: "样品优先", name: "样品优先", sort: 9, status: "启用" },
-      { id: "lt10", code: "复购询盘", name: "复购询盘", sort: 10, status: "启用" },
-      { id: "lt11", code: "紧急订单", name: "紧急订单", sort: 11, status: "启用" },
-      { id: "lt12", code: "价格敏感", name: "价格敏感", sort: 12, status: "启用" }
+    { id: "dict-customer-level", code: "customerLevel", name: "客户潜质分级", domain: "客户域", tier: "business", sort: 50, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "cl1", code: "high_potential", name: "高潜客户", sort: 10, status: "启用", builtin: true, isDefault: false },
+      { id: "cl2", code: "potential", name: "潜在客户", sort: 20, status: "启用", builtin: true, isDefault: true },
+      { id: "cl3", code: "general", name: "一般客户", sort: 30, status: "启用", builtin: true, isDefault: false }
     ]},
-    { id: "dict-customer-focus", code: "customerFocus", name: "客户关注选项", domain: "客户域", items: [
-      { id: "cf1", code: "价格", name: "价格", sort: 1, status: "启用" },
-      { id: "cf2", code: "交期", name: "交期", sort: 2, status: "启用" },
-      { id: "cf3", code: "质量认证", name: "质量认证", sort: 3, status: "启用" },
-      { id: "cf4", code: "售后服务", name: "售后服务", sort: 4, status: "启用" }
+    { id: "dict-customer-tag", code: "customerTag", name: "客户标签", domain: "客户域", tier: "business", sort: 60, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "ct1", code: "重点客户", name: "重点客户", sort: 1, status: "启用", builtin: true },
+      { id: "ct2", code: "高潜客户", name: "高潜客户", sort: 2, status: "启用", builtin: true },
+      { id: "ct3", code: "复购客户", name: "复购客户", sort: 3, status: "启用", builtin: true },
+      { id: "ct4", code: "长期合作客户", name: "长期合作客户", sort: 4, status: "启用", builtin: true },
+      { id: "ct5", code: "待维护客户", name: "待维护客户", sort: 5, status: "启用", builtin: true },
+      { id: "ct6", code: "价格敏感客户", name: "价格敏感客户", sort: 6, status: "启用", builtin: true },
+      { id: "ct7", code: "新品客户", name: "新品客户", sort: 7, status: "启用", builtin: true },
+      { id: "ct8", code: "已流失风险客户", name: "已流失风险客户", sort: 8, status: "启用", builtin: true }
     ]},
-    { id: "dict-industry", code: "industry", name: "行业", domain: "客户域", items: [
-      { id: "ind1", code: "工业制造", name: "工业制造", sort: 1, status: "启用" },
-      { id: "ind2", code: "机械设备", name: "机械设备", sort: 2, status: "启用" },
-      { id: "ind3", code: "电子电器", name: "电子电器", sort: 3, status: "启用" },
-      { id: "ind4", code: "汽车配件", name: "汽车配件", sort: 4, status: "启用" },
-      { id: "ind5", code: "玩具礼品", name: "玩具礼品", sort: 5, status: "启用" },
-      { id: "ind6", code: "家居用品", name: "家居用品", sort: 6, status: "启用" },
-      { id: "ind7", code: "纺织服装", name: "纺织服装", sort: 7, status: "启用" },
-      { id: "ind8", code: "五金工具", name: "五金工具", sort: 8, status: "启用" },
-      { id: "ind9", code: "医疗器械", name: "医疗器械", sort: 9, status: "启用" },
-      { id: "ind10", code: "化工原料", name: "化工原料", sort: 10, status: "启用" },
-      { id: "ind11", code: "农副产品", name: "农副产品", sort: 11, status: "启用" },
-      { id: "ind12", code: "其他", name: "其他", sort: 12, status: "启用" }
+    { id: "dict-lead-tag", code: "leadTag", name: "线索手动标签", domain: "线索域", tier: "business", sort: 70, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "lt1", code: "北美市场", name: "北美市场", sort: 1, status: "启用", builtin: true },
+      { id: "lt2", code: "欧洲市场", name: "欧洲市场", sort: 2, status: "启用", builtin: true },
+      { id: "lt3", code: "东南亚市场", name: "东南亚市场", sort: 3, status: "启用", builtin: true },
+      { id: "lt4", code: "中东市场", name: "中东市场", sort: 4, status: "启用", builtin: true },
+      { id: "lt5", code: "拉美市场", name: "拉美市场", sort: 5, status: "启用", builtin: true },
+      { id: "lt6", code: "老客户介绍", name: "老客户介绍", sort: 6, status: "启用", builtin: true },
+      { id: "lt7", code: "展会线索", name: "展会线索", sort: 7, status: "启用", builtin: true },
+      { id: "lt8", code: "大额采购", name: "大额采购", sort: 8, status: "启用", builtin: true },
+      { id: "lt9", code: "样品优先", name: "样品优先", sort: 9, status: "启用", builtin: true },
+      { id: "lt10", code: "复购询盘", name: "复购询盘", sort: 10, status: "启用", builtin: true },
+      { id: "lt11", code: "紧急订单", name: "紧急订单", sort: 11, status: "启用", builtin: true },
+      { id: "lt12", code: "价格敏感", name: "价格敏感", sort: 12, status: "启用", builtin: true }
     ]},
-    { id: "dict-country", code: "country", name: "国家/地区", domain: "客户域", items: [
-      { id: "co1", code: "中国", name: "中国", sort: 1, status: "启用" },
-      { id: "co2", code: "美国", name: "美国", sort: 2, status: "启用" },
-      { id: "co3", code: "加拿大", name: "加拿大", sort: 3, status: "启用" },
-      { id: "co4", code: "墨西哥", name: "墨西哥", sort: 4, status: "启用" },
-      { id: "co5", code: "德国", name: "德国", sort: 5, status: "启用" },
-      { id: "co6", code: "英国", name: "英国", sort: 6, status: "启用" },
-      { id: "co7", code: "法国", name: "法国", sort: 7, status: "启用" },
-      { id: "co8", code: "意大利", name: "意大利", sort: 8, status: "启用" },
-      { id: "co9", code: "阿联酋", name: "阿联酋", sort: 9, status: "启用" },
-      { id: "co10", code: "日本", name: "日本", sort: 10, status: "启用" },
-      { id: "co11", code: "韩国", name: "韩国", sort: 11, status: "启用" },
-      { id: "co12", code: "印度", name: "印度", sort: 12, status: "启用" },
-      { id: "co13", code: "巴西", name: "巴西", sort: 13, status: "启用" },
-      { id: "co14", code: "澳大利亚", name: "澳大利亚", sort: 14, status: "启用" },
-      { id: "co15", code: "其他", name: "其他", sort: 15, status: "启用" }
+    { id: "dict-customer-focus", code: "customerFocus", name: "客户关注选项", domain: "客户域", tier: "business", sort: 80, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "cf1", code: "price_quotation", name: "价格与报价", sort: 10, status: "启用", builtin: true, displayGroup: "商务" },
+      { id: "cf2", code: "minimum_order_quantity", name: "最小起订量", sort: 20, status: "启用", builtin: true, displayGroup: "商务" },
+      { id: "cf3", code: "payment_terms", name: "付款方式与账期", sort: 30, status: "启用", builtin: true, displayGroup: "商务" },
+      { id: "cf4", code: "delivery_time", name: "交货周期", sort: 40, status: "启用", builtin: true, displayGroup: "交付" },
+      { id: "cf5", code: "logistics", name: "物流与运输", sort: 50, status: "启用", builtin: true, displayGroup: "交付" },
+      { id: "cf6", code: "product_specification", name: "产品规格与参数", sort: 60, status: "启用", builtin: true, displayGroup: "产品" },
+      { id: "cf7", code: "sample", name: "样品与打样", sort: 70, status: "启用", builtin: true, displayGroup: "产品" },
+      { id: "cf8", code: "customization", name: "定制/OEM/ODM", sort: 80, status: "启用", builtin: true, displayGroup: "产品" },
+      { id: "cf9", code: "quality_standard", name: "质量标准", sort: 90, status: "启用", builtin: true, displayGroup: "质量" },
+      { id: "cf10", code: "qualification_certificate", name: "企业资质与产品认证", sort: 100, status: "启用", builtin: true, displayGroup: "质量" },
+      { id: "cf11", code: "production_capacity", name: "生产能力", sort: 110, status: "启用", builtin: true, displayGroup: "供应能力" },
+      { id: "cf12", code: "after_sales_service", name: "售后服务", sort: 120, status: "启用", builtin: true, displayGroup: "服务" },
+      { id: "cf13", code: "compliance", name: "合规与可持续要求", sort: 130, status: "启用", builtin: true, displayGroup: "合规" },
+      { id: "cf14", code: "other", name: "其他", sort: 999, status: "启用", builtin: true, displayGroup: "其他" }
     ]},
-    { id: "dict-login-method", code: "loginMethod", name: "登录方式", domain: "系统域", items: [
-      { id: "lm1", code: "账号密码", name: "账号密码", sort: 1, status: "启用" },
-      { id: "lm2", code: "钉钉扫码", name: "钉钉扫码", sort: 2, status: "启用" },
-      { id: "lm3", code: "短信验证码", name: "短信验证码", sort: 3, status: "停用" }
+    { id: "dict-industry", code: "industry", name: "行业", domain: "客户域", tier: "business", sort: 90, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "ind1", code: "工业制造", name: "工业制造", sort: 1, status: "启用", builtin: true },
+      { id: "ind2", code: "机械设备", name: "机械设备", sort: 2, status: "启用", builtin: true },
+      { id: "ind3", code: "电子电器", name: "电子电器", sort: 3, status: "启用", builtin: true },
+      { id: "ind4", code: "汽车配件", name: "汽车配件", sort: 4, status: "启用", builtin: true },
+      { id: "ind5", code: "玩具礼品", name: "玩具礼品", sort: 5, status: "启用", builtin: true },
+      { id: "ind6", code: "家居用品", name: "家居用品", sort: 6, status: "启用", builtin: true },
+      { id: "ind7", code: "纺织服装", name: "纺织服装", sort: 7, status: "启用", builtin: true },
+      { id: "ind8", code: "五金工具", name: "五金工具", sort: 8, status: "启用", builtin: true },
+      { id: "ind9", code: "医疗器械", name: "医疗器械", sort: 9, status: "启用", builtin: true },
+      { id: "ind10", code: "化工原料", name: "化工原料", sort: 10, status: "启用", builtin: true },
+      { id: "ind11", code: "农副产品", name: "农副产品", sort: 11, status: "启用", builtin: true },
+      { id: "ind12", code: "其他", name: "其他", sort: 999, status: "启用", builtin: true }
+    ]},
+    { id: "dict-country", code: "country", name: "国家/地区", domain: "客户域", tier: "business", sort: 100, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "co1", code: "中国", name: "中国", sort: 1, status: "启用", builtin: true },
+      { id: "co2", code: "美国", name: "美国", sort: 2, status: "启用", builtin: true },
+      { id: "co3", code: "加拿大", name: "加拿大", sort: 3, status: "启用", builtin: true },
+      { id: "co4", code: "墨西哥", name: "墨西哥", sort: 4, status: "启用", builtin: true },
+      { id: "co5", code: "德国", name: "德国", sort: 5, status: "启用", builtin: true },
+      { id: "co6", code: "英国", name: "英国", sort: 6, status: "启用", builtin: true },
+      { id: "co7", code: "法国", name: "法国", sort: 7, status: "启用", builtin: true },
+      { id: "co8", code: "意大利", name: "意大利", sort: 8, status: "启用", builtin: true },
+      { id: "co9", code: "阿联酋", name: "阿联酋", sort: 9, status: "启用", builtin: true },
+      { id: "co10", code: "日本", name: "日本", sort: 10, status: "启用", builtin: true },
+      { id: "co11", code: "韩国", name: "韩国", sort: 11, status: "启用", builtin: true },
+      { id: "co12", code: "印度", name: "印度", sort: 12, status: "启用", builtin: true },
+      { id: "co13", code: "巴西", name: "巴西", sort: 13, status: "启用", builtin: true },
+      { id: "co14", code: "澳大利亚", name: "澳大利亚", sort: 14, status: "启用", builtin: true },
+      { id: "co15", code: "其他", name: "其他", sort: 999, status: "启用", builtin: true }
+    ]},
+    { id: "dict-contact-role", code: "contactRole", name: "联系角色", domain: "客户域", tier: "business", sort: 110, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "cr1", code: "decision_maker", name: "决策人", sort: 10, status: "启用", builtin: true },
+      { id: "cr2", code: "purchasing_manager", name: "采购经理", sort: 20, status: "启用", builtin: true },
+      { id: "cr3", code: "key_contact", name: "关键联系人", sort: 30, status: "启用", builtin: true },
+      { id: "cr4", code: "execution_contact", name: "执行联系人", sort: 40, status: "启用", builtin: true },
+      { id: "cr5", code: "technical_contact", name: "技术联系人", sort: 50, status: "启用", builtin: true },
+      { id: "cr6", code: "financial_contact", name: "财务联系人", sort: 60, status: "启用", builtin: true },
+      { id: "cr7", code: "other", name: "其他", sort: 999, status: "启用", builtin: true }
+    ]},
+    { id: "dict-lead-status", code: "leadStatus", name: "线索状态", domain: "线索域", tier: "controlled", sort: 120, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "ls1", code: "pending_assign", name: "待分配", sort: 10, status: "启用", builtin: true },
+      { id: "ls2", code: "pending_follow_up", name: "待跟进", sort: 20, status: "启用", builtin: true },
+      { id: "ls3", code: "following", name: "跟进中", sort: 30, status: "启用", builtin: true },
+      { id: "ls4", code: "converted", name: "已转客户", sort: 40, status: "启用", builtin: true },
+      { id: "ls5", code: "won", name: "已成交", sort: 50, status: "启用", builtin: true },
+      { id: "ls6", code: "invalid", name: "无效", sort: 60, status: "启用", builtin: true },
+      { id: "ls7", code: "lost", name: "丢失", sort: 70, status: "启用", builtin: true }
+    ]},
+    { id: "dict-contract-status", code: "contractStatus", name: "合同状态", domain: "合同域", tier: "controlled", sort: 130, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "cs1", code: "signed", name: "已签约", sort: 10, status: "启用", builtin: true },
+      { id: "cs2", code: "void", name: "失效", sort: 20, status: "启用", builtin: true }
+    ]},
+    { id: "dict-login-method", code: "loginMethod", name: "登录方式", domain: "系统域", tier: "system", sort: 140, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "lm1", code: "password", name: "账号密码", sort: 10, status: "启用", builtin: true },
+      { id: "lm2", code: "dingtalk", name: "钉钉扫码", sort: 20, status: "启用", builtin: true }
+    ]},
+    { id: "dict-operation-type", code: "operationType", name: "操作类型", domain: "系统域", tier: "system", sort: 150, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "ot1", code: "create", name: "新增", sort: 10, status: "启用", builtin: true },
+      { id: "ot2", code: "update", name: "编辑", sort: 20, status: "启用", builtin: true },
+      { id: "ot3", code: "delete", name: "删除", sort: 30, status: "启用", builtin: true },
+      { id: "ot4", code: "export", name: "导出", sort: 40, status: "启用", builtin: true },
+      { id: "ot5", code: "import", name: "导入", sort: 50, status: "启用", builtin: true },
+      { id: "ot6", code: "login", name: "登录", sort: 60, status: "启用", builtin: true },
+      { id: "ot7", code: "config", name: "配置", sort: 70, status: "启用", builtin: true }
+    ]},
+    { id: "dict-ai-scene", code: "aiBusinessScenario", name: "AI 业务场景", domain: "系统域", tier: "system", sort: 160, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "as1", code: "mail_intent", name: "邮件意向分析", sort: 10, status: "启用", builtin: true },
+      { id: "as2", code: "wa_intent", name: "WhatsApp 意向分析", sort: 20, status: "启用", builtin: true },
+      { id: "as3", code: "company_extract", name: "AI 自动提取企业信息", sort: 30, status: "启用", builtin: true },
+      { id: "as4", code: "batch_refine", name: "批量 AI 提炼", sort: 40, status: "启用", builtin: true }
+    ]},
+    { id: "dict-ai-provider", code: "aiProvider", name: "AI 服务商", domain: "系统域", tier: "business", sort: 170, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "ap1", code: "openai", name: "OpenAI / Azure OpenAI", sort: 10, status: "启用", builtin: true },
+      { id: "ap2", code: "qwen", name: "通义千问", sort: 20, status: "启用", builtin: true },
+      { id: "ap3", code: "zhipu", name: "智谱 AI", sort: 30, status: "启用", builtin: true },
+      { id: "ap4", code: "deepseek", name: "DeepSeek", sort: 40, status: "启用", builtin: true },
+      { id: "ap5", code: "doubao", name: "豆包", sort: 50, status: "启用", builtin: true },
+      { id: "ap6", code: "moonshot", name: "月之暗面", sort: 60, status: "启用", builtin: true },
+      { id: "ap7", code: "ernie", name: "文心一言", sort: 70, status: "启用", builtin: true }
+    ]},
+    { id: "dict-ai-model", code: "aiModel", name: "AI 模型", domain: "系统域", tier: "business", sort: 180, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
+      { id: "am1", code: "gpt-4o", name: "GPT-4o", sort: 10, status: "启用", builtin: true, parentId: "ap1" },
+      { id: "am2", code: "gpt-4o-mini", name: "GPT-4o-mini", sort: 20, status: "启用", builtin: true, parentId: "ap1" },
+      { id: "am3", code: "gpt-4.1", name: "GPT-4.1", sort: 30, status: "启用", builtin: true, parentId: "ap1" },
+      { id: "am4", code: "gpt-4.1-mini", name: "GPT-4.1-mini", sort: 40, status: "启用", builtin: true, parentId: "ap1" },
+      { id: "am5", code: "Qwen-Max", name: "Qwen-Max", sort: 10, status: "启用", builtin: true, parentId: "ap2" },
+      { id: "am6", code: "Qwen-Plus", name: "Qwen-Plus", sort: 20, status: "启用", builtin: true, parentId: "ap2" },
+      { id: "am7", code: "Qwen-Turbo", name: "Qwen-Turbo", sort: 30, status: "启用", builtin: true, parentId: "ap2" },
+      { id: "am8", code: "Qwen-Long", name: "Qwen-Long", sort: 40, status: "启用", builtin: true, parentId: "ap2" },
+      { id: "am9", code: "GLM-4", name: "GLM-4", sort: 10, status: "启用", builtin: true, parentId: "ap3" },
+      { id: "am10", code: "GLM-4-Plus", name: "GLM-4-Plus", sort: 20, status: "启用", builtin: true, parentId: "ap3" },
+      { id: "am11", code: "GLM-4-Flash", name: "GLM-4-Flash", sort: 30, status: "启用", builtin: true, parentId: "ap3" },
+      { id: "am12", code: "DeepSeek-V4-Pro", name: "DeepSeek-V4-Pro", sort: 10, status: "启用", builtin: true, parentId: "ap4" },
+      { id: "am13", code: "DeepSeek-V4-Flash", name: "DeepSeek-V4-Flash", sort: 20, status: "启用", builtin: true, parentId: "ap4" },
+      { id: "am14", code: "DeepSeek-Chat", name: "DeepSeek-Chat", sort: 30, status: "启用", builtin: true, parentId: "ap4" },
+      { id: "am15", code: "DeepSeek-Reasoner", name: "DeepSeek-Reasoner", sort: 40, status: "启用", builtin: true, parentId: "ap4" },
+      { id: "am16", code: "Doubao-1.5-Pro", name: "Doubao-1.5-Pro", sort: 10, status: "启用", builtin: true, parentId: "ap5" },
+      { id: "am17", code: "Doubao-Pro", name: "Doubao-Pro", sort: 20, status: "启用", builtin: true, parentId: "ap5" },
+      { id: "am18", code: "Doubao-Lite", name: "Doubao-Lite", sort: 30, status: "启用", builtin: true, parentId: "ap5" },
+      { id: "am19", code: "Kimi-K2", name: "Kimi-K2", sort: 10, status: "启用", builtin: true, parentId: "ap6" },
+      { id: "am20", code: "moonshot-v1", name: "moonshot-v1", sort: 20, status: "启用", builtin: true, parentId: "ap6" },
+      { id: "am21", code: "ERNIE-4.0", name: "ERNIE-4.0", sort: 10, status: "启用", builtin: true, parentId: "ap7" },
+      { id: "am22", code: "ERNIE-Speed", name: "ERNIE-Speed", sort: 20, status: "启用", builtin: true, parentId: "ap7" }
     ]}
   ],
-  aiProviderOptions: ["OpenAI", "Azure OpenAI", "阿里通义千问", "智谱 AI", "DeepSeek", "自定义"],
+  // AI 服务商/模型下拉由 dictionaries.aiProvider / aiModel 驱动（见 pages-admin）
+  aiProviderOptions: ["OpenAI / Azure OpenAI", "通义千问", "智谱 AI", "DeepSeek", "豆包", "月之暗面", "文心一言"],
   aiModelOptions: {
-    "OpenAI": ["gpt-4o", "gpt-4o-mini"],
-    "Azure OpenAI": ["gpt-4o", "gpt-4o-mini"],
-    "阿里通义千问": ["qwen-plus", "qwen-turbo"],
-    "智谱 AI": ["glm-4", "glm-4-flash"],
-    "DeepSeek": ["deepseek-chat", "deepseek-reasoner"],
-    "自定义": []
+    "OpenAI / Azure OpenAI": ["GPT-4o", "GPT-4o-mini", "GPT-4.1", "GPT-4.1-mini"],
+    "通义千问": ["Qwen-Max", "Qwen-Plus", "Qwen-Turbo", "Qwen-Long"],
+    "智谱 AI": ["GLM-4", "GLM-4-Plus", "GLM-4-Flash"],
+    "DeepSeek": ["DeepSeek-V4-Pro", "DeepSeek-V4-Flash", "DeepSeek-Chat", "DeepSeek-Reasoner"],
+    "豆包": ["Doubao-1.5-Pro", "Doubao-Pro", "Doubao-Lite"],
+    "月之暗面": ["Kimi-K2", "moonshot-v1"],
+    "文心一言": ["ERNIE-4.0", "ERNIE-Speed"]
   },
   aiBusinessScenes: ["邮件意向分析", "WhatsApp 意向分析", "AI 自动提取企业信息", "批量 AI 提炼"],
   mailAuthModes: ["MASTER_PASSWORD（子邮箱授权码）", "OAUTH2", "XOAUTH2", "LOGIN", "PLAIN"],
@@ -708,7 +808,7 @@ window.CRM_MOCK = {
       country: "美国",
       industry: "玩具礼品",
       ownerId: "u03",
-      potentialLevel: "潜在",
+      potentialLevel: "潜在客户",
       tags: ["重点客户", "新品客户"],
       leadIds: [],
       contractIds: [],
@@ -724,7 +824,7 @@ window.CRM_MOCK = {
       country: "德国",
       industry: "机械设备",
       ownerId: "u02",
-      potentialLevel: "可跟进",
+      potentialLevel: "高潜客户",
       tags: ["复购客户", "长期合作客户"],
       leadIds: ["l04"],
       contractIds: ["ct01"],
@@ -742,7 +842,7 @@ window.CRM_MOCK = {
       country: "加拿大",
       industry: "玩具礼品",
       ownerId: "u03",
-      potentialLevel: "潜在",
+      potentialLevel: "潜在客户",
       tags: ["高潜客户"],
       leadIds: ["l02"],
       contractIds: [],
@@ -762,7 +862,7 @@ window.CRM_MOCK = {
     api: {
       apiKey: "sk-proj-demo1234567890",
       baseUrl: "https://api.openai.com/v1",
-      model: "gpt-4o",
+      model: "GPT-4o",
       secret: "",
       timeout: 30,
       temperature: 0.2,
@@ -777,9 +877,10 @@ window.CRM_MOCK = {
   aiProviders: [
     {
       id: "aip01",
-      name: "OpenAI",
+      name: "OpenAI / Azure OpenAI",
+      capabilityName: "OpenAI-邮件/WhatsApp 意向",
       type: "大语言模型",
-      defaultModel: "gpt-4o",
+      defaultModel: "GPT-4o",
       businessScene: ["邮件意向分析", "WhatsApp 意向分析"],
       status: "启用",
       updatedAt: "2026-07-02 16:20",
@@ -787,7 +888,7 @@ window.CRM_MOCK = {
         api: {
           apiKey: "sk-proj-demo1234567890",
           baseUrl: "https://api.openai.com/v1",
-          model: "gpt-4o",
+          model: "GPT-4o",
           secret: "",
           timeout: 30,
           temperature: 0.2,
@@ -802,16 +903,18 @@ window.CRM_MOCK = {
     },
     {
       id: "aip02",
-      name: "Azure OpenAI",
-      type: "企业模型服务",
-      defaultModel: "gpt-4o-mini",
+      name: "月之暗面",
+      capabilityName: "Kimi-批量备用",
+      type: "大语言模型",
+      defaultModel: "Kimi-K2",
+      businessScene: [],
       status: "停用",
       updatedAt: "2026-06-28 11:05",
       config: {
         api: {
           apiKey: "",
           baseUrl: "https://example.openai.azure.com",
-          model: "gpt-4o-mini",
+          model: "Kimi-K2",
           secret: "",
           timeout: 45,
           temperature: 0.3,
@@ -936,14 +1039,14 @@ window.CRM_MOCK = {
   ]);
 
   appendById("leads", [
-    { id: "l05", no: "LEAD-2026-0914", company: "Andes Fleet Supply", contact: "Marco Silva", email: "procurement@andesfleet.cl", phone: "+56 9 2211 3488", siteId: "s04", channel: "邮件", ownerId: "u02", status: "待跟进", stage: "待首响", products: ["刹车卡钳支架", "汽车冲压件"], purchaseIntent: "明确采购", aiTags: ["批量采购", "汽车配件"], manualTags: ["拉美市场"], createdAt: "2026-07-03 09:15", updatedAt: "2026-07-03 09:48", lastFollowAt: "2026-07-03 09:48", nextFollowAt: "2026-07-05 10:00", customerId: "", aiSummary: "客户要求 PPAP 文件与年度采购计划，适合快速技术评估。" },
-    { id: "l06", no: "LEAD-2026-0915", company: "Casa Global Retail", contact: "Emma Brown", email: "buyer@casa-global.co.uk", phone: "+44 7700 900321", siteId: "s05", channel: "邮件", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["厨房收纳盒", "私标包装"], purchaseIntent: "价格咨询", aiTags: ["私标", "Q4 订单"], manualTags: ["欧洲市场"], createdAt: "2026-07-03 10:05", updatedAt: "2026-07-03 16:20", lastFollowAt: "2026-07-03 16:20", nextFollowAt: "2026-07-05 15:00", customerId: "", aiSummary: "客户需要私标包装并关注上架时间，报价需包含包装方案。" },
-    { id: "l07", no: "LEAD-2026-0916", company: "KoreaTech Devices", contact: "Daniel Park", email: "daniel@koreatech.kr", phone: "+82 10 8822 1900", siteId: "s06", channel: "邮件", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["USB-C 连接器"], purchaseIntent: "样品评估", aiTags: ["样品评估", "电子元件"], manualTags: ["东南亚市场"], createdAt: "2026-07-03 11:25", updatedAt: "2026-07-03 11:31", lastFollowAt: "2026-07-03 11:31", nextFollowAt: "2026-07-04 16:00", customerId: "", aiSummary: "客户正在进行供应商导入，需优先提供样品和规格书。" },
-    { id: "l08", no: "LEAD-2026-0917", company: "Medline India", contact: "Priya Nair", email: "sourcing@medline-in.in", phone: "+91 98765 10234", siteId: "s07", channel: "邮件", ownerId: "u03", status: "待跟进", stage: "需求确认", products: ["丁腈手套", "医疗耗材"], purchaseIntent: "明确采购", aiTags: ["招标", "认证关注"], manualTags: [], createdAt: "2026-07-03 13:40", updatedAt: "2026-07-03 13:55", lastFollowAt: "2026-07-03 13:55", nextFollowAt: "2026-07-04 11:00", customerId: "", aiSummary: "客户准备招标，需要证书和付款条款。" },
-    { id: "l09", no: "LEAD-2026-0918", company: "TrailMart", contact: "Noah Wilson", email: "noah@trailmart.com.au", phone: "+61 412 900 778", siteId: "s08", channel: "WhatsApp", ownerId: "u04", status: "已联系", stage: "需求确认", products: ["户外炊具套装"], purchaseIntent: "价格咨询", aiTags: ["户外装备"], manualTags: ["样品优先"], createdAt: "2026-07-03 15:18", updatedAt: "2026-07-03 15:22", lastFollowAt: "2026-07-03 15:22", nextFollowAt: "2026-07-05 09:30", customerId: "", aiSummary: "客户关注包装和交期，报价前需确认颜色组合。" },
-    { id: "l10", no: "LEAD-2026-0919", company: "Italia Foods", contact: "Sofia Rossi", email: "sofia@italiafoods.it", phone: "+39 347 110 2290", siteId: "s09", channel: "邮件", ownerId: "u02", status: "跟进中", stage: "报价阶段", products: ["牛皮纸袋", "食品包装"], purchaseIntent: "明确采购", aiTags: ["包装材料", "认证关注"], manualTags: ["欧洲市场"], createdAt: "2026-07-04 08:50", updatedAt: "2026-07-04 08:58", lastFollowAt: "2026-07-04 08:58", nextFollowAt: "2026-07-05 14:30", customerId: "", aiSummary: "客户关注 FSC 认证和阶梯报价，需同步 MOQ 与打样费。" },
-    { id: "l11", no: "LEAD-2026-0920", company: "Polar Mining", contact: "Henry Adams", email: "henry@polar-mining.ca", phone: "+1 604 882 1900", siteId: "s01", channel: "邮件", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["不锈钢阀体"], purchaseIntent: "样品评估", aiTags: ["工业制造", "样品评估"], manualTags: ["北美市场"], createdAt: "2026-07-04 10:32", updatedAt: "2026-07-04 10:36", lastFollowAt: "2026-07-04 10:36", nextFollowAt: "2026-07-06 10:30", customerId: "", aiSummary: "客户有技术图纸和样品需求，建议安排工程评审。" },
-    { id: "l12", no: "LEAD-2026-0921", company: "Fiesta Shop", contact: "Marta Lopez", email: "marta@fiesta-shop.mx", phone: "+52 55 4421 0091", siteId: "s02", channel: "邮件", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["节日毛绒玩具"], purchaseIntent: "明确采购", aiTags: ["节日订单", "批量采购"], manualTags: ["拉美市场"], createdAt: "2026-07-04 11:46", updatedAt: "2026-07-04 11:52", lastFollowAt: "2026-07-04 11:52", nextFollowAt: "2026-07-06 15:00", customerId: "", aiSummary: "客户要求 6 个 SKU 组合和 EN71 证书，适合推进报价确认。" }
+    { id: "l05", no: "LEAD-2026-0914", company: "Andes Fleet Supply", contact: "Marco Silva", email: "procurement@andesfleet.cl", phone: "+56 9 2211 3488", siteId: "s04", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "待跟进", stage: "待首响", products: ["刹车卡钳支架", "汽车冲压件"], purchaseIntent: "明确采购", aiTags: ["批量采购", "汽车配件"], manualTags: ["拉美市场"], createdAt: "2026-07-03 09:15", updatedAt: "2026-07-03 09:48", lastFollowAt: "2026-07-03 09:48", nextFollowAt: "2026-07-05 10:00", customerId: "", aiSummary: "客户要求 PPAP 文件与年度采购计划，适合快速技术评估。" },
+    { id: "l06", no: "LEAD-2026-0915", company: "Casa Global Retail", contact: "Emma Brown", email: "buyer@casa-global.co.uk", phone: "+44 7700 900321", siteId: "s05", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["厨房收纳盒", "私标包装"], purchaseIntent: "价格咨询", aiTags: ["私标", "Q4 订单"], manualTags: ["欧洲市场"], createdAt: "2026-07-03 10:05", updatedAt: "2026-07-03 16:20", lastFollowAt: "2026-07-03 16:20", nextFollowAt: "2026-07-05 15:00", customerId: "", aiSummary: "客户需要私标包装并关注上架时间，报价需包含包装方案。" },
+    { id: "l07", no: "LEAD-2026-0916", company: "KoreaTech Devices", contact: "Daniel Park", email: "daniel@koreatech.kr", phone: "+82 10 8822 1900", siteId: "s06", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["USB-C 连接器"], purchaseIntent: "样品评估", aiTags: ["样品评估", "电子元件"], manualTags: ["东南亚市场"], createdAt: "2026-07-03 11:25", updatedAt: "2026-07-03 11:31", lastFollowAt: "2026-07-03 11:31", nextFollowAt: "2026-07-04 16:00", customerId: "", aiSummary: "客户正在进行供应商导入，需优先提供样品和规格书。" },
+    { id: "l08", no: "LEAD-2026-0917", company: "Medline India", contact: "Priya Nair", email: "sourcing@medline-in.in", phone: "+91 98765 10234", siteId: "s07", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "待跟进", stage: "需求确认", products: ["丁腈手套", "医疗耗材"], purchaseIntent: "明确采购", aiTags: ["招标", "认证关注"], manualTags: [], createdAt: "2026-07-03 13:40", updatedAt: "2026-07-03 13:55", lastFollowAt: "2026-07-03 13:55", nextFollowAt: "2026-07-04 11:00", customerId: "", aiSummary: "客户准备招标，需要证书和付款条款。" },
+    { id: "l09", no: "LEAD-2026-0918", company: "TrailMart", contact: "Noah Wilson", email: "noah@trailmart.com.au", phone: "+61 412 900 778", siteId: "s08", channel: "WhatsApp", entryMethod: "询盘转入", ownerId: "u04", status: "已联系", stage: "需求确认", products: ["户外炊具套装"], purchaseIntent: "价格咨询", aiTags: ["户外装备"], manualTags: ["样品优先"], createdAt: "2026-07-03 15:18", updatedAt: "2026-07-03 15:22", lastFollowAt: "2026-07-03 15:22", nextFollowAt: "2026-07-05 09:30", customerId: "", aiSummary: "客户关注包装和交期，报价前需确认颜色组合。" },
+    { id: "l10", no: "LEAD-2026-0919", company: "Italia Foods", contact: "Sofia Rossi", email: "sofia@italiafoods.it", phone: "+39 347 110 2290", siteId: "s09", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "跟进中", stage: "报价阶段", products: ["牛皮纸袋", "食品包装"], purchaseIntent: "明确采购", aiTags: ["包装材料", "认证关注"], manualTags: ["欧洲市场"], createdAt: "2026-07-04 08:50", updatedAt: "2026-07-04 08:58", lastFollowAt: "2026-07-04 08:58", nextFollowAt: "2026-07-05 14:30", customerId: "", aiSummary: "客户关注 FSC 认证和阶梯报价，需同步 MOQ 与打样费。" },
+    { id: "l11", no: "LEAD-2026-0920", company: "Polar Mining", contact: "Henry Adams", email: "henry@polar-mining.ca", phone: "+1 604 882 1900", siteId: "s01", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["不锈钢阀体"], purchaseIntent: "样品评估", aiTags: ["工业制造", "样品评估"], manualTags: ["北美市场"], createdAt: "2026-07-04 10:32", updatedAt: "2026-07-04 10:36", lastFollowAt: "2026-07-04 10:36", nextFollowAt: "2026-07-06 10:30", customerId: "", aiSummary: "客户有技术图纸和样品需求，建议安排工程评审。" },
+    { id: "l12", no: "LEAD-2026-0921", company: "Fiesta Shop", contact: "Marta Lopez", email: "marta@fiesta-shop.mx", phone: "+52 55 4421 0091", siteId: "s02", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["节日毛绒玩具"], purchaseIntent: "明确采购", aiTags: ["节日订单", "批量采购"], manualTags: ["拉美市场"], createdAt: "2026-07-04 11:46", updatedAt: "2026-07-04 11:52", lastFollowAt: "2026-07-04 11:52", nextFollowAt: "2026-07-06 15:00", customerId: "", aiSummary: "客户要求 6 个 SKU 组合和 EN71 证书，适合推进报价确认。" }
   ]);
 
   appendById("followLogs", [
@@ -970,13 +1073,13 @@ window.CRM_MOCK = {
   ]);
 
   appendById("customers", [
-    { id: "c04", no: "CUS-2026-0303", name: "AeroMex Precision Parts", siteId: "s01", country: "墨西哥", industry: "工业制造", ownerId: "u02", potentialLevel: "可跟进", tags: ["重点客户", "高潜客户"], leadIds: ["l01"], contractIds: [], transferRecords: [], aiProfile: "墨西哥航空与工业零部件采购商，关注认证、交付与批量稳定性。", createdAt: "2026-07-03" },
-    { id: "c05", no: "CUS-2026-0304", name: "Andes Fleet Supply", siteId: "s04", country: "智利", industry: "汽车零部件", ownerId: "u02", potentialLevel: "潜在", tags: ["高潜客户"], leadIds: ["l05"], contractIds: ["ct02"], transferRecords: [], aiProfile: "南美车队维修供应商，有年度框架采购潜力。", createdAt: "2026-07-03" },
-    { id: "c06", no: "CUS-2026-0305", name: "Casa Global Retail", siteId: "s05", country: "英国", industry: "家居用品", ownerId: "u03", potentialLevel: "潜在", tags: ["新品客户"], leadIds: ["l06"], contractIds: ["ct03"], transferRecords: [], aiProfile: "英国零售渠道采购商，关注私标包装与上架时间。", createdAt: "2026-07-03" },
-    { id: "c07", no: "CUS-2026-0306", name: "KoreaTech Devices", siteId: "s06", country: "韩国", industry: "电子元件", ownerId: "u02", potentialLevel: "可跟进", tags: ["高潜客户"], leadIds: ["l07"], contractIds: ["ct04"], transferRecords: [], aiProfile: "智能设备项目供应商导入阶段，重视规格稳定性和样品响应。", createdAt: "2026-07-03" },
-    { id: "c08", no: "CUS-2026-0307", name: "Medline India", siteId: "s07", country: "印度", industry: "医疗耗材", ownerId: "u03", potentialLevel: "潜在", tags: ["重点客户"], leadIds: ["l08"], contractIds: ["ct05"], transferRecords: [], aiProfile: "医疗耗材渠道商，采购流程偏招标制，关注证书与合规资料。", createdAt: "2026-07-03" },
+    { id: "c04", no: "CUS-2026-0303", name: "AeroMex Precision Parts", siteId: "s01", country: "墨西哥", industry: "工业制造", ownerId: "u02", potentialLevel: "高潜客户", tags: ["重点客户", "高潜客户"], leadIds: ["l01"], contractIds: [], transferRecords: [], aiProfile: "墨西哥航空与工业零部件采购商，关注认证、交付与批量稳定性。", createdAt: "2026-07-03" },
+    { id: "c05", no: "CUS-2026-0304", name: "Andes Fleet Supply", siteId: "s04", country: "智利", industry: "汽车零部件", ownerId: "u02", potentialLevel: "潜在客户", tags: ["高潜客户"], leadIds: ["l05"], contractIds: ["ct02"], transferRecords: [], aiProfile: "南美车队维修供应商，有年度框架采购潜力。", createdAt: "2026-07-03" },
+    { id: "c06", no: "CUS-2026-0305", name: "Casa Global Retail", siteId: "s05", country: "英国", industry: "家居用品", ownerId: "u03", potentialLevel: "潜在客户", tags: ["新品客户"], leadIds: ["l06"], contractIds: ["ct03"], transferRecords: [], aiProfile: "英国零售渠道采购商，关注私标包装与上架时间。", createdAt: "2026-07-03" },
+    { id: "c07", no: "CUS-2026-0306", name: "KoreaTech Devices", siteId: "s06", country: "韩国", industry: "电子元件", ownerId: "u02", potentialLevel: "高潜客户", tags: ["高潜客户"], leadIds: ["l07"], contractIds: ["ct04"], transferRecords: [], aiProfile: "智能设备项目供应商导入阶段，重视规格稳定性和样品响应。", createdAt: "2026-07-03" },
+    { id: "c08", no: "CUS-2026-0307", name: "Medline India", siteId: "s07", country: "印度", industry: "医疗耗材", ownerId: "u03", potentialLevel: "潜在客户", tags: ["重点客户"], leadIds: ["l08"], contractIds: ["ct05"], transferRecords: [], aiProfile: "医疗耗材渠道商，采购流程偏招标制，关注证书与合规资料。", createdAt: "2026-07-03" },
     { id: "c09", no: "CUS-2026-0308", name: "TrailMart", siteId: "s08", country: "澳大利亚", industry: "户外装备", ownerId: "u04", potentialLevel: "一般客户", tags: ["价格敏感客户"], leadIds: ["l09"], contractIds: ["ct06"], transferRecords: [], aiProfile: "澳洲户外用品零售商，关注包装、交期和价格区间。", createdAt: "2026-07-03" },
-    { id: "c10", no: "CUS-2026-0309", name: "Italia Foods", siteId: "s09", country: "意大利", industry: "食品包装", ownerId: "u02", potentialLevel: "可跟进", tags: ["长期合作客户"], leadIds: ["l10"], contractIds: ["ct07"], transferRecords: [], aiProfile: "食品包装采购商，重视 FSC 认证和大批量阶梯报价。", createdAt: "2026-07-04" }
+    { id: "c10", no: "CUS-2026-0309", name: "Italia Foods", siteId: "s09", country: "意大利", industry: "食品包装", ownerId: "u02", potentialLevel: "高潜客户", tags: ["长期合作客户"], leadIds: ["l10"], contractIds: ["ct07"], transferRecords: [], aiProfile: "食品包装采购商，重视 FSC 认证和大批量阶梯报价。", createdAt: "2026-07-04" }
   ]);
 
   appendById("contacts", [
@@ -1003,14 +1106,11 @@ window.CRM_MOCK = {
   ]);
 
   appendById("aiProviders", [
-    { id: "aip03", name: "阿里通义千问", type: "大语言模型", defaultModel: "qwen-plus", status: "启用", updatedAt: "2026-07-01 10:15", config: providerConfig("阿里通义千问", "qwen-plus", true) },
-    { id: "aip04", name: "智谱 AI", type: "大语言模型", defaultModel: "glm-4", status: "启用", updatedAt: "2026-06-30 09:25", config: providerConfig("智谱 AI", "glm-4", true) },
-    { id: "aip05", name: "DeepSeek", type: "大语言模型", defaultModel: "deepseek-chat", status: "启用", updatedAt: "2026-06-29 17:40", config: providerConfig("DeepSeek", "deepseek-chat", true) },
-    { id: "aip06", name: "自定义-销售摘要模型", type: "自定义模型服务", defaultModel: "crm-sales-summary-v1", status: "启用", updatedAt: "2026-06-28 15:30", config: providerConfig("自定义", "crm-sales-summary-v1", true) },
-    { id: "aip07", name: "自定义-企业情报模型", type: "自定义模型服务", defaultModel: "company-intel-v2", businessScene: ["AI 自动提取企业信息"], status: "启用", updatedAt: "2026-06-27 13:15", config: providerConfig("自定义", "company-intel-v2", true) },
-    { id: "aip08", name: "自定义-风险分析模型", type: "自定义模型服务", defaultModel: "risk-check-v1", status: "停用", updatedAt: "2026-06-26 11:00", config: providerConfig("自定义", "risk-check-v1", false) },
-    { id: "aip09", name: "Azure OpenAI EU", type: "企业模型服务", defaultModel: "gpt-4o", status: "启用", updatedAt: "2026-06-25 16:25", config: providerConfig("Azure OpenAI", "gpt-4o", true) },
-    { id: "aip10", name: "OpenAI Mini 低成本通道", type: "大语言模型", defaultModel: "gpt-4o-mini", status: "启用", updatedAt: "2026-06-24 10:10", config: providerConfig("OpenAI", "gpt-4o-mini", true) }
+    { id: "aip03", name: "通义千问", capabilityName: "通义-邮件/WhatsApp 意向", type: "大语言模型", defaultModel: "Qwen-Plus", businessScene: ["邮件意向分析", "WhatsApp 意向分析"], status: "启用", updatedAt: "2026-07-01 10:15", config: providerConfig("通义千问", "Qwen-Plus", true) },
+    { id: "aip04", name: "智谱 AI", capabilityName: "智谱-批量提炼", type: "大语言模型", defaultModel: "GLM-4", businessScene: ["批量 AI 提炼"], status: "启用", updatedAt: "2026-06-30 09:25", config: providerConfig("智谱 AI", "GLM-4", true) },
+    { id: "aip05", name: "DeepSeek", capabilityName: "DeepSeek-企业信息提取", type: "大语言模型", defaultModel: "DeepSeek-Chat", businessScene: ["AI 自动提取企业信息"], status: "启用", updatedAt: "2026-06-29 17:40", config: providerConfig("DeepSeek", "DeepSeek-Chat", true) },
+    { id: "aip09", name: "OpenAI / Azure OpenAI", capabilityName: "OpenAI 备用通道", type: "大语言模型", defaultModel: "GPT-4o", businessScene: [], status: "停用", updatedAt: "2026-06-25 16:25", config: providerConfig("OpenAI / Azure OpenAI", "GPT-4o", false) },
+    { id: "aip10", name: "豆包", capabilityName: "豆包备用", type: "大语言模型", defaultModel: "Doubao-Pro", businessScene: [], status: "停用", updatedAt: "2026-06-24 10:10", config: providerConfig("豆包", "Doubao-Pro", false) }
   ]);
 
   mock.customers.forEach(customer => {
@@ -1055,14 +1155,14 @@ window.CRM_MOCK = {
   ]);
 
   appendById("leads", [
-    { id: "l13", no: "LEAD-2026-0922", company: "Nordic Office Supply", contact: "Lars Petersen", email: "lars@nordic-office.dk", phone: "+45 31 20 4490", siteId: "s12", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["办公收纳", "文件夹"], purchaseIntent: "信息不足", aiTags: ["办公文具"], manualTags: [], createdAt: "2026-07-04 12:10", updatedAt: "2026-07-04 12:15", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "收件邮箱未绑定用户", poolEnteredAt: "2026-07-04 12:15", aiSummary: "客户询问办公收纳报价，收件账号负责人异常，进入公海池待分配。" },
-    { id: "l14", no: "LEAD-2026-0923", company: "PetJoy Retail", contact: "Chloe Martin", email: "chloe@petjoy.fr", phone: "+33 6 44 21 0098", siteId: "s11", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["宠物牵引绳", "宠物玩具"], purchaseIntent: "价格咨询", aiTags: ["宠物用品"], manualTags: [], createdAt: "2026-07-04 13:05", updatedAt: "2026-07-04 13:12", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 13:12", aiSummary: "客户询问宠物用品组合报价，需分配对应业务员。" },
-    { id: "l15", no: "LEAD-2026-0924", company: "Baltic Tools OU", contact: "Marek Tamm", email: "marek@baltic-tools.ee", phone: "+372 5551 2234", siteId: "s01", channel: "邮件", ownerId: "", status: "无效", stage: "待首响", products: ["工业铰链"], purchaseIntent: "明确采购", aiTags: ["工业制造"], manualTags: [], createdAt: "2026-07-04 14:20", updatedAt: "2026-07-04 14:23", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "超期回收", poolEnteredAt: "2026-07-04 14:23", aiSummary: "工业件询盘超过首响时限，系统回收至公海池。" },
-    { id: "l16", no: "LEAD-2026-0925", company: "Desert Kids Trading", contact: "Omar Saleh", email: "omar@desertkids.ae", phone: "+971 50 334 8812", siteId: "s02", channel: "WhatsApp", ownerId: "", status: "待分配", stage: "待首响", products: ["益智玩具"], purchaseIntent: "明确采购", aiTags: ["中东市场"], manualTags: [], createdAt: "2026-07-04 15:08", updatedAt: "2026-07-04 15:12", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 15:12", aiSummary: "WhatsApp 询盘数量明确，运营回收后等待重新分配。" },
-    { id: "l17", no: "LEAD-2026-0926", company: "Pacific Homeware", contact: "Mia Thompson", email: "mia@pacifichome.nz", phone: "+64 21 770 332", siteId: "s05", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["厨房置物架"], purchaseIntent: "样品评估", aiTags: ["家居用品"], manualTags: [], createdAt: "2026-07-04 16:00", updatedAt: "2026-07-04 16:05", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "负责人已停用", poolEnteredAt: "2026-07-04 16:05", aiSummary: "原负责人不可用，线索进入公海池待重新分配。" },
-    { id: "l18", no: "LEAD-2026-0927", company: "Sana Medical Supply", contact: "Fatima Al Noor", email: "fatima@sanamed.qa", phone: "+974 5521 1190", siteId: "s07", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["一次性口罩"], purchaseIntent: "明确采购", aiTags: ["医疗耗材"], manualTags: [], createdAt: "2026-07-04 16:40", updatedAt: "2026-07-04 16:45", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "收件邮箱未绑定用户", poolEnteredAt: "2026-07-04 16:45", aiSummary: "医疗耗材批量询盘，邮箱绑定异常导致进入公海。" },
-    { id: "l19", no: "LEAD-2026-0928", company: "GreenPack Chile", contact: "Valentina Rojas", email: "valentina@greenpack.cl", phone: "+56 9 7711 3022", siteId: "s09", channel: "邮件", ownerId: "", status: "丢失", stage: "待首响", products: ["环保纸盒"], purchaseIntent: "价格咨询", aiTags: ["包装材料"], manualTags: [], createdAt: "2026-07-04 17:05", updatedAt: "2026-07-04 17:08", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "超期回收", poolEnteredAt: "2026-07-04 17:08", aiSummary: "包装材料询价超期未响应，进入公海待认领。" },
-    { id: "l20", no: "LEAD-2026-0929", company: "Summit Outdoor GmbH", contact: "Felix Bauer", email: "felix@summit-outdoor.de", phone: "+49 171 2233 9090", siteId: "s08", channel: "WhatsApp", ownerId: "", status: "待分配", stage: "待首响", products: ["登山杖", "户外水壶"], purchaseIntent: "明确采购", aiTags: ["户外装备"], manualTags: [], createdAt: "2026-07-04 17:35", updatedAt: "2026-07-04 17:40", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 17:40", aiSummary: "户外装备组合询盘，等待运营分配负责人。" },
-    { id: "l21", no: "LEAD-2026-0930", company: "Nova EV Parts", contact: "Ethan Brooks", email: "ethan@novaev.us", phone: "+1 512 800 2340", siteId: "s10", channel: "邮件", ownerId: "", status: "待分配", stage: "待首响", products: ["新能源线束"], purchaseIntent: "样品评估", aiTags: ["新能源配件"], manualTags: [], createdAt: "2026-07-04 18:10", updatedAt: "2026-07-04 18:15", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "站点停用待处理", poolEnteredAt: "2026-07-04 18:15", aiSummary: "停用站点收到样品询盘，进入公海池由运营判断是否继续跟进。" }
+    { id: "l13", no: "LEAD-2026-0922", company: "Nordic Office Supply", contact: "Lars Petersen", email: "lars@nordic-office.dk", phone: "+45 31 20 4490", siteId: "s12", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["办公收纳", "文件夹"], purchaseIntent: "信息不足", aiTags: ["办公文具"], manualTags: [], createdAt: "2026-07-04 12:10", updatedAt: "2026-07-04 12:15", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "收件邮箱未绑定用户", poolEnteredAt: "2026-07-04 12:15", aiSummary: "客户询问办公收纳报价，收件账号负责人异常，进入公海池待分配。" },
+    { id: "l14", no: "LEAD-2026-0923", company: "PetJoy Retail", contact: "Chloe Martin", email: "chloe@petjoy.fr", phone: "+33 6 44 21 0098", siteId: "s11", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["宠物牵引绳", "宠物玩具"], purchaseIntent: "价格咨询", aiTags: ["宠物用品"], manualTags: [], createdAt: "2026-07-04 13:05", updatedAt: "2026-07-04 13:12", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 13:12", aiSummary: "客户询问宠物用品组合报价，需分配对应业务员。" },
+    { id: "l15", no: "LEAD-2026-0924", company: "Baltic Tools OU", contact: "Marek Tamm", email: "marek@baltic-tools.ee", phone: "+372 5551 2234", siteId: "s01", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "无效", stage: "待首响", products: ["工业铰链"], purchaseIntent: "明确采购", aiTags: ["工业制造"], manualTags: [], createdAt: "2026-07-04 14:20", updatedAt: "2026-07-04 14:23", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "超期回收", poolEnteredAt: "2026-07-04 14:23", aiSummary: "工业件询盘超过首响时限，系统回收至公海池。" },
+    { id: "l16", no: "LEAD-2026-0925", company: "Desert Kids Trading", contact: "Omar Saleh", email: "omar@desertkids.ae", phone: "+971 50 334 8812", siteId: "s02", channel: "WhatsApp", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["益智玩具"], purchaseIntent: "明确采购", aiTags: ["中东市场"], manualTags: [], createdAt: "2026-07-04 15:08", updatedAt: "2026-07-04 15:12", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 15:12", aiSummary: "WhatsApp 询盘数量明确，运营回收后等待重新分配。" },
+    { id: "l17", no: "LEAD-2026-0926", company: "Pacific Homeware", contact: "Mia Thompson", email: "mia@pacifichome.nz", phone: "+64 21 770 332", siteId: "s05", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["厨房置物架"], purchaseIntent: "样品评估", aiTags: ["家居用品"], manualTags: [], createdAt: "2026-07-04 16:00", updatedAt: "2026-07-04 16:05", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "负责人已停用", poolEnteredAt: "2026-07-04 16:05", aiSummary: "原负责人不可用，线索进入公海池待重新分配。" },
+    { id: "l18", no: "LEAD-2026-0927", company: "Sana Medical Supply", contact: "Fatima Al Noor", email: "fatima@sanamed.qa", phone: "+974 5521 1190", siteId: "s07", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["一次性口罩"], purchaseIntent: "明确采购", aiTags: ["医疗耗材"], manualTags: [], createdAt: "2026-07-04 16:40", updatedAt: "2026-07-04 16:45", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "收件邮箱未绑定用户", poolEnteredAt: "2026-07-04 16:45", aiSummary: "医疗耗材批量询盘，邮箱绑定异常导致进入公海。" },
+    { id: "l19", no: "LEAD-2026-0928", company: "GreenPack Chile", contact: "Valentina Rojas", email: "valentina@greenpack.cl", phone: "+56 9 7711 3022", siteId: "s09", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "丢失", stage: "待首响", products: ["环保纸盒"], purchaseIntent: "价格咨询", aiTags: ["包装材料"], manualTags: [], createdAt: "2026-07-04 17:05", updatedAt: "2026-07-04 17:08", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "超期回收", poolEnteredAt: "2026-07-04 17:08", aiSummary: "包装材料询价超期未响应，进入公海待认领。" },
+    { id: "l20", no: "LEAD-2026-0929", company: "Summit Outdoor GmbH", contact: "Felix Bauer", email: "felix@summit-outdoor.de", phone: "+49 171 2233 9090", siteId: "s08", channel: "WhatsApp", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["登山杖", "户外水壶"], purchaseIntent: "明确采购", aiTags: ["户外装备"], manualTags: [], createdAt: "2026-07-04 17:35", updatedAt: "2026-07-04 17:40", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "运营专员手动回收", poolEnteredAt: "2026-07-04 17:40", aiSummary: "户外装备组合询盘，等待运营分配负责人。" },
+    { id: "l21", no: "LEAD-2026-0930", company: "Nova EV Parts", contact: "Ethan Brooks", email: "ethan@novaev.us", phone: "+1 512 800 2340", siteId: "s10", channel: "邮件", entryMethod: "询盘转入", ownerId: "", status: "待分配", stage: "待首响", products: ["新能源线束"], purchaseIntent: "样品评估", aiTags: ["新能源配件"], manualTags: [], createdAt: "2026-07-04 18:10", updatedAt: "2026-07-04 18:15", lastFollowAt: "", nextFollowAt: "", customerId: "", poolReason: "站点停用待处理", poolEnteredAt: "2026-07-04 18:15", aiSummary: "停用站点收到样品询盘，进入公海池由运营判断是否继续跟进。" }
   ]);
 })();

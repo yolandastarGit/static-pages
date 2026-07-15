@@ -396,6 +396,31 @@ window.CRMCrmPage = {
     if (!dict) return [];
     return (dict.items || []).filter(item => item.status !== "停用").sort((a, b) => (a.sort || 0) - (b.sort || 0));
   },
+  // 业务表单仅可选叶子（无子项视为叶子）
+  dictLeafItems(code) {
+    const items = this.dictItems(code);
+    const parentIds = new Set(items.filter(i => i.parentId).map(i => i.parentId));
+    return items.filter(item => !parentIds.has(item.id));
+  },
+  dictItemByName(code, name) {
+    const dict = (CRM_MOCK.dictionaries || []).find(d => d.code === code);
+    return (dict?.items || []).find(item => item.name === name);
+  },
+  defaultCustomerLevel() {
+    const items = this.dictItems("customerLevel");
+    return items.find(i => i.isDefault)?.name || items.find(i => i.code === "potential")?.name || "潜在客户";
+  },
+  stageAllowsConvert(stageName) {
+    const item = this.dictItemByName("followStage", stageName);
+    if (!item) return true;
+    return Boolean(item.allowConvertToCustomer);
+  },
+  focusSelectOptions() {
+    return this.dictLeafItems("customerFocus").map(item => ({
+      value: item.name,
+      label: item.displayGroup ? `${item.displayGroup} / ${item.name}` : item.name
+    }));
+  },
   openLeadTagModal(leadId) {
     const lead = CRM_MOCK.leads.find(l => l.id === leadId);
     CRMUI.modal("线索打标签", `
@@ -645,8 +670,12 @@ window.CRMCrmPage = {
       return;
     }
     const isConverted = ["已转客户", "已成交"].includes(current.status);
+    const stageBlocked = !this.stageAllowsConvert(current.stage);
     const canConvert = this.canConvertLead(current);
     const convertBtnLabel = "转客户";
+    const convertDisabledTitle = isConverted
+      ? "已转客户/已成交线索不可重复转客户"
+      : (stageBlocked ? "当前跟进阶段未开启「允许转客户」" : "当前角色无转客户权限");
     const linkedCustomer = current.customerId ? CRM_MOCK.customers.find(c => c.id === current.customerId) : null;
     const linkedCustomerHtml = (current.customerId && linkedCustomer) ? `
       <div class="section-title detail-section-title">关联客户</div>
@@ -664,7 +693,7 @@ window.CRMCrmPage = {
         <div class="toolbar" style="margin:0">
           <button class="btn primary" id="detailFollow">录入跟进</button>
           <button class="btn" id="detailRelatedMsg">查看关联消息</button>
-          <button class="btn" id="detailConvert" ${isConverted || !canConvert ? `disabled title="${isConverted ? "已转客户/已成交线索不可重复转客户" : "当前角色无转客户权限"}"` : ""}>${convertBtnLabel}</button>
+          <button class="btn" id="detailConvert" ${isConverted || !canConvert ? `disabled title="${convertDisabledTitle}"` : ""}>${convertBtnLabel}</button>
         </div>
       </div>
       <div class="card pad detail-card">
@@ -684,6 +713,7 @@ window.CRMCrmPage = {
           <div><div class="muted">负责人</div><strong>${CRMUI.userName(current.ownerId)}</strong></div>
           <div><div class="muted">站点</div><strong>${CRMUI.siteName(current.siteId)}</strong></div>
           <div><div class="muted">来源渠道</div><strong>${current.channel || "—"}</strong></div>
+          <div><div class="muted">录入方式</div><strong>${current.entryMethod || "—"}</strong></div>
           <div><div class="muted">创建时间</div><strong>${current.createdAt || "—"}</strong></div>
           <div><div class="muted">最近跟进</div><strong>${current.lastFollowAt || "—"}</strong></div>
           <div><div class="muted">下次跟进</div><strong>${current.nextFollowAt || "—"}</strong></div>
@@ -926,8 +956,9 @@ window.CRMCrmPage = {
   openLeadModal(lead) {
     const isEdit = Boolean(lead);
     const canChangeOwner = this.canRecycle();
-    const focusOptions = this.dictItems("customerFocus").map(item => ({ value: item.name, label: item.name }));
-    const tagOptions = this.dictItems("leadTag").map(item => ({ value: item.name, label: item.name }));
+    const focusOptions = this.focusSelectOptions();
+    const tagOptions = this.dictLeafItems("leadTag").map(item => ({ value: item.name, label: item.name }));
+    const channelOptions = this.dictLeafItems("sourceChannel");
     const ownerOptions = CRM_MOCK.users.filter(u => ["业务员", "运营专员"].includes(u.role) && u.status !== "禁用");
     CRMUI.modal(isEdit ? "编辑线索" : "新增线索", `
       <div class="form-grid">
@@ -938,7 +969,8 @@ window.CRMCrmPage = {
         ${CRMUI.formInput("电话", "phone", lead?.phone || "")}
         ${CRMUI.formInput("WhatsApp", "whatsapp", lead?.whatsapp || "")}
         ${isEdit ? `<div class="form-field"><label>站点</label><input value="${CRMUI.siteName(lead.siteId)}" disabled></div>` : `<div class="form-field"><label>站点</label><select name="siteId">${CRMUI.optionList(CRM_MOCK.sites, lead?.siteId || "")}</select></div>`}
-        <div class="form-field"><label>来源渠道</label><select name="channel"><option ${!lead?.channel || lead?.channel === "邮件" ? "selected" : ""}>邮件</option><option ${lead?.channel === "WhatsApp" ? "selected" : ""}>WhatsApp</option><option ${lead?.channel === "官网询盘" ? "selected" : ""}>官网询盘</option><option ${lead?.channel === "展会" ? "selected" : ""}>展会</option><option ${lead?.channel === "客户转介绍" ? "selected" : ""}>客户转介绍</option><option ${lead?.channel === "其他" ? "selected" : ""}>其他</option></select></div>
+        <div class="form-field"><label>来源渠道</label><select name="channel">${channelOptions.map(item => `<option value="${item.name}" ${lead?.channel === item.name ? "selected" : ""}>${item.name}</option>`).join("")}</select></div>
+        ${isEdit ? `<div class="form-field"><label>录入方式</label><input value="${lead.entryMethod || "—"}" disabled></div>` : ""}
         ${( !isEdit || canChangeOwner) ? `<div class="form-field"><label>负责人</label><select name="ownerId">${CRMUI.optionList(ownerOptions, lead?.ownerId || CRM_MOCK.currentUser.id)}</select></div>` : `<div class="form-field"><label>负责人</label><input value="${CRMUI.userName(lead.ownerId)}" disabled></div>`}
         ${isEdit && canChangeOwner ? `<div class="form-field full"><label>变更说明</label><textarea name="ownerNote" placeholder="若修改负责人请填写变更说明"></textarea></div>` : ""}
         ${CRMUI.formInput("意向产品", "products", (lead?.products || []).join("、"))}
@@ -1009,6 +1041,7 @@ window.CRMCrmPage = {
           whatsapp,
           siteId,
           channel,
+          entryMethod: this.dictItemByName("entryMethod", "手动新建")?.name || "手动新建",
           ownerId: form.get("ownerId") || CRM_MOCK.currentUser.id,
           status: "待跟进",
           stage: "待首响",
@@ -1034,14 +1067,14 @@ window.CRMCrmPage = {
   },
   openFollowModal(leadId) {
     const lead = CRM_MOCK.leads.find(l => l.id === leadId);
-    const methodOptions = this.dictItems("followMethod").map(item => ({ value: item.name, label: item.name }));
-    const stageOptions = this.dictItems("followStage").map(item => ({ value: item.name, label: item.name }));
+    const methodOptions = this.dictLeafItems("followMethod").map(item => ({ value: item.name, label: item.name }));
+    const stageOptions = this.dictLeafItems("followStage").map(item => ({ value: item.name, label: item.name }));
     CRMUI.modal(`录入跟进 - ${lead.no}`, `
       <div class="form-grid">
         <div class="form-field full"><label>线索编号</label><input value="${lead.no} · ${lead.company || lead.contact || ""}" disabled></div>
         ${CRMUI.formSelect("跟进方式", "method", methodOptions.length ? methodOptions : ["电话", "邮件", "WhatsApp", "会议", "备注"].map(v => ({ value: v, label: v })))}
         ${CRMUI.formSelect("当前阶段", "stage", stageOptions.length ? stageOptions : ["待首响", "已联系", "需求确认", "打样阶段", "报价阶段", "谈判阶段"].map(v => ({ value: v, label: v })), lead.stage)}
-        ${CRMUI.formMultiSelect("客户关注", "focus", this.dictItems("customerFocus").map(item => ({ value: item.name, label: item.name })), [])}
+        ${CRMUI.formMultiSelect("客户关注", "focus", this.focusSelectOptions(), [])}
         <div class="form-field full"><label>跟进内容</label><textarea name="content" required></textarea></div>
         <div class="form-field"><label>下次跟进时间</label><input type="datetime-local" name="nextFollowAt" value=""></div>
         <div class="form-field full"><label>跟进附件</label><input type="file" name="attachment" multiple></div>
@@ -1144,6 +1177,7 @@ window.CRMCrmPage = {
   canConvertLead(lead) {
     if (CRM_MOCK.currentUser?.role === "协同人") return false;
     if (lead?.status === "待分配") return this.canRecycle();
+    if (lead && !this.stageAllowsConvert(lead.stage)) return false;
     return true;
   },
   openRecycleModal(leadId) {
@@ -1221,6 +1255,10 @@ window.CRMCrmPage = {
       CRMUI.toast(`线索 ${lead.no} 已转客户/已成交，不可重复转客户`);
       return false;
     }
+    if (!this.stageAllowsConvert(lead.stage)) {
+      CRMUI.toast(`当前跟进阶段「${lead.stage || "-"}」未开启允许转客户`);
+      return false;
+    }
     const existing = CRM_MOCK.customers.find(c => c.name === lead.company && c.siteId === lead.siteId);
     const prefill = this.customerCountryIndustryFromLead(lead);
     let customer;
@@ -1241,7 +1279,7 @@ window.CRMCrmPage = {
         country: prefill.country || "",
         industry: prefill.industry || "",
         ownerId: lead.ownerId || CRM_MOCK.currentUser.id,
-        potentialLevel: "可跟进",
+        potentialLevel: this.defaultCustomerLevel(),
         tags: [],
         leadIds: [lead.id],
         contractIds: [],
@@ -1912,15 +1950,16 @@ window.CRMCrmPage = {
   },
   openCustomerModal(customer) {
     const isEdit = Boolean(customer);
-    const countryOpts = this.dictItems("country").map(i => ({ value: i.name, label: i.name }));
-    const industryOpts = this.dictItems("industry").map(i => ({ value: i.name, label: i.name }));
-    const levelOpts = this.dictItems("customerLevel").map(i => ({ value: i.name, label: i.name }));
+    const countryOpts = this.dictLeafItems("country").map(i => ({ value: i.name, label: i.name }));
+    const industryOpts = this.dictLeafItems("industry").map(i => ({ value: i.name, label: i.name }));
+    const levelOpts = this.dictLeafItems("customerLevel").map(i => ({ value: i.name, label: i.name }));
+    const defaultLevel = this.defaultCustomerLevel();
     CRMUI.modal(isEdit ? "编辑客户资料" : "新建客户", `
       <div class="form-grid">
         ${CRMUI.formInput("客户名称", "name", customer?.name || "")}
         ${CRMUI.formSelect("国家/地区", "country", countryOpts, customer?.country || "")}
         ${CRMUI.formSelect("行业", "industry", industryOpts, customer?.industry || "")}
-        ${CRMUI.formSelect("客户潜质分级", "potentialLevel", levelOpts, customer?.potentialLevel || "可跟进")}
+        ${CRMUI.formSelect("客户潜质分级", "potentialLevel", levelOpts, customer?.potentialLevel || defaultLevel)}
         <div class="form-field"><label>站点</label><select name="siteId" ${isEdit ? "disabled" : ""}>${CRMUI.optionList(CRM_MOCK.sites, customer?.siteId || "")}</select></div>
         ${!isEdit ? `<div class="form-field"><label>关联已有线索</label><select name="leadId"><option value="">不关联</option>${CRM_MOCK.leads.filter(l => !l.customerId).map(l => `<option value="${l.id}">${l.no} · ${l.company}</option>`).join("")}</select></div>
         ${CRMUI.formInput("客户联系人姓名", "contactName")}
@@ -1933,10 +1972,10 @@ window.CRMCrmPage = {
         Object.assign(customer, {
           country: form.get("country") || "-",
           industry: form.get("industry") || "-",
-          potentialLevel: form.get("potentialLevel") || "可跟进"
+          potentialLevel: form.get("potentialLevel") || defaultLevel
         });
       } else {
-        const newCustomer = { id: `c${Date.now()}`, no: `CUS-2026-${Math.floor(Math.random() * 9000 + 1000)}`, name: form.get("name") || "新客户", siteId: form.get("siteId"), country: form.get("country") || "-", industry: form.get("industry") || "-", ownerId: CRM_MOCK.currentUser.id, potentialLevel: form.get("potentialLevel") || "可跟进", tags: [], leadIds: [], contractIds: [], transferRecords: [], aiProfile: "暂无客户画像数据", createdAt: "2026-07-02" };
+        const newCustomer = { id: `c${Date.now()}`, no: `CUS-2026-${Math.floor(Math.random() * 9000 + 1000)}`, name: form.get("name") || "新客户", siteId: form.get("siteId"), country: form.get("country") || "-", industry: form.get("industry") || "-", ownerId: CRM_MOCK.currentUser.id, potentialLevel: form.get("potentialLevel") || defaultLevel, tags: [], leadIds: [], contractIds: [], transferRecords: [], aiProfile: "暂无客户画像数据", createdAt: "2026-07-02" };
         const leadId = form.get("leadId");
         if (leadId) {
           newCustomer.leadIds.push(leadId);
@@ -1955,7 +1994,8 @@ window.CRMCrmPage = {
     if (!this.canEditCustomer()) return CRMUI.toast("当前角色无添加联系人权限");
     const customer = CRM_MOCK.customers.find(c => c.id === customerId);
     if (!customer) return CRMUI.toast("未找到客户");
-    const roleOpts = ["决策人", "采购经理", "执行联系人", "关键联系人", "其他"].map(v => ({ value: v, label: v }));
+    const roleOpts = this.dictLeafItems("contactRole").map(item => ({ value: item.name, label: item.name }));
+    const defaultRole = roleOpts.find(r => r.value === "执行联系人")?.value || roleOpts[0]?.value || "执行联系人";
     const existing = CRM_MOCK.contacts.filter(c => c.customerId === customerId);
     CRMUI.modal("添加联系人", `
       <div class="form-grid">
@@ -1965,7 +2005,7 @@ window.CRMCrmPage = {
         ${CRMUI.formInput("邮箱", "email")}
         ${CRMUI.formInput("电话", "phone")}
         ${CRMUI.formInput("WhatsApp", "whatsapp")}
-        ${CRMUI.formSelect("联系角色", "role", roleOpts, "执行联系人")}
+        ${CRMUI.formSelect("联系角色", "role", roleOpts, defaultRole)}
         <div class="form-field full"><label><input type="checkbox" name="primary" value="1" ${existing.length ? "" : "checked"}> 设为主要联系人</label></div>
       </div>`, form => {
       const name = (form.get("name") || "").trim();

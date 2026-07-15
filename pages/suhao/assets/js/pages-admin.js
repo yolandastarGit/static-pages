@@ -56,7 +56,11 @@ window.CRMAdminPage = {
       { title: "AI 模型", render: row => row.defaultModel },
       { title: "业务关联", render: row => this.renderAiBusinessScenes(row) },
       { title: "API 端点", render: row => row.config?.api?.baseUrl || "-" },
-      { title: "状态", render: row => CRMUI.badge(row.status) },
+      { title: "状态", render: row => {
+        const available = this.isAiDictAvailable(row);
+        if (row.status === "启用" && !available) return `${CRMUI.badge("启用")} <span class="badge gray">字典不可用</span>`;
+        return CRMUI.badge(row.status);
+      } },
       { title: "创建时间", render: row => row.createdAt || row.updatedAt },
       { title: "操作", render: row => `<button class="btn" data-ai-config="${row.id}">编辑</button> <button class="btn" data-ai-toggle="${row.id}">${row.status === "启用" ? "停用" : "启用"}</button> <button class="btn danger" data-ai-delete="${row.id}" ${row.status === "启用" ? "disabled title='启用状态不可删除'" : ""}>删除</button>` }
     ], providers, "暂无 AI 服务商配置");
@@ -78,8 +82,48 @@ window.CRMAdminPage = {
   aiConfigTemplate() {
     return JSON.parse(JSON.stringify(CRM_MOCK.aiConfig));
   },
+  dictByCode(code) {
+    return (CRM_MOCK.dictionaries || []).find(d => d.code === code);
+  },
+  dictItems(code, { includeDisabled = false } = {}) {
+    const dict = this.dictByCode(code);
+    if (!dict) return [];
+    return (dict.items || [])
+      .filter(item => includeDisabled || item.status !== "停用")
+      .sort((a, b) => (a.sort || 0) - (b.sort || 0));
+  },
+  dictItemByName(code, name) {
+    return this.dictItems(code, { includeDisabled: true }).find(item => item.name === name);
+  },
+  aiProviderDictOptions(currentName = "") {
+    const names = this.dictItems("aiProvider").map(item => item.name);
+    if (currentName && !names.includes(currentName)) names.unshift(currentName);
+    return names.map(name => {
+      const enabled = this.dictItemByName("aiProvider", name)?.status !== "停用";
+      return { value: name, label: enabled ? name : `${name}（已停用）`, disabled: !enabled && name !== currentName };
+    });
+  },
+  aiModelDictOptions(providerName, currentModel = "") {
+    const provider = this.dictItemByName("aiProvider", providerName);
+    const models = this.dictItems("aiModel", { includeDisabled: true })
+      .filter(item => !provider || item.parentId === provider.id)
+      .filter(item => item.status !== "停用" || item.name === currentModel);
+    const names = models.map(item => item.name);
+    if (currentModel && !names.includes(currentModel)) names.unshift(currentModel);
+    return names.map(name => {
+      const enabled = this.dictItemByName("aiModel", name)?.status !== "停用";
+      return { value: name, label: enabled ? name : `${name}（已停用）` };
+    });
+  },
+  isAiDictAvailable(provider) {
+    if (!provider) return false;
+    const p = this.dictItemByName("aiProvider", provider.name);
+    const m = this.dictItemByName("aiModel", provider.defaultModel);
+    return p?.status === "启用" && m?.status === "启用";
+  },
   aiBusinessScenes() {
-    return CRM_MOCK.aiBusinessScenes || ["邮件意向分析", "WhatsApp 意向分析", "AI 自动提取企业信息", "批量 AI 提炼"];
+    const fromDict = this.dictItems("aiBusinessScenario").map(item => item.name);
+    return fromDict.length ? fromDict : (CRM_MOCK.aiBusinessScenes || ["邮件意向分析", "WhatsApp 意向分析", "AI 自动提取企业信息", "批量 AI 提炼"]);
   },
   aiBusinessSceneValues(provider = {}) {
     const scenes = provider.businessScene ?? provider.businessScenes ?? [];
@@ -111,13 +155,14 @@ window.CRMAdminPage = {
   openAiConfigModal(provider) {
     const isEdit = Boolean(provider);
     const config = provider?.config || this.aiConfigTemplate();
-    const providerNames = CRM_MOCK.aiProviderOptions || [];
-    const providerOpts = providerNames.map(v => ({ value: v, label: v }));
-    const currentProvider = provider?.name && providerNames.includes(provider.name) ? provider.name : (provider ? "自定义" : providerNames[0] || "");
-    const modelOpts = (CRM_MOCK.aiModelOptions?.[currentProvider] || []).map(v => ({ value: v, label: v }));
-    const isCustomProvider = currentProvider === "自定义";
+    const providerOpts = this.aiProviderDictOptions(provider?.name || "");
+    const currentProvider = provider?.name && providerOpts.some(o => o.value === provider.name)
+      ? provider.name
+      : (providerOpts.find(o => !o.disabled)?.value || providerOpts[0]?.value || "");
+    const currentModel = provider?.defaultModel || config.api.model || "";
+    const modelOpts = this.aiModelDictOptions(currentProvider, currentModel);
     const selectedScenes = this.aiBusinessSceneValues(provider);
-    CRMUI.modal(isEdit ? `${provider.name} 配置` : "新增 AI 配置", `
+    CRMUI.modal(isEdit ? `${provider.capabilityName || provider.name} 配置` : "新增 AI 配置", `
       <div class="form-grid">
         ${CRMUI.formInput("能力名称", "capabilityName", provider?.capabilityName || `${provider?.name || "AI"} 意向分析`)}
         ${CRMUI.formMultiSelect("业务关联", "businessScene", this.aiBusinessSceneOptions(provider), selectedScenes)}
@@ -125,12 +170,13 @@ window.CRMAdminPage = {
         ${CRMUI.formSelect("启用状态", "status", ["启用", "停用"].map(value => ({ value, label: value })), provider?.status || "启用")}
         ${isEdit ? `<div class="form-field"><label>API Key</label><input name="apiKey" type="password" value="" placeholder="留空则不修改，当前：${this.maskApiKey(config.api.apiKey)}"></div>` : CRMUI.formInput("API Key", "apiKey", "", "password")}
         ${CRMUI.formInput("API 端点", "baseUrl", config.api.baseUrl)}
-        <div class="form-field" id="modelSelectWrap"><label>AI 模型</label><select name="model">${modelOpts.map(o => `<option value="${o.value}" ${o.value === config.api.model ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>
-        <div class="form-field" id="modelInputWrap" style="display:${isCustomProvider ? "" : "none"}"><label>AI 模型（自定义）</label><input name="modelCustom" type="text" value="${isCustomProvider ? config.api.model : ""}" placeholder="自定义模型名"></div>
+        <div class="form-field" id="modelSelectWrap"><label>AI 模型</label><select name="model">${modelOpts.map(o => `<option value="${o.value}" ${o.value === currentModel ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>
       </div>`, form => {
       const providerName = form.get("name");
-      const model = providerName === "自定义" ? (form.get("modelCustom") || "").trim() : form.get("model");
-      if (!providerName || !form.get("baseUrl") || !model) return CRMUI.toast("请完善 AI 服务商、API Key、Base URL 和 AI 模型");
+      const model = (form.get("model") || "").trim();
+      if (!providerName || !form.get("baseUrl") || !model) return CRMUI.toast("请完善 AI 服务商、API 端点和 AI 模型");
+      if (this.dictItemByName("aiProvider", providerName)?.status === "停用") return CRMUI.toast("所选 AI 服务商已停用，请更换");
+      if (this.dictItemByName("aiModel", model)?.status === "停用") return CRMUI.toast("所选 AI 模型已停用，请更换");
       const apiKey = form.get("apiKey") || (isEdit ? config.api.apiKey : "");
       if (!apiKey) return CRMUI.toast("请填写 API Key");
       const businessScene = form.getAll("businessScene").filter(Boolean);
@@ -169,22 +215,12 @@ window.CRMAdminPage = {
       CRMUI.toast(isEdit ? "AI 配置已保存" : "AI 配置已新增");
       this.renderAiProviderTable();
     });
-    // AI 服务商与模型联动：切换服务商时刷新模型下拉；选"自定义"时降级为文本输入
     const providerSel = CRMUI.$('select[name="name"]');
-    const modelSelectWrap = CRMUI.$("#modelSelectWrap");
-    const modelInputWrap = CRMUI.$("#modelInputWrap");
-    if (providerSel && modelSelectWrap && modelInputWrap) {
+    const modelSelect = CRMUI.$("#modelSelectWrap select");
+    if (providerSel && modelSelect) {
       providerSel.addEventListener("change", e => {
-        const val = e.target.value;
-        const opts = CRM_MOCK.aiModelOptions?.[val] || [];
-        modelSelectWrap.querySelector("select").innerHTML = opts.map(m => `<option value="${m}">${m}</option>`).join("");
-        if (val === "自定义") {
-          modelSelectWrap.style.display = "none";
-          modelInputWrap.style.display = "";
-        } else {
-          modelSelectWrap.style.display = "";
-          modelInputWrap.style.display = "none";
-        }
+        const opts = this.aiModelDictOptions(e.target.value);
+        modelSelect.innerHTML = opts.map(o => `<option value="${o.value}">${o.label}</option>`).join("");
       });
     }
   },
@@ -1699,208 +1735,306 @@ window.CRMAdminPage = {
       if (submit) submit.textContent = "关闭";
     }
   },
+  dictTierLabel(tier) {
+    if (tier === "system") return "系统基础";
+    if (tier === "controlled") return "受控预置";
+    return "业务可配";
+  },
+  dictIsLocked(dict) {
+    return dict?.tier === "system" || dict?.tier === "controlled";
+  },
+  dictParentOptions(dict, currentItemId = "") {
+    return (dict.items || [])
+      .filter(item => item.id !== currentItemId && !item.parentId)
+      .map(item => ({ value: item.id, label: item.name }));
+  },
+  dictParentName(dict, item) {
+    if (!item?.parentId) return "-";
+    return (dict.items || []).find(i => i.id === item.parentId)?.name || "-";
+  },
   renderSystemDicts(root) {
-    this.dictState = this.dictState || { activeDictCode: "followStage", keyword: "", status: "", expandedDomains: {} };
+    this.dictState = this.dictState || { view: "types", activeDictCode: "", keyword: "", status: "", typeKeyword: "" };
     this.dictState.root = root;
-    const dicts = CRM_MOCK.dictionaries || [];
-    if (!dicts.find(d => d.code === this.dictState.activeDictCode) && dicts.length) this.dictState.activeDictCode = dicts[0].code;
-    dicts.forEach(dict => {
-      const domain = dict.domain || "默认分类";
-      if (this.dictState.expandedDomains[domain] === undefined) this.dictState.expandedDomains[domain] = true;
-    });
+    if (this.dictState.view === "items" && this.dictState.activeDictCode) {
+      this.renderSystemDictItems(root);
+      return;
+    }
+    this.dictState.view = "types";
+    const dicts = [...(CRM_MOCK.dictionaries || [])].sort((a, b) => (a.sort || 0) - (b.sort || 0));
     root.innerHTML = `
-      <div class="dict-management-layout">
-        <aside class="dict-tree-panel">
-          <div class="dict-panel-head">
-            <strong>字典分类</strong>
-          </div>
-          <div id="dictCategoryList"></div>
-        </aside>
-        <section class="dict-list-panel">
-          <div class="dict-list-head">
-            <strong id="dictActiveTitle"></strong>
-          </div>
-          <div class="list-toolbar">
-            <div class="toolbar-actions">
-              <button class="btn primary" id="dictItemAdd">新增</button>
-            </div>
-            <div class="toolbar-filters">
-              <div class="dict-filter-bar search-filter">
-                <label class="filter-item"><span>关键词</span><input id="dictItemSearch" placeholder="字典名称 / 字典编码"></label>
-                <label class="filter-item"><span>状态</span><select id="dictItemStatus">
-                  <option value="">全部状态</option>
-                  <option value="启用">启用</option>
-                  <option value="停用">停用</option>
-                </select></label>
-                <div class="filter-actions"><button class="btn primary" id="dictItemSearchBtn">查询</button><button class="btn" id="dictItemSearchReset">重置</button></div>
-              </div>
+      <section class="dict-list-panel dict-type-panel">
+        <div class="dict-list-head"><strong>字典类型</strong><span class="muted">类型清单系统预置，不可新增/停用类型</span></div>
+        <div class="list-toolbar">
+          <div class="toolbar-filters">
+            <div class="dict-filter-bar search-filter">
+              <label class="filter-item"><span>关键词</span><input id="dictTypeSearch" placeholder="字典名称 / 字典编码" value="${this.dictState.typeKeyword || ""}"></label>
+              <div class="filter-actions"><button class="btn primary" id="dictTypeSearchBtn">查询</button><button class="btn" id="dictTypeSearchReset">重置</button></div>
             </div>
           </div>
-          <div id="dictItemTable"></div>
-        </section>
-      </div>
+        </div>
+        <div id="dictTypeTable"></div>
+      </section>
     `;
-    const groupedDicts = dicts.reduce((groups, dict) => {
-      const domain = dict.domain || "默认分类";
-      if (!groups[domain]) groups[domain] = [];
-      groups[domain].push(dict);
-      return groups;
-    }, {});
-    const drawCategories = () => {
-      CRMUI.$("#dictCategoryList").innerHTML = Object.entries(groupedDicts).map(([domain, items]) => {
-        const expanded = this.dictState.expandedDomains[domain] !== false;
-        return `
-          <div class="dict-tree-group">
-            <button class="dict-tree-domain" data-dict-domain="${domain}" type="button">
-              <span class="dict-tree-caret">${expanded ? "▾" : "▸"}</span>
-              <span>${domain}</span>
-            </button>
-            <div class="dict-tree-children" ${expanded ? "" : "hidden"}>
-              ${items.map(d => `
-                <button class="dict-tree-node ${d.code === this.dictState.activeDictCode ? "active" : ""}" data-dict-code="${d.code}" type="button">
-                  <span class="dict-tree-branch"></span>
-                  <span class="dict-tree-main">${d.name}</span>
-                </button>
-              `).join("")}
-            </div>
-          </div>
-        `;
-      }).join("");
-      CRMUI.$$("[data-dict-domain]").forEach(el => el.addEventListener("click", () => {
-        this.dictState.expandedDomains[el.dataset.dictDomain] = this.dictState.expandedDomains[el.dataset.dictDomain] === false;
-        drawCategories();
-      }));
-      CRMUI.$$("[data-dict-code]").forEach(el => el.addEventListener("click", () => {
-        const treePanel = CRMUI.$(".dict-tree-panel");
-        const treeScrollTop = treePanel ? treePanel.scrollTop : 0;
-        this.dictState.activeDictCode = el.dataset.dictCode;
+    const drawTypes = () => {
+      const keyword = (this.dictState.typeKeyword || "").toLowerCase();
+      const rows = dicts.filter(d => `${d.name} ${d.code} ${d.domain || ""}`.toLowerCase().includes(keyword));
+      CRMUI.$("#dictTypeTable").innerHTML = CRMUI.table([
+        { title: "字典名称", render: d => d.name },
+        { title: "字典编码", render: d => d.code },
+        { title: "治理层级", render: d => this.dictTierLabel(d.tier) },
+        { title: "所属域", render: d => d.domain || "-" },
+        { title: "字典项数", render: d => (d.items || []).length },
+        { title: "更新时间", render: d => d.updatedAt || "-" },
+        { title: "更新人", render: d => d.updatedBy || "-" },
+        { title: "操作", render: d => `<button class="btn" data-dict-edit-type="${d.code}">编辑说明</button> <button class="btn primary" data-dict-manage="${d.code}">字典项管理</button>` }
+      ], rows, "暂无字典类型");
+      CRMUI.$$("[data-dict-manage]").forEach(el => el.addEventListener("click", () => {
+        this.dictState.view = "items";
+        this.dictState.activeDictCode = el.dataset.dictManage;
         this.dictState.keyword = "";
         this.dictState.status = "";
-        CRMUI.$("#dictItemSearch").value = "";
-        CRMUI.$("#dictItemStatus").value = "";
-        drawCategories();
-        drawItems();
-        if (treePanel) requestAnimationFrame(() => { treePanel.scrollTop = treeScrollTop; });
+        this.renderSystemDicts(root);
+      }));
+      CRMUI.$$("[data-dict-edit-type]").forEach(el => el.addEventListener("click", () => {
+        const dict = dicts.find(d => d.code === el.dataset.dictEditType);
+        if (!dict) return;
+        CRMUI.modal("编辑字典类型说明", `
+          <div class="form-grid">
+            <div class="form-field"><label>字典名称</label><input value="${dict.name}" readonly></div>
+            <div class="form-field"><label>字典编码</label><input value="${dict.code}" readonly></div>
+            <div class="form-field"><label>治理层级</label><input value="${this.dictTierLabel(dict.tier)}" readonly></div>
+            ${CRMUI.formInput("排序", "sort", String(dict.sort || 0), "number")}
+            <div class="form-field full"><label>字典说明</label><textarea name="remark">${dict.remark || ""}</textarea></div>
+          </div>`, form => {
+          dict.sort = Number(form.get("sort")) || dict.sort;
+          dict.remark = form.get("remark") || "";
+          dict.updatedAt = "2026-07-15 12:00";
+          dict.updatedBy = CRM_MOCK.currentUser?.name || "系统管理员";
+          CRMUI.closeModal();
+          CRMUI.toast("字典类型说明已更新");
+          this.renderSystemDicts(root);
+        });
       }));
     };
+    CRMUI.$("#dictTypeSearchBtn").addEventListener("click", () => {
+      this.dictState.typeKeyword = CRMUI.$("#dictTypeSearch").value;
+      drawTypes();
+    });
+    CRMUI.$("#dictTypeSearchReset").addEventListener("click", () => {
+      this.dictState.typeKeyword = "";
+      CRMUI.$("#dictTypeSearch").value = "";
+      drawTypes();
+    });
+    drawTypes();
+  },
+  renderSystemDictItems(root) {
+    const dict = this.dictByCode(this.dictState.activeDictCode);
+    if (!dict) {
+      this.dictState.view = "types";
+      this.renderSystemDicts(root);
+      return;
+    }
+    const locked = this.dictIsLocked(dict);
+    const supportsParent = ["aiModel", "industry", "country", "sourceChannel", "followMethod", "customerFocus", "customerTag", "leadTag", "contactRole", "customerLevel", "followStage", "aiProvider"].includes(dict.code);
+    root.innerHTML = `
+      <section class="dict-list-panel dict-type-panel">
+        <div class="dict-list-head">
+          <div>
+            <button class="btn" id="dictBackToTypes" type="button">← 返回类型列表</button>
+            <strong style="margin-left:10px">${dict.name}</strong>
+            <span class="badge gray" style="margin-left:8px">${this.dictTierLabel(dict.tier)}</span>
+          </div>
+          <span class="muted">${locked ? "仅可改展示名称与排序" : "可新增 / 启停 / 排序字典项"}</span>
+        </div>
+        <div class="list-toolbar">
+          <div class="toolbar-actions">
+            ${locked ? "" : `<button class="btn primary" id="dictItemAdd">新增字典项</button>`}
+          </div>
+          <div class="toolbar-filters">
+            <div class="dict-filter-bar search-filter">
+              <label class="filter-item"><span>关键词</span><input id="dictItemSearch" placeholder="字典名称 / 字典编码" value="${this.dictState.keyword || ""}"></label>
+              ${locked ? "" : `<label class="filter-item"><span>状态</span><select id="dictItemStatus"><option value="">全部状态</option><option value="启用">启用</option><option value="停用">停用</option></select></label>`}
+              <div class="filter-actions"><button class="btn primary" id="dictItemSearchBtn">查询</button><button class="btn" id="dictItemSearchReset">重置</button></div>
+            </div>
+          </div>
+        </div>
+        <div id="dictItemTable"></div>
+      </section>
+    `;
     const drawItems = () => {
-      const dict = dicts.find(d => d.code === this.dictState.activeDictCode);
-      if (!dict) { CRMUI.$("#dictItemTable").innerHTML = '<p class="muted">暂无字典</p>'; return; }
-      CRMUI.$("#dictActiveTitle").textContent = dict.name;
-      const extension = this.dictExtensionConfig(dict);
+      const extensionCols = this.dictExtensionColumns(dict);
       const columns = [
-        { title: "字典名称", render: item => item.name },
-        { title: "字典编码", render: item => item.code },
+        { title: "字典项名称", render: item => `${item.name}${item.builtin ? ' <span class="badge gray">系统内置</span>' : ""}${item.isDefault ? ' <span class="badge blue">默认</span>' : ""}` },
+        { title: "字典项编码", render: item => item.code },
+        ...(supportsParent ? [{ title: "父级", render: item => this.dictParentName(dict, item) }] : []),
         { title: "排序", render: item => item.sort },
-        { title: extension.title, render: item => extension.render(item) },
-        { title: "状态", render: item => CRMUI.badge(item.status) },
-        { title: "创建时间", render: item => item.createdAt || item.updatedAt || "-" },
-        { title: "操作", render: item => `<button class="btn" data-dict-item-edit="${item.id}">编辑</button> <button class="btn" data-dict-item-toggle="${item.id}">${item.status === "启用" ? "停用" : "启用"}</button> <button class="btn" data-dict-item-del="${item.id}">删除</button>` }
+        ...extensionCols,
+        ...(locked ? [] : [{ title: "状态", render: item => CRMUI.badge(item.status || "启用") }]),
+        { title: "操作", render: item => {
+          const actions = [`<button class="btn" data-dict-item-edit="${item.id}">编辑</button>`];
+          if (!locked) {
+            actions.push(`<button class="btn" data-dict-item-toggle="${item.id}">${item.status === "启用" ? "停用" : "启用"}</button>`);
+            if (!item.builtin) actions.push(`<button class="btn" data-dict-item-del="${item.id}">删除</button>`);
+          }
+          return actions.join(" ");
+        } }
       ];
       const keyword = (this.dictState.keyword || "").toLowerCase();
       const status = this.dictState.status || "";
-      const sortedItems = [...dict.items]
-        .filter(item => `${item.name} ${item.code} ${item.status} ${item.remark || ""}`.toLowerCase().includes(keyword))
+      const sortedItems = [...(dict.items || [])]
+        .filter(item => `${item.name} ${item.code} ${item.status || ""} ${item.displayGroup || ""}`.toLowerCase().includes(keyword))
         .filter(item => !status || item.status === status)
-        .sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        .sort((a, b) => (a.sort || 0) - (b.sort || 0) || String(a.name).localeCompare(String(b.name)));
       CRMUI.$("#dictItemTable").innerHTML = CRMUI.table(columns, sortedItems, "暂无字典项");
       CRMUI.$$("[data-dict-item-edit]").forEach(el => el.addEventListener("click", () => this.openDictItemModal(dict, el.dataset.dictItemEdit)));
       CRMUI.$$("[data-dict-item-toggle]").forEach(el => el.addEventListener("click", () => {
         const item = dict.items.find(i => i.id === el.dataset.dictItemToggle);
-        if (item) { item.status = item.status === "启用" ? "停用" : "启用"; CRMUI.toast(`已${item.status}字典项「${item.name}」`); drawItems(); }
+        if (!item || locked) return;
+        item.status = item.status === "启用" ? "停用" : "启用";
+        dict.updatedAt = "2026-07-15 12:00";
+        CRMUI.toast(`已${item.status}字典项「${item.name}」`);
+        drawItems();
       }));
       CRMUI.$$("[data-dict-item-del]").forEach(el => el.addEventListener("click", () => {
         const item = dict.items.find(i => i.id === el.dataset.dictItemDel);
-        if (!item) return;
+        if (!item || item.builtin || locked) return;
+        const hasChildren = (dict.items || []).some(i => i.parentId === item.id);
+        if (hasChildren) return CRMUI.toast("请先删除或调整子级字典项");
         CRMUI.modal("删除字典项", `
           <p>确定删除字典项「<strong>${item.name}</strong>」吗？</p>
-          <p class="muted">删除后不可恢复。</p>
+          <p class="muted">已被业务引用的项建议停用而非删除。</p>
         `, () => {
           const idx = dict.items.findIndex(i => i.id === item.id);
-          if (idx >= 0) {
-            const removed = dict.items.splice(idx, 1)[0];
-            CRMUI.closeModal();
-            CRMUI.toast(`已删除字典项「${removed.name}」`);
-            drawItems();
-            drawCategories();
-          }
+          if (idx >= 0) dict.items.splice(idx, 1);
+          CRMUI.closeModal();
+          CRMUI.toast(`已删除字典项「${item.name}」`);
+          drawItems();
         });
       }));
     };
-    CRMUI.$("#dictItemAdd").addEventListener("click", () => this.openDictItemModal(dicts.find(d => d.code === this.dictState.activeDictCode)));
-    CRMUI.$("#dictItemSearch").value = this.dictState.keyword || "";
-    CRMUI.$("#dictItemStatus").value = this.dictState.status || "";
+    CRMUI.$("#dictBackToTypes").addEventListener("click", () => {
+      this.dictState.view = "types";
+      this.dictState.activeDictCode = "";
+      this.renderSystemDicts(root);
+    });
+    CRMUI.$("#dictItemAdd")?.addEventListener("click", () => this.openDictItemModal(dict));
+    if (CRMUI.$("#dictItemStatus")) CRMUI.$("#dictItemStatus").value = this.dictState.status || "";
     CRMUI.$("#dictItemSearchBtn").addEventListener("click", () => {
       this.dictState.keyword = CRMUI.$("#dictItemSearch").value;
-      this.dictState.status = CRMUI.$("#dictItemStatus").value;
+      this.dictState.status = CRMUI.$("#dictItemStatus")?.value || "";
       drawItems();
     });
     CRMUI.$("#dictItemSearchReset").addEventListener("click", () => {
       this.dictState.keyword = "";
       this.dictState.status = "";
       CRMUI.$("#dictItemSearch").value = "";
-      CRMUI.$("#dictItemStatus").value = "";
+      if (CRMUI.$("#dictItemStatus")) CRMUI.$("#dictItemStatus").value = "";
       drawItems();
     });
-    drawCategories();
     drawItems();
   },
-  dictExtensionConfig(dict) {
-    if (dict.code === "followStage") return {
-      title: "是否允许转客户",
-      render: item => item.allowHighIntent ? '<span class="badge blue">是</span>' : "否"
-    };
-    if (dict.code === "customerLevel") return {
-      title: "分级颜色",
-      render: item => item.color ? `<span class="dict-color-dot" style="background:${item.color}"></span>${item.color}` : "-"
-    };
-    if (dict.code === "customerTag" || dict.code === "leadTag") return {
-      title: "标签颜色",
-      render: item => item.color ? `<span class="dict-color-dot" style="background:${item.color}"></span>${item.color}` : "-"
-    };
-    if (dict.code === "country") return {
-      title: "国家编码",
-      render: item => item.countryCode || item.isoCode || "-"
-    };
-    return {
-      title: "扩展属性",
-      render: () => "-"
-    };
+  dictExtensionColumns(dict) {
+    if (dict.code === "followStage") {
+      return [
+        { title: "允许转客户", render: item => item.allowConvertToCustomer ? '<span class="badge blue">是</span>' : "否" },
+        { title: "计入高意向", render: item => item.countAsHighIntent ? '<span class="badge blue">是</span>' : "否" }
+      ];
+    }
+    if (dict.code === "customerFocus") {
+      return [{ title: "展示分类", render: item => item.displayGroup || "-" }];
+    }
+    if (dict.code === "customerLevel") {
+      return [{ title: "是否默认", render: item => item.isDefault ? '<span class="badge blue">是</span>' : "否" }];
+    }
+    return [];
   },
   openDictItemModal(dict, itemId) {
     const isEdit = Boolean(itemId);
-    const item = isEdit ? dict.items.find(i => i.id === itemId) : { name: "", code: "", sort: dict.items.length + 1, status: "启用", allowHighIntent: false };
+    const locked = this.dictIsLocked(dict);
+    const item = isEdit
+      ? dict.items.find(i => i.id === itemId)
+      : { name: "", code: "", sort: (dict.items?.length || 0) + 1, status: "启用", allowConvertToCustomer: false, countAsHighIntent: false, parentId: "", displayGroup: "", isDefault: false };
+    if (!item) return;
     const isFollowStage = dict.code === "followStage";
-    const hasColor = dict.code === "customerLevel" || dict.code === "customerTag" || dict.code === "leadTag";
+    const isFocus = dict.code === "customerFocus";
+    const isLevel = dict.code === "customerLevel";
+    const isAiModel = dict.code === "aiModel";
+    const parentSource = isAiModel ? this.dictByCode("aiProvider") : dict;
+    const parentOpts = isAiModel
+      ? this.dictItems("aiProvider").map(p => ({ value: p.id, label: p.name }))
+      : this.dictParentOptions(dict, item.id);
+    const showParent = isAiModel || ["industry", "country", "sourceChannel", "followMethod", "customerTag", "leadTag", "contactRole"].includes(dict.code);
+    const codeReadonly = isEdit ? "readonly" : "";
     CRMUI.modal(isEdit ? "编辑字典项" : "新增字典项", `
       <div class="form-grid">
-        <div class="form-field"><label>所属分类</label><input value="${dict.name}" readonly></div>
-        ${CRMUI.formInput("字典名称", "name", item.name)}
-        ${CRMUI.formInput("字典编码", "code", item.code)}
-        ${CRMUI.formInput("排序", "sort", String(item.sort), "number")}
-        ${CRMUI.formSelect("状态", "status", ["启用", "停用"].map(v => ({ value: v, label: v })), item.status)}
-        ${isFollowStage ? `<div class="form-field"><label>是否允许转客户</label><select name="allowHighIntent"><option value="false" ${!item.allowHighIntent ? "selected" : ""}>否</option><option value="true" ${item.allowHighIntent ? "selected" : ""}>是</option></select></div>` : ""}
-        ${hasColor ? `<div class="form-field"><label>${dict.code === "customerLevel" ? "分级颜色" : "标签颜色"}</label><input name="color" value="${item.color || ""}" placeholder="#2563eb"></div>` : ""}
+        <div class="form-field"><label>所属字典</label><input value="${dict.name}" readonly></div>
+        ${CRMUI.formInput("字典项名称", "name", item.name)}
+        <div class="form-field"><label>字典项编码</label><input name="code" value="${item.code || ""}" ${codeReadonly} placeholder="${isEdit ? "" : "创建后不可修改"}"></div>
+        ${CRMUI.formInput("排序", "sort", String(item.sort ?? 0), "number")}
+        ${locked ? "" : CRMUI.formSelect("状态", "status", ["启用", "停用"].map(v => ({ value: v, label: v })), item.status || "启用")}
+        ${showParent ? `<div class="form-field"><label>${isAiModel ? "所属服务商" : "父级字典项"}</label><select name="parentId"><option value="">${isAiModel ? "请选择服务商" : "无（作为父级/叶子）"}</option>${parentOpts.map(o => `<option value="${o.value}" ${item.parentId === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select></div>` : ""}
+        ${isFollowStage ? `
+          <div class="form-field"><label>是否允许转客户</label><select name="allowConvertToCustomer"><option value="false" ${!item.allowConvertToCustomer ? "selected" : ""}>否</option><option value="true" ${item.allowConvertToCustomer ? "selected" : ""}>是</option></select></div>
+          <div class="form-field"><label>是否计入高意向</label><select name="countAsHighIntent"><option value="false" ${!item.countAsHighIntent ? "selected" : ""}>否</option><option value="true" ${item.countAsHighIntent ? "selected" : ""}>是</option></select></div>
+        ` : ""}
+        ${isFocus ? `<div class="form-field"><label>展示分类</label><select name="displayGroup">${["商务", "交付", "产品", "质量", "供应能力", "服务", "合规", "其他"].map(g => `<option value="${g}" ${item.displayGroup === g ? "selected" : ""}>${g}</option>`).join("")}</select></div>` : ""}
+        ${isLevel ? `<div class="form-field"><label>是否默认</label><select name="isDefault"><option value="false" ${!item.isDefault ? "selected" : ""}>否</option><option value="true" ${item.isDefault ? "selected" : ""}>是</option></select></div>` : ""}
       </div>`, form => {
       const name = (form.get("name") || "").trim();
-      if (!name) return CRMUI.toast("请填写字典名称");
-      if (!(form.get("code") || "").trim()) return CRMUI.toast("请填写字典编码");
-      const code = (form.get("code") || "").trim() || name;
-      const sort = Number(form.get("sort")) || (dict.items.length + 1);
+      if (!name) return CRMUI.toast("请填写字典项名称");
+      const code = (form.get("code") || "").trim();
+      if (!code) return CRMUI.toast("请填写字典项编码");
+      if (!isEdit && (dict.items || []).some(i => i.code === code)) return CRMUI.toast("字典项编码已存在");
+      if (isAiModel && !form.get("parentId")) return CRMUI.toast("AI 模型必须归属某一服务商");
+      const sort = Number(form.get("sort")) || 0;
+      const parentId = form.get("parentId") || "";
       if (isEdit) {
-        item.name = name; item.code = code; item.sort = sort; item.status = form.get("status");
-        if (isFollowStage) item.allowHighIntent = form.get("allowHighIntent") === "true";
-        if (hasColor) item.color = (form.get("color") || "").trim();
+        item.name = name;
+        item.sort = sort;
+        if (!locked) item.status = form.get("status") || item.status;
+        if (showParent) item.parentId = parentId || undefined;
+        if (isFollowStage) {
+          item.allowConvertToCustomer = form.get("allowConvertToCustomer") === "true";
+          item.countAsHighIntent = form.get("countAsHighIntent") === "true";
+        }
+        if (isFocus) item.displayGroup = form.get("displayGroup") || "";
+        if (isLevel) {
+          const makeDefault = form.get("isDefault") === "true";
+          if (makeDefault) dict.items.forEach(i => { i.isDefault = i.id === item.id; });
+          else item.isDefault = false;
+        }
       } else {
-        const newItem = { id: `${dict.code}${Date.now()}`, name, code, sort, status: form.get("status") };
-        if (isFollowStage) newItem.allowHighIntent = form.get("allowHighIntent") === "true";
-        if (hasColor) newItem.color = (form.get("color") || "").trim();
+        if (locked) return CRMUI.toast("当前字典类型不可新增字典项");
+        const newItem = {
+          id: `${dict.code}${Date.now()}`,
+          name,
+          code,
+          sort,
+          status: form.get("status") || "启用",
+          builtin: false
+        };
+        if (parentId) newItem.parentId = parentId;
+        if (isFollowStage) {
+          newItem.allowConvertToCustomer = form.get("allowConvertToCustomer") === "true";
+          newItem.countAsHighIntent = form.get("countAsHighIntent") === "true";
+        }
+        if (isFocus) newItem.displayGroup = form.get("displayGroup") || "其他";
+        if (isLevel && form.get("isDefault") === "true") {
+          dict.items.forEach(i => { i.isDefault = false; });
+          newItem.isDefault = true;
+        }
         dict.items.push(newItem);
       }
+      dict.updatedAt = "2026-07-15 12:00";
+      dict.updatedBy = CRM_MOCK.currentUser?.name || "系统管理员";
       CRMUI.closeModal();
       CRMUI.toast(isEdit ? "字典项已更新" : "字典项已新增");
       this.renderSystemDicts(this.dictState.root);
     });
+    if (locked) {
+      const codeInput = CRMUI.$('#modalForm input[name="code"]');
+      if (codeInput) codeInput.readOnly = true;
+    }
   },
   // 系统日志：登录日志 / 操作日志 / 配置变更 三 Tab，分别使用登录时间 / 操作时间 / 变更时间筛选，默认近 7 天
   renderSystemLogs(root) {

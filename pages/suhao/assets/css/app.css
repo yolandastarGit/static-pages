@@ -953,6 +953,10 @@ nav {
   align-items: start;
 }
 
+.dict-type-panel {
+  width: 100%;
+}
+
 .dict-tree-panel,
 .dict-list-panel {
   min-width: 0;
