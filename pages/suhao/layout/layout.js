@@ -334,15 +334,17 @@ window.CRMLayout = {
     return site ? CRMUI.siteName(site.id) : "-";
   },
   renderPersonalEmailForm(account) {
+    const isEdit = Boolean(account);
     CRMUI.$("#personalBindBody").innerHTML = `
       <div class="account-bind-flow">
-        <p class="muted small bind-flow-hint">填写邮箱地址后即可完成绑定，无需填写授权信息。</p>
+        <p class="muted small bind-flow-hint">协议参数取自系统全局邮件配置；每个邮箱需单独填写密码/授权码。</p>
         <div class="form-grid">
           <div class="form-field"><label>邮箱地址</label><input name="personalEmail" type="email" value="${account?.email || ""}" placeholder="例如 demo@example.com"></div>
+          <div class="form-field"><label>密码/授权码</label><input name="personalAuthCode" type="password" value="" placeholder="${isEdit ? "已配置，留空则不修改" : "请输入该邮箱密码或授权码"}"></div>
         </div>
         <div class="toolbar">
           <button class="btn" type="button" id="backPersonalEmailList">返回列表</button>
-          <button class="btn primary" type="button" id="savePersonalEmail">完成绑定</button>
+          <button class="btn primary" type="button" id="savePersonalEmail">${isEdit ? "保存" : "完成绑定"}</button>
         </div>
       </div>
     `;
@@ -351,15 +353,25 @@ window.CRMLayout = {
   },
   savePersonalEmail(account) {
     const email = CRMUI.$("input[name='personalEmail']").value.trim();
+    const authCode = CRMUI.$("input[name='personalAuthCode']").value.trim();
     if (!email) return CRMUI.toast("请填写邮箱地址");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return CRMUI.toast("请输入合法邮箱地址");
+    if (!account && !authCode) return CRMUI.toast("请填写密码/授权码");
     const duplicated = (CRM_MOCK.personalEmailAccounts || []).some(item => item.email === email && item.id !== account?.id);
     if (duplicated) return CRMUI.toast("该邮箱已被绑定");
     if (account) {
       account.email = email;
       account.status = "已绑定";
+      if (authCode) account.authCode = "******";
     } else {
-      (CRM_MOCK.personalEmailAccounts || (CRM_MOCK.personalEmailAccounts = [])).unshift({ id: `pe${Date.now()}`, userId: CRM_MOCK.currentUser.id, email, status: "已绑定", boundAt: "2026-07-03 18:10" });
+      (CRM_MOCK.personalEmailAccounts || (CRM_MOCK.personalEmailAccounts = [])).unshift({
+        id: `pe${Date.now()}`,
+        userId: CRM_MOCK.currentUser.id,
+        email,
+        authCode: "******",
+        status: "已绑定",
+        boundAt: "2026-07-03 18:10"
+      });
     }
     CRMUI.toast("邮箱绑定已保存");
     this.renderPersonalEmailBinding();

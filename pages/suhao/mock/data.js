@@ -231,7 +231,6 @@ window.CRM_MOCK = {
     "文心一言": ["ERNIE-4.0", "ERNIE-Speed"]
   },
   aiBusinessScenes: ["邮件意向分析", "WhatsApp 意向分析", "AI 自动提取企业信息", "批量 AI 提炼"],
-  mailAuthModes: ["MASTER_PASSWORD（子邮箱授权码）", "OAUTH2", "XOAUTH2", "LOGIN", "PLAIN"],
   purchaseIntentOptions: ["明确采购", "样品评估", "价格咨询", "复购扩展", "信息不足"],
   notificationChannels: ["站内信", "钉钉"],
   notificationTargetOptions: ["当前负责人", "创建人", "分配人", "站点运营专员", "指定用户"],
@@ -252,14 +251,13 @@ window.CRM_MOCK = {
     smtpServer: "smtp.qq.com",
     smtpPort: 465,
     smtpSsl: true,
-    masterUsername: "719869119@qq.com",
-    masterPassword: "",
-    authMode: "MASTER_PASSWORD（子邮箱授权码）",
+    authMode: "LOGIN",
     pullInterval: 1800
   },
+  mailAuthModes: ["LOGIN", "PLAIN", "OAUTH2", "XOAUTH2"],
   personalEmailAccounts: [
-    { id: "pe01", userId: "u01", email: "sales@industrial.example.com", status: "已绑定", boundAt: "2026-06-30 10:12" },
-    { id: "pe02", userId: "u01", email: "info@toys.example.com", status: "已绑定", boundAt: "2026-07-01 09:20" }
+    { id: "pe01", userId: "u01", email: "sales@industrial.example.com", authCode: "******", status: "已绑定", boundAt: "2026-06-30 10:12" },
+    { id: "pe02", userId: "u01", email: "info@toys.example.com", authCode: "******", status: "已绑定", boundAt: "2026-07-01 09:20" }
   ],
   dingTalkServiceConfig: {
     appKey: "ding_********",

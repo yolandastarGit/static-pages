@@ -711,25 +711,17 @@ window.CRMAdminPage = {
           </div>
         </section>
         <section class="mail-config-section">
-          <div class="mail-section-title"><span>主账号凭据</span></div>
-          <div class="mail-config-row">
-            <label>主账号用户名</label>
-            <input name="masterUsername" value="${config.masterUsername}">
-          </div>
-          <div class="mail-config-row">
-            <label>主账号密码</label>
-            <input name="masterPassword" type="password" placeholder="已配置，留空则不修改">
-          </div>
+          <div class="mail-section-title"><span>协议参数</span></div>
           <div class="mail-config-row">
             <label>认证模式</label>
             <select name="authMode">
-              ${(CRM_MOCK.mailAuthModes || ["MASTER_PASSWORD（子邮箱授权码）"]).map(item => `<option value="${item}" ${item === config.authMode ? "selected" : ""}>${item}</option>`).join("")}
+              ${(CRM_MOCK.mailAuthModes || ["LOGIN", "PLAIN", "OAUTH2", "XOAUTH2"]).map(item => `<option value="${item}" ${item === config.authMode ? "selected" : ""}>${item}</option>`).join("")}
             </select>
           </div>
           <div class="mail-config-row compact with-help">
             <label>拉取间隔(秒)</label>
             ${this.mailNumberStepper("pullInterval", config.pullInterval)}
-            <small>定时任务按此间隔拉取，默认 1800 秒（半小时），保存后即时生效</small>
+            <small>全局协议供各绑定邮箱复用；凭据在个人中心按邮箱填写。定时拉取默认 1800 秒</small>
           </div>
         </section>
         <div class="mail-config-actions">
@@ -790,10 +782,10 @@ window.CRMAdminPage = {
     CRMUI.$("#testWhatsappService").addEventListener("click", () => CRMUI.toast("WhatsApp 服务连接测试通过"));
   },
   validateMailServiceConfig(form) {
-    const required = ["imapServer", "imapPort", "smtpServer", "smtpPort", "masterUsername", "authMode", "pullInterval"];
+    const required = ["imapServer", "imapPort", "smtpServer", "smtpPort", "authMode", "pullInterval"];
     const missing = required.find(name => !String(form.get(name) || "").trim());
     if (missing) {
-      CRMUI.toast("请完善邮件服务配置必填项");
+      CRMUI.toast("请完善邮件协议配置必填项");
       return false;
     }
     return true;
@@ -808,12 +800,12 @@ window.CRMAdminPage = {
       smtpServer: form.get("smtpServer"),
       smtpPort: Number(form.get("smtpPort")),
       smtpSsl: form.get("smtpSsl") === "on",
-      masterUsername: form.get("masterUsername"),
       authMode: form.get("authMode"),
       pullInterval: Number(form.get("pullInterval"))
     });
-    if (form.get("masterPassword")) config.masterPassword = form.get("masterPassword");
-    CRMUI.toast("邮件服务配置已保存");
+    delete config.masterUsername;
+    delete config.masterPassword;
+    CRMUI.toast("邮件协议配置已保存");
   },
   syncMailServiceConfig() {
     const form = new FormData(CRMUI.$("#mailServiceForm"));
