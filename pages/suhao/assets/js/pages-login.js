@@ -43,6 +43,11 @@ window.CRMLoginPage = {
             <form id="loginForm" class="login-form">
               <div class="form-field full"><label>登录账号</label><input name="account" autocomplete="username" placeholder="请输入登录账号"></div>
               <div class="form-field full login-password"><label>登录密码</label><input name="password" type="password" autocomplete="current-password" placeholder="请输入密码"><button class="btn" type="button" id="togglePassword">显示</button></div>
+              <div class="login-demo-tip" role="note">
+                <span>演示账号</span>
+                <button type="button" id="fillDemoLogin">sysadmin / 123456</button>
+                <button type="button" id="fillOpsLogin">admin / 123456</button>
+              </div>
               <div class="login-options">
                 <label class="login-check"><input type="checkbox" name="remember"> 记住账号</label>
                 <button class="link-btn" type="button" id="forgotPassword">忘记密码</button>
@@ -79,6 +84,16 @@ window.CRMLoginPage = {
       const showing = password.type === "text";
       password.type = showing ? "password" : "text";
       e.currentTarget.textContent = showing ? "显示" : "隐藏";
+    });
+    document.getElementById("fillDemoLogin").addEventListener("click", () => {
+      form.querySelector("input[name='account']").value = "sysadmin";
+      password.value = "123456";
+      CRMUI.toast("已填入系统管理员演示账号");
+    });
+    document.getElementById("fillOpsLogin").addEventListener("click", () => {
+      form.querySelector("input[name='account']").value = "admin";
+      password.value = "123456";
+      CRMUI.toast("已填入运营专员演示账号");
     });
     document.getElementById("forgotPassword").addEventListener("click", () => CRMUI.toast("请联系系统管理员重置密码"));
     document.getElementById("refreshDingQr").addEventListener("click", () => CRMUI.toast("钉钉二维码已刷新"));
