@@ -1,38 +1,47 @@
 ---
-description: 发布静态 HTML 到 GitHub Pages 并返回分享链接
+description: 用户扔 HTML 原件时，自动发布到 GitHub Pages 并返回分享链接
 globs: pages/**/*.html
 alwaysApply: true
 ---
 
-# 静态 HTML 发布流程
+# 静态 HTML 自动发布
 
-当用户提供静态 HTML 文件或 HTML 内容时，自动完成发布并返回可访问链接。
+用户发送 HTML 文件、粘贴 HTML 内容，或说「发布」「上线」「分享链接」时，**立即执行发布**，不要只给步骤。
 
-## 配置
+## 固定配置
 
-- GitHub 用户名: `yolandastarGit`
-- 仓库名: `static-pages`
-- 页面目录: `pages/`
-- 基础 URL: `https://yolandastarGit.github.io/static-pages`
+| 项 | 值 |
+|---|---|
+| 本地目录 | `/Users/yolandaw-/Documents/仓库` |
+| GitHub | `yolandastarGit/static-pages` |
+| 基础 URL | `https://yolandastarGit.github.io/static-pages` |
+| 分支 | `main` |
 
-## 发布步骤
+## 文件路径规则
 
-1. 将 HTML 保存到 `pages/{文件名}.html`（文件名用小写英文、数字、连字符，如 `report-2024.html`）
-2. 若用户未指定文件名，根据内容生成简短 slug
-3. 执行 git 提交并推送:
-   ```bash
-   git add pages/{文件名}.html
-   git commit -m "publish: {文件名}.html"
-   git push origin main
-   ```
-4. 向用户返回完整链接:
-   ```
-   https://yolandastarGit.github.io/static-pages/pages/{文件名}.html
-   ```
-5. 提醒：首次推送后 GitHub Actions 部署约需 1–2 分钟
+按项目分文件夹，**禁止中文和空格**：
 
-## 注意
+```
+pages/{项目slug}/index.html      ← 整个系统/主原型
+pages/{项目slug}/{页面}.html     ← 子页面
+```
 
-- 不要修改 `.github/workflows/deploy-pages.yml` 除非用户明确要求
-- 若 remote 未配置或 push 失败，告知用户按 README 完成首次设置
-- 返回链接时使用 markdown 链接格式，方便用户点击
+| 用户说的项目 | slug |
+|---|---|
+| 苏豪 | `suhao` |
+| 未说明 | 从项目名转拼音小写，或问一句 |
+
+## 发布流程
+
+1. 保存 HTML 到 `pages/{slug}/...`
+2. `git add` → `git commit -m "publish: {slug}/{文件名}"` → `git push origin main`
+3. 返回链接（markdown 可点击）：
+   - 主页面：`{基础URL}/pages/{slug}/`
+   - 子页面：`{基础URL}/pages/{slug}/{页面}.html`
+4. 提醒部署约 1–2 分钟
+
+## 禁止
+
+- 不改 `.github/workflows/deploy-pages.yml`
+- 不用中文/空格作路径名
+- push 失败时给出终端命令，不要静默失败

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>苏豪 B2B CRM</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="login-view" id="loginView"></div>
+
+<div class="app-view crm-app" id="appView">
+  <div class="topbar">
+    <div class="brand"><div class="brand-mark">CRM</div><span>苏豪 B2B CRM</span></div>
+    <div class="top-actions">
+      <button class="btn msg-bell-btn" onclick="nav('message-center')" title="消息中心"><span class="bell">🔔</span>消息<span class="tag red" id="notifyCount">0</span></button>
+      <div class="avatar" id="userAvatar" title="个人中心">—</div>
+      <button class="btn" onclick="logout()">退出</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main">
+      <div id="app"></div>
+      <div id="aiInsightPanelHost" class="ai-insight-host" aria-live="polite"></div>
+    </main>
+  </div>
+</div>
+
+<div class="drawer-mask" id="drawerMask" onclick="closeDrawer(event)">
+  <div class="drawer" onclick="event.stopPropagation()">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title" id="drawerTitle">详情</div>
+        <div class="page-desc" id="drawerSub"></div>
+      </div>
+      <button class="close" onclick="closeDrawer()">×</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </div>
+</div>
+
+<div class="ai-drawer-mask" id="aiDrawerMask" onclick="closeAiConfigDrawer(event)" aria-hidden="true">
+  <div class="ai-drawer" role="dialog" aria-modal="true" aria-labelledby="aiDrawerTitle" onclick="event.stopPropagation()">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title" id="aiDrawerTitle">AI 能力配置</div>
+        <div class="page-desc" id="aiDrawerSub">连接外部模型服务，启用 AI 增强能力</div>
+      </div>
+      <button type="button" class="close" aria-label="关闭" onclick="setIsAIDrawerOpen(false)">×</button>
+    </div>
+    <div class="drawer-body" id="aiDrawerBody"></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modalMask" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">新增</div>
+      <button class="close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="saveMock()">保存</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>window.CRM_MODULE_FILE="communication.html";</script>
+<script src="assets/shared.js"></script>
+<script src="assets/router.js"></script>
+<script>document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && isAIDrawerOpen) setIsAIDrawerOpen(false);
+  if(e.key==="Escape" && openRowActionMenuId){ closeRowActionMenu(); syncRowActionMenus(); }
+});
+document.addEventListener("click",e=>{
+  if(!openRowActionMenuId) return;
+  if(e.target.closest(".row-action-more-wrap")) return;
+  closeRowActionMenu();
+  syncRowActionMenus();
+});
+document.addEventListener("scroll",repositionOpenRowActionMenu,true);
+window.addEventListener("resize",repositionOpenRowActionMenu);
+bootstrapModulePage("communication-desk");</script>
+
+</body>
+</html>
