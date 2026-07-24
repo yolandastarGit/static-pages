@@ -781,7 +781,7 @@ window.CRMCrmPage = {
     this.renderLeadDetail(page);
     page.dataset.rendered = "true";
   },
-  // 线索详情「客户画像」：引用询盘联系人侧画像（消息 AI 分析产物），非意向总结（§7.9 / §11.5.3）
+  // 线索详情「客户画像」：引用询盘联系人侧画像（企业块=Apollo；参展/风险一期可空），非意向总结（§7.9 / §11.5.3）
   companyProfileForLead(lead) {
     if (!lead) return null;
     const profiles = CRM_MOCK.companyProfiles || [];
@@ -801,11 +801,15 @@ window.CRMCrmPage = {
     const profile = this.companyProfileForLead(lead);
     const Comm = window.CRMCommunicationPage;
     if (!profile || !Comm) {
-      return `<p class="muted">暂无客户画像数据</p>`;
+      return `<p class="muted">暂无客户画像数据</p><p class="muted small">暂无企业工商信息；参展/风险一期未接入</p>`;
     }
+    const sourceHint = profile.enrichmentSource === "apollo"
+      ? `<p class="muted small">企业工商信息来源：Apollo</p>`
+      : (profile.humanEdited ? `<p class="muted small">企业工商信息来源：人工维护（后续 AI / Apollo 不覆盖）</p>` : "");
     return `
       <div class="lead-profile-stack">
         <div class="section-title detail-section-title">企业工商信息</div>
+        ${sourceHint}
         ${Comm.renderCustomerProfile(profile)}
         <div class="section-title detail-section-title">过往参展信息</div>
         ${Comm.renderExhibitionHistory(profile)}
@@ -814,30 +818,28 @@ window.CRMCrmPage = {
       </div>
     `;
   },
-  // 编辑弹窗：客户画像表单（与详情三块口径一致；人工优先 BR-017）
+  // 编辑弹窗：客户画像表单（Apollo 企业字段 + 参展/风险可人工补录；人工优先 BR-017）
   renderLeadProfileEditFields(lead) {
     const profile = this.companyProfileForLead(lead) || {};
     const risk = profile.risk || {};
     const exhibitionsText = (profile.exhibitions || []).map(item => `${item.year || ""} ${item.name || ""}`.trim()).filter(Boolean).join("\n");
     return `
       <div class="form-field full"><div class="section-title detail-section-title" style="margin:8px 0 0">客户画像 · 企业工商信息</div></div>
+      <div class="form-field full"><p class="muted small">默认来自 Apollo enrichment；保存后视为人工锁定，后续 AI / Apollo 不覆盖</p></div>
       ${CRMUI.formInput("企业名称", "profileCompany", profile.company || lead?.company || "")}
       ${CRMUI.formInput("企业简称", "profileShortName", profile.shortName || "")}
+      ${CRMUI.formInput("官网 / 企业域名", "profileWebsiteUrl", profile.websiteUrl || profile.primaryDomain || "")}
+      ${CRMUI.formInput("LinkedIn 公司主页", "profileLinkedinUrl", profile.linkedinUrl || "")}
       ${CRMUI.formInput("所属行业", "profileIndustry", profile.industry || "")}
-      ${CRMUI.formInput("企业规模", "profileScale", profile.scale || "")}
-      ${CRMUI.formInput("成立时间", "profileFoundedAt", profile.foundedAt || "")}
-      ${CRMUI.formInput("注册资本", "profileRegisteredCapital", profile.registeredCapital || "")}
-      ${CRMUI.formInput("法定代表人", "profileLegalRepresentative", profile.legalRepresentative || "")}
-      ${CRMUI.formInput("企业所在地", "profileLocation", profile.location || "")}
-      <div class="form-field full"><label>企业基本信息</label><textarea name="profileBasicInfo">${profile.basicInfo || ""}</textarea></div>
-      <div class="form-field full"><label>企业工商信息</label><textarea name="profileRegistrationInfo">${profile.registrationInfo || ""}</textarea></div>
-      <div class="form-field full"><label>主营业务</label><textarea name="profileMainBusiness">${profile.mainBusiness || ""}</textarea></div>
-      <div class="form-field full"><label>企业简介</label><textarea name="profileIntro">${profile.intro || ""}</textarea></div>
-      <div class="form-field full"><div class="section-title detail-section-title" style="margin:8px 0 0">客户画像 · 过往参展信息</div></div>
-      <div class="form-field full"><label>参展记录（每行：年份 展会名称）</label><textarea name="profileExhibitions" placeholder="2025 Toy Fair New York">${exhibitionsText}</textarea></div>
+      ${CRMUI.formInput("员工人数 / 企业规模", "profileScale", profile.scale || "")}
+      ${CRMUI.formInput("成立年份", "profileFoundedAt", profile.foundedAt || "")}
+      ${CRMUI.formInput("国家/地区、所在地", "profileLocation", profile.location || "")}
+      <div class="form-field full"><label>企业简介</label><textarea name="profileIntro">${profile.intro || profile.basicInfo || ""}</textarea></div>
+      <div class="form-field full"><div class="section-title detail-section-title" style="margin:8px 0 0">客户画像 · 过往参展信息（一期可空）</div></div>
+      <div class="form-field full"><label>参展记录（每行：年份 展会名称）</label><textarea name="profileExhibitions" placeholder="一期无数据源，可手工补录">${exhibitionsText}</textarea></div>
       <div class="form-field full"><label>参展趋势</label><textarea name="profileExhibitionTrend">${profile.exhibitionTrend || ""}</textarea></div>
-      <div class="form-field full"><div class="section-title detail-section-title" style="margin:8px 0 0">客户画像 · 企业风险提示</div></div>
-      ${CRMUI.formSelect("风险等级", "profileRiskLevel", ["低", "中", "高"].map(v => ({ value: v, label: v })), risk.level || "低")}
+      <div class="form-field full"><div class="section-title detail-section-title" style="margin:8px 0 0">客户画像 · 企业风险提示（一期可空）</div></div>
+      ${CRMUI.formSelect("风险等级", "profileRiskLevel", ["", "低", "中", "高"].map(v => ({ value: v, label: v || "—" })), risk.level || "")}
       <div class="form-field full"><label>企业经营风险</label><textarea name="profileRiskOperation">${risk.operation || ""}</textarea></div>
       <div class="form-field full"><label>法律诉讼</label><textarea name="profileRiskLitigation">${risk.litigation || ""}</textarea></div>
       <div class="form-field full"><label>行政处罚</label><textarea name="profileRiskAdmin">${risk.administrativePenalty || ""}</textarea></div>
@@ -854,27 +856,25 @@ window.CRMCrmPage = {
       domain: domain || undefined,
       company: lead.company || "",
       shortName: "",
-      basicInfo: "",
-      registrationInfo: "",
+      websiteUrl: domain ? `https://${domain}` : "",
+      primaryDomain: domain || "",
+      linkedinUrl: "",
       industry: "",
       scale: "",
       foundedAt: "",
-      registeredCapital: "",
-      legalRepresentative: "",
-      mainBusiness: "",
       location: "",
       intro: "",
+      basicInfo: "",
+      registeredCapital: "",
+      legalRepresentative: "",
+      revenue: "",
+      mainBusiness: "",
+      registrationInfo: "",
       exhibitions: [],
       exhibitionTrend: "",
-      risk: {
-        operation: "",
-        litigation: "",
-        administrativePenalty: "",
-        abnormal: "",
-        dishonesty: "",
-        level: "低",
-        summary: ""
-      },
+      risk: null,
+      enrichmentSource: "manual",
+      profileLocked: true,
       humanEdited: true,
       aiRecommendation: ""
     };
@@ -891,60 +891,57 @@ window.CRMCrmPage = {
   },
   applyLeadProfileForm(lead, form) {
     const profile = this.ensureCompanyProfileForLead(lead);
+    const website = form.get("profileWebsiteUrl") || "";
     const before = JSON.stringify({
       company: profile.company,
       shortName: profile.shortName,
-      basicInfo: profile.basicInfo,
-      registrationInfo: profile.registrationInfo,
+      websiteUrl: profile.websiteUrl,
+      linkedinUrl: profile.linkedinUrl,
       industry: profile.industry,
       scale: profile.scale,
       foundedAt: profile.foundedAt,
-      registeredCapital: profile.registeredCapital,
-      legalRepresentative: profile.legalRepresentative,
-      mainBusiness: profile.mainBusiness,
       location: profile.location,
       intro: profile.intro,
       exhibitions: profile.exhibitions,
       exhibitionTrend: profile.exhibitionTrend,
       risk: profile.risk
     });
+    const riskLevel = form.get("profileRiskLevel") || "";
     Object.assign(profile, {
       company: form.get("profileCompany") || profile.company || lead.company || "",
       shortName: form.get("profileShortName") || "",
-      basicInfo: form.get("profileBasicInfo") || "",
-      registrationInfo: form.get("profileRegistrationInfo") || "",
+      websiteUrl: website,
+      primaryDomain: website.replace(/^https?:\/\//, "").split("/")[0] || profile.primaryDomain || "",
+      linkedinUrl: form.get("profileLinkedinUrl") || "",
       industry: form.get("profileIndustry") || "",
       scale: form.get("profileScale") || "",
       foundedAt: form.get("profileFoundedAt") || "",
-      registeredCapital: form.get("profileRegisteredCapital") || "",
-      legalRepresentative: form.get("profileLegalRepresentative") || "",
-      mainBusiness: form.get("profileMainBusiness") || "",
       location: form.get("profileLocation") || "",
       intro: form.get("profileIntro") || "",
+      basicInfo: form.get("profileIntro") || "",
       exhibitions: this.parseExhibitionLines(form.get("profileExhibitions")),
       exhibitionTrend: form.get("profileExhibitionTrend") || "",
       humanEdited: true,
+      profileLocked: true,
+      enrichmentSource: profile.enrichmentSource === "apollo" ? "apollo+manual" : "manual",
       risk: {
         operation: form.get("profileRiskOperation") || "",
         litigation: form.get("profileRiskLitigation") || "",
         administrativePenalty: form.get("profileRiskAdmin") || "",
         abnormal: form.get("profileRiskAbnormal") || "",
         dishonesty: form.get("profileRiskDishonesty") || "",
-        level: form.get("profileRiskLevel") || "低",
+        level: riskLevel,
         summary: form.get("profileRiskSummary") || ""
       }
     });
     const after = JSON.stringify({
       company: profile.company,
       shortName: profile.shortName,
-      basicInfo: profile.basicInfo,
-      registrationInfo: profile.registrationInfo,
+      websiteUrl: profile.websiteUrl,
+      linkedinUrl: profile.linkedinUrl,
       industry: profile.industry,
       scale: profile.scale,
       foundedAt: profile.foundedAt,
-      registeredCapital: profile.registeredCapital,
-      legalRepresentative: profile.legalRepresentative,
-      mainBusiness: profile.mainBusiness,
       location: profile.location,
       intro: profile.intro,
       exhibitions: profile.exhibitions,
@@ -1248,7 +1245,8 @@ window.CRMCrmPage = {
   isConvertedLead(lead) {
     return ["已转客户", "已成交"].includes(lead.status);
   },
-  // 转客户：客户匹配（企业名称 + 站点精确匹配）→ 关联已有客户或新建客户 → 同步 AI 信息（BR-036）
+  // 转客户：客户匹配（企业名称 + 站点精确匹配）→ 关联已有客户或新建客户 → 同步画像国家/行业（Apollo 企业块，BR-036）
+  // 客户侧画像展示按关联线索引用询盘联系人侧 companyProfiles；客户已有画像则不覆盖
   // 仅已转客户/已成交线索不可重复转化；无效/丢失允许按手动路径转客户
   convertLead(lead) {
     if (["已转客户", "已成交"].includes(lead.status)) {
@@ -1908,13 +1906,17 @@ window.CRMCrmPage = {
     }));
   },
   renderCustomerProfilePanel(customer) {
-    // 客户画像只展示结构化三块（工商/参展/风险）；禁止用 aiProfile 意向文案冒充画像，避免歧义
+    // 客户画像只展示结构化三块（工商=Apollo / 参展·风险一期可空）；禁止用 aiProfile 意向文案冒充画像
     const profile = this.companyProfileForCustomer(customer);
     const Comm = window.CRMCommunicationPage;
     if (profile && Comm) {
+      const sourceHint = profile.enrichmentSource === "apollo"
+        ? `<p class="muted small">企业工商信息来源：Apollo（经转客户同步）</p>`
+        : (profile.humanEdited ? `<p class="muted small">企业工商信息来源：人工维护</p>` : "");
       return `
         <div class="lead-profile-stack">
           <div class="section-title detail-section-title">企业工商信息</div>
+          ${sourceHint}
           ${Comm.renderCustomerProfile(profile)}
           <div class="section-title detail-section-title">过往参展信息</div>
           ${Comm.renderExhibitionHistory(profile)}
@@ -1923,7 +1925,7 @@ window.CRMCrmPage = {
         </div>
       `;
     }
-    return `<p class="muted">暂无客户画像数据</p>`;
+    return `<p class="muted">当前客户暂无客户画像</p><p class="muted small">暂无企业工商信息；参展/风险一期未接入</p>`;
   },
   companyProfileForCustomer(customer) {
     if (!customer) return null;

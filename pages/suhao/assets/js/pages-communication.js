@@ -581,7 +581,14 @@ window.CRMCommunicationPage = {
       return candidates.some(candidate => names.some(name => candidate.includes(name) || name.includes(candidate)));
     });
   },
+  profileDisplayValue(value) {
+    const text = value == null ? "" : String(value).trim();
+    return text || "—";
+  },
   renderCommunicationAiPanel({ summaryTitle, summary, profile, tags = [], recommendation, warning }) {
+    const sourceHint = profile?.enrichmentSource === "apollo"
+      ? `<p class="muted small">企业工商信息来源：Apollo（参展/风险一期未接入）</p>`
+      : (profile?.humanEdited ? `<p class="muted small">企业工商信息来源：人工维护</p>` : "");
     return `
       <div class="ai-panel">
         <div>
@@ -590,20 +597,21 @@ window.CRMCommunicationPage = {
           ${tags.length ? `<p>${tags.map(t => `<span class="badge blue">${t}</span>`).join(" ")}</p>` : ""}
         </div>
         <div>
-          <strong>客户画像</strong>
+          <strong>客户画像 · 企业工商信息</strong>
+          ${sourceHint}
           ${this.renderCustomerProfile(profile)}
         </div>
         <div>
-          <strong>参展资料</strong>
+          <strong>过往参展信息</strong>
           ${this.renderExhibitionHistory(profile)}
         </div>
         <div>
-          <strong>企业风险信息</strong>
+          <strong>企业风险提示</strong>
           ${this.renderCompanyRisk(profile)}
         </div>
         <div>
           <strong>AI 综合建议</strong>
-          <p>${recommendation || profile?.aiRecommendation || "建议结合沟通内容、企业画像、历史参展和风险信息综合判断客户价值，并制定下一步动作。"}</p>
+          <p>${recommendation || profile?.aiRecommendation || "建议结合沟通内容与企业工商信息综合判断客户价值，并制定下一步动作。"}</p>
         </div>
         <div>
           <strong>风险提示</strong>
@@ -612,51 +620,56 @@ window.CRMCommunicationPage = {
       </div>
     `;
   },
+  // 企业块字段对齐 Apollo Organization Enrichment（§7.9）；一期无数据项显「—」
   renderCustomerProfile(profile) {
-    if (!profile) return `<p class="muted">暂未匹配到企业工商信息，建议先完善客户企业档案。</p>`;
+    if (!profile) {
+      return `<p class="muted">暂无企业工商信息（Apollo 未命中或尚未 enrichment）。不阻断查看消息与生成线索。</p>`;
+    }
+    const website = profile.websiteUrl || profile.primaryDomain || "";
     return `
       <div class="ai-info-grid">
-        <span>企业名称</span><strong>${profile.company}</strong>
-        <span>企业简称</span><strong>${profile.shortName || "-"}</strong>
-        <span>企业基本信息</span><strong>${profile.basicInfo}</strong>
-        <span>企业工商信息</span><strong>${profile.registrationInfo}</strong>
-        <span>所属行业</span><strong>${profile.industry}</strong>
-        <span>企业规模</span><strong>${profile.scale}</strong>
-        <span>成立时间</span><strong>${profile.foundedAt}</strong>
-        <span>注册资本</span><strong>${profile.registeredCapital}</strong>
-        <span>法定代表人</span><strong>${profile.legalRepresentative || "-"}</strong>
-        <span>主营业务</span><strong>${profile.mainBusiness}</strong>
-        <span>企业所在地</span><strong>${profile.location || "-"}</strong>
+        <span>企业名称</span><strong>${this.profileDisplayValue(profile.company)}</strong>
+        <span>官网 / 企业域名</span><strong>${this.profileDisplayValue(website)}</strong>
+        <span>LinkedIn 公司主页</span><strong>${this.profileDisplayValue(profile.linkedinUrl)}</strong>
+        <span>所属行业</span><strong>${this.profileDisplayValue(profile.industry)}</strong>
+        <span>成立年份</span><strong>${this.profileDisplayValue(profile.foundedAt)}</strong>
+        <span>国家/地区、所在地</span><strong>${this.profileDisplayValue(profile.location)}</strong>
+        <span>员工人数 / 企业规模</span><strong>${this.profileDisplayValue(profile.scale)}</strong>
+        <span>年收入 / 注册资本 / 法人</span><strong>—</strong>
+        <span>企业简介</span><strong>${this.profileDisplayValue(profile.intro || profile.basicInfo)}</strong>
       </div>
-      <p>${profile.intro}</p>
     `;
   },
   renderExhibitionHistory(profile) {
-    if (!profile) return `<p class="muted">暂无企业历史参展数据。</p>`;
-    const exhibitions = profile.exhibitions || [];
+    const exhibitions = profile?.exhibitions || [];
+    if (!exhibitions.length) {
+      return `<p class="muted">—（一期未接入参展数据源）</p>`;
+    }
     return `
       <div class="ai-info-grid">
         <span>近几年参加展会次数</span><strong>${exhibitions.length}</strong>
-        <span>最近一次参展时间</span><strong>${exhibitions[0]?.year || "-"}</strong>
-        <span>参展年份</span><strong>${exhibitions.map(item => item.year).join("、") || "-"}</strong>
-        <span>展会名称</span><strong>${exhibitions.map(item => item.name).join("、") || "-"}</strong>
-        <span>参展活跃度分析</span><strong>${exhibitions.length >= 3 ? "高" : exhibitions.length ? "中" : "低"}</strong>
-        <span>参展趋势</span><strong>${profile.exhibitionTrend}</strong>
+        <span>最近一次参展时间</span><strong>${this.profileDisplayValue(exhibitions[0]?.year)}</strong>
+        <span>参展年份</span><strong>${this.profileDisplayValue(exhibitions.map(item => item.year).filter(Boolean).join("、"))}</strong>
+        <span>展会名称</span><strong>${this.profileDisplayValue(exhibitions.map(item => item.name).filter(Boolean).join("、"))}</strong>
+        <span>参展活跃度分析</span><strong>${exhibitions.length >= 3 ? "高" : "中"}</strong>
+        <span>参展趋势</span><strong>${this.profileDisplayValue(profile.exhibitionTrend)}</strong>
       </div>
     `;
   },
   renderCompanyRisk(profile) {
-    if (!profile?.risk) return `<p class="muted">暂无企业风险数据，建议完善工商及风控资料后再生成风险判断。</p>`;
-    const risk = profile.risk;
+    const risk = profile?.risk;
+    if (!risk || (!risk.summary && !risk.operation && !risk.level)) {
+      return `<p class="muted">—（一期未接入风险数据源）</p>`;
+    }
     return `
       <div class="ai-info-grid">
-        <span>企业经营风险</span><strong>${risk.operation}</strong>
-        <span>法律诉讼</span><strong>${risk.litigation}</strong>
-        <span>行政处罚</span><strong>${risk.administrativePenalty}</strong>
-        <span>经营异常</span><strong>${risk.abnormal}</strong>
-        <span>失信记录</span><strong>${risk.dishonesty}</strong>
-        <span>风险等级</span><strong>${CRMUI.badge(risk.level)}</strong>
-        <span>AI 风险总结</span><strong>${risk.summary}</strong>
+        <span>企业经营风险</span><strong>${this.profileDisplayValue(risk.operation)}</strong>
+        <span>法律诉讼</span><strong>${this.profileDisplayValue(risk.litigation)}</strong>
+        <span>行政处罚</span><strong>${this.profileDisplayValue(risk.administrativePenalty)}</strong>
+        <span>经营异常</span><strong>${this.profileDisplayValue(risk.abnormal)}</strong>
+        <span>失信记录</span><strong>${this.profileDisplayValue(risk.dishonesty)}</strong>
+        <span>风险等级</span><strong>${risk.level ? CRMUI.badge(risk.level) : "—"}</strong>
+        <span>风险综述</span><strong>${this.profileDisplayValue(risk.summary)}</strong>
       </div>
     `;
   },
@@ -1026,7 +1039,7 @@ window.CRMCommunicationPage = {
         profile,
         tags: c.aiTags,
         recommendation: profile?.aiRecommendation || "建议结合 WhatsApp 会话内容、联系人信息、客户资料和历史 CRM 记录确定跟进优先级。",
-        warning: profile?.risk?.summary || "未发现明显安全风险。"
+        warning: "未发现明显安全风险。"
       })}
       <div class="toolbar">
         ${canGenerateLead ? `<button class="btn primary" id="chatLead">${c.leadId ? "查看线索详情" : "生成线索"}</button>` : ""}

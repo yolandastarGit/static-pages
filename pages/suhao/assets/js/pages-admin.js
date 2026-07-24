@@ -138,19 +138,27 @@ window.CRMAdminPage = {
   },
   aiBusinessSceneOptions(provider) {
     const occupied = this.occupiedAiBusinessScenes(provider?.id);
+    const idleScenes = new Set(["AI 自动提取企业信息"]);
     return this.aiBusinessScenes().map(scene => {
       const owner = occupied[scene];
+      const idleHint = idleScenes.has(scene) ? "（一期闲置，画像改 Apollo）" : "";
       return {
         value: scene,
-        label: owner ? `${scene}（已占用）` : scene,
+        label: owner ? `${scene}（已占用）` : `${scene}${idleHint}`,
         disabled: Boolean(owner),
-        title: owner ? `已被「${owner.capabilityName || owner.name}」占用` : ""
+        title: owner
+          ? `已被「${owner.capabilityName || owner.name}」占用`
+          : (idleHint ? "一期不作为客户画像企业块门槛，可不绑定能力" : "")
       };
     });
   },
   renderAiBusinessScenes(row) {
     const scenes = this.aiBusinessSceneValues(row);
-    return scenes.length ? scenes.map(scene => `<span class="badge blue">${scene}</span>`).join(" ") : "-";
+    return scenes.length ? scenes.map(scene => {
+      const idle = scene === "AI 自动提取企业信息" ? " gray" : " blue";
+      const label = scene === "AI 自动提取企业信息" ? `${scene}·闲置` : scene;
+      return `<span class="badge${idle}">${label}</span>`;
+    }).join(" ") : "-";
   },
   openAiConfigModal(provider) {
     const isEdit = Boolean(provider);
@@ -653,12 +661,14 @@ window.CRMAdminPage = {
   },
   renderCommunicationConfig(root) {
     const q = CRMRouter.query();
-    const validTabs = ["mail", "dingtalk"];
+    const validTabs = ["mail", "dingtalk", "storage", "apollo"];
     this.communicationState = { tab: validTabs.includes(q.tab) ? q.tab : "mail" };
     root.innerHTML = `
       <div class="tabs" id="communicationTabs">
         <div class="tab ${this.communicationState.tab === "mail" ? "active" : ""}" data-tab="mail">邮箱服务配置</div>
         <div class="tab ${this.communicationState.tab === "dingtalk" ? "active" : ""}" data-tab="dingtalk">钉钉应用配置</div>
+        <div class="tab ${this.communicationState.tab === "storage" ? "active" : ""}" data-tab="storage">文件存储</div>
+        <div class="tab ${this.communicationState.tab === "apollo" ? "active" : ""}" data-tab="apollo">Apollo 客户画像</div>
       </div>
       <div id="communicationTable"></div>
     `;
@@ -674,6 +684,8 @@ window.CRMAdminPage = {
     const tab = this.communicationState.tab;
     if (tab === "mail") return this.renderMailServiceConfig();
     if (tab === "dingtalk") return this.renderDingTalkServiceConfig();
+    if (tab === "storage") return this.renderFileStorageConfig();
+    if (tab === "apollo") return this.renderApolloServiceConfig();
   },
   mailNumberStepper(name, value) {
     return `<div class="mail-stepper" data-stepper="${name}">
@@ -867,6 +879,128 @@ window.CRMAdminPage = {
     });
     CRMUI.$("#syncDingTalkEmployees").addEventListener("click", () => CRMUI.toast("钉钉员工同步完成"));
     CRMUI.$("#testDingTalkScan").addEventListener("click", () => CRMUI.toast("钉钉扫码测试通过，应用凭证配置有效"));
+  },
+  renderFileStorageConfig() {
+    const config = CRM_MOCK.fileStorageConfig || { storageType: "本地磁盘" };
+    const isObs = config.storageType === "华为云 OBS";
+    CRMUI.$("#communicationTable").innerHTML = `
+      <form class="mail-config-form" id="fileStorageForm">
+        <section class="mail-config-section">
+          <div class="mail-section-title"><span>存储类型</span></div>
+          <div class="mail-config-row">
+            <label>存储类型</label>
+            <select name="storageType" id="storageTypeSelect">
+              <option value="本地磁盘" ${config.storageType === "本地磁盘" ? "selected" : ""}>本地磁盘</option>
+              <option value="华为云 OBS" ${isObs ? "selected" : ""}>华为云 OBS</option>
+            </select>
+          </div>
+          <p class="muted small">同一时间仅可选用一种存储；业务附件与导入/导出临时文件统一走当前存储。</p>
+        </section>
+        <section class="mail-config-section" id="obsFields" style="${isObs ? "" : "display:none"}">
+          <div class="mail-section-title"><span>华为云 OBS</span></div>
+          <div class="mail-config-row"><label>Endpoint</label><input name="endpoint" value="${config.endpoint || ""}" placeholder="obs.cn-southwest-2.myhuaweicloud.com"></div>
+          <div class="mail-config-row"><label>Bucket</label><input name="bucket" value="${config.bucket || ""}"></div>
+          <div class="mail-config-row"><label>Access Key</label><input name="accessKey" value="${config.accessKey || ""}"></div>
+          <div class="mail-config-row"><label>Secret Key</label><input name="secretKey" type="password" placeholder="已配置，留空则不修改"></div>
+          <div class="mail-config-row"><label>Region</label><input name="region" value="${config.region || ""}" placeholder="cn-southwest-2"></div>
+          <div class="mail-config-row"><label>全局前缀</label><input name="prefix" value="${config.prefix || ""}" placeholder="crm-prod/"></div>
+        </section>
+        <div class="mail-config-actions">
+          <button class="btn primary" type="submit">保存</button>
+          <button class="btn" id="testFileStorage" type="button" style="${isObs ? "" : "display:none"}">测试连接</button>
+        </div>
+      </form>
+    `;
+    const toggleObs = () => {
+      const obs = CRMUI.$("#storageTypeSelect").value === "华为云 OBS";
+      CRMUI.$("#obsFields").style.display = obs ? "" : "none";
+      CRMUI.$("#testFileStorage").style.display = obs ? "" : "none";
+    };
+    CRMUI.$("#storageTypeSelect").addEventListener("change", toggleObs);
+    CRMUI.$("#fileStorageForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const nextType = form.get("storageType");
+      if (nextType === "华为云 OBS") {
+        if (!form.get("endpoint") || !form.get("bucket") || !form.get("accessKey")) {
+          return CRMUI.toast("请完善华为云 OBS 必填项");
+        }
+      }
+      Object.assign(config, {
+        storageType: nextType,
+        endpoint: form.get("endpoint") || "",
+        bucket: form.get("bucket") || "",
+        accessKey: form.get("accessKey") || "",
+        region: form.get("region") || "",
+        prefix: form.get("prefix") || ""
+      });
+      if (form.get("secretKey")) config.secretKey = form.get("secretKey");
+      CRM_MOCK.fileStorageConfig = config;
+      CRMUI.toast("文件存储配置已保存");
+    });
+    CRMUI.$("#testFileStorage").addEventListener("click", () => CRMUI.toast("OBS 连接测试通过"));
+  },
+  renderApolloServiceConfig() {
+    const config = CRM_MOCK.apolloServiceConfig || {
+      enabled: true,
+      apiKey: "",
+      baseUrl: "",
+      personalEmailDomains: []
+    };
+    const domainsText = (config.personalEmailDomains || []).join(", ");
+    CRMUI.$("#communicationTable").innerHTML = `
+      <form class="mail-config-form" id="apolloServiceForm">
+        <section class="mail-config-section">
+          <div class="mail-section-title"><span>Apollo 客户画像</span></div>
+          <p class="muted small">用于客户画像·企业工商信息 enrichment；与「AI 功能启用」相互独立。关闭或 Key 为空时跳过 enrichment，不阻断建线索。</p>
+          <div class="mail-config-row compact">
+            <label class="mail-check"><input type="checkbox" name="enabled" ${config.enabled ? "checked" : ""}> 启用 Apollo 客户画像（switch.apollo_profile）</label>
+          </div>
+          <div class="mail-config-row">
+            <label>API Key</label>
+            <input name="apiKey" type="password" placeholder="已配置，留空则不修改" value="">
+          </div>
+          <div class="mail-config-row">
+            <label>Base URL</label>
+            <input name="baseUrl" value="${config.baseUrl || ""}" placeholder="可选；默认官方 Organization Enrichment 端点">
+          </div>
+          <div class="mail-config-row">
+            <label>个人邮箱域黑名单</label>
+            <textarea name="personalEmailDomains" rows="3" placeholder="逗号分隔">${domainsText}</textarea>
+          </div>
+          <p class="muted small">当前 Key：${config.apiKey ? "已配置（脱敏）" : "未配置"}</p>
+        </section>
+        <div class="mail-config-actions">
+          <button class="btn primary" type="submit">保存</button>
+          <button class="btn" id="testApolloConnection" type="button">测试连接</button>
+        </div>
+      </form>
+    `;
+    CRMUI.$("#apolloServiceForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const enabled = form.get("enabled") === "on";
+      if (enabled && !config.apiKey && !form.get("apiKey")) {
+        return CRMUI.toast("启用时请填写 API Key");
+      }
+      const domains = String(form.get("personalEmailDomains") || "")
+        .split(/[,，\s]+/)
+        .map(item => item.trim().toLowerCase())
+        .filter(Boolean);
+      Object.assign(config, {
+        enabled,
+        baseUrl: form.get("baseUrl") || "",
+        personalEmailDomains: domains
+      });
+      if (form.get("apiKey")) config.apiKey = form.get("apiKey");
+      CRM_MOCK.apolloServiceConfig = config;
+      CRMUI.toast("Apollo 客户画像配置已保存");
+    });
+    CRMUI.$("#testApolloConnection").addEventListener("click", () => {
+      if (!config.enabled) return CRMUI.toast("请先启用 Apollo 客户画像");
+      if (!config.apiKey) return CRMUI.toast("请先配置 API Key");
+      CRMUI.toast("Apollo 连接测试通过");
+    });
   },
   renderPushServiceConfig() {
     const config = CRM_MOCK.pushServiceConfig;
