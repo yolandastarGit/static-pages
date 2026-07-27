@@ -4,6 +4,10 @@ window.CRMCommunicationPage = {
       this.renderComposeMailPage(root);
       return;
     }
+    if (page === "b2bChat") {
+      this.renderB2bChat(root);
+      return;
+    }
     page === "email" ? this.renderEmail(root) : this.renderWhatsApp(root);
   },
   renderEmail(root) {
@@ -175,8 +179,9 @@ window.CRMCommunicationPage = {
     CRMUI.$("#mailAi").innerHTML = `
       <div class="card-title">AI 智能分析</div>
       ${this.renderCommunicationAiPanel({
-        summaryTitle: "邮件摘要",
         summary: mail.aiSummary,
+        historySummary: this.mailHistorySummary(mail),
+        intentProduct: mail.aiIntentProduct,
         profile,
         tags: mail.aiTags,
         recommendation: profile?.aiRecommendation || "建议结合邮件内容、企业资料和历史 CRM 记录确认客户价值，并安排下一步跟进。",
@@ -263,9 +268,13 @@ window.CRMCommunicationPage = {
       this.renderMailDetail();
     });
   },
-  channelOptions(defaultChannel = "邮件") {
-    const channels = ["邮件", "官网询盘", "自然询盘", "WhatsApp", "展会", "客户转介绍", "其他"];
-    return channels.map(name => ({ value: name, label: name }));
+  // 取值统一走「客户域 → 来源渠道」字典（§23.5），不在页面写死
+  channelOptions() {
+    const dict = (CRM_MOCK.dictionaries || []).find(item => item.code === "sourceChannel");
+    return (dict?.items || [])
+      .filter(item => item.status !== "停用")
+      .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+      .map(item => ({ value: item.name, label: item.name }));
   },
   ownerOptions(defaultOwnerId = "") {
     return (CRM_MOCK.users || [])
@@ -585,17 +594,38 @@ window.CRMCommunicationPage = {
     const text = value == null ? "" : String(value).trim();
     return text || "—";
   },
-  renderCommunicationAiPanel({ summaryTitle, summary, profile, tags = [], recommendation, warning }) {
+  // 询盘联系人地址：收件方向取发件人，发件方向取收件人；统一剥离显示名后比对
+  mailCounterpartAddress(mail = {}) {
+    const raw = ["sent", "draft"].includes(mail.folder) ? (mail.to || "") : (mail.from || "");
+    const matched = String(raw).match(/<([^>]+)>/);
+    return (matched ? matched[1] : raw).trim().toLowerCase();
+  },
+  // 过往交流摘要（§7.9）：邮件按「同邮箱账号 + 同发件地址」回顾，仅当前账号自身历史，不跨查看者权限范围；无历史返回空串
+  mailHistorySummary(mail) {
+    const address = this.mailCounterpartAddress(mail);
+    if (!address) return "";
+    const history = (CRM_MOCK.emails || [])
+      .filter(item => item.id !== mail.id && item.folder !== "draft" && item.mailbox === mail.mailbox && this.mailCounterpartAddress(item) === address)
+      .sort((a, b) => String(a.time).localeCompare(String(b.time)));
+    if (!history.length) return "";
+    const range = `${String(history[0].time).slice(0, 10)} 至 ${String(history.at(-1).time).slice(0, 10)}`;
+    const topics = Array.from(new Set(history.map(item => item.subject).filter(Boolean))).slice(0, 3).join("；");
+    return `与 ${this.escapeHtml(address)} 在本邮箱下已有 ${history.length} 封历史往来（${range}）。此前主要沟通：${this.escapeHtml(topics) || "无主题记录"}。`;
+  },
+  // 过往交流摘要（§7.9）：WhatsApp 按「同会话号」回顾本会话自身历史，即最新一条之前的往来
+  whatsappHistorySummary(conversation) {
+    const history = (conversation.messages || []).slice(0, -1);
+    if (!history.length) return "";
+    const fromCustomer = history.filter(item => item.from === "customer").length;
+    const topics = history.filter(item => item.from === "customer").map(item => item.text).filter(Boolean).slice(0, 2).join("；");
+    return `与会话号 ${this.escapeHtml(conversation.phone || "")} 此前已往来 ${history.length} 条消息（客户 ${fromCustomer} 条）。此前主要沟通：${this.escapeHtml(topics) || "无文本记录"}。`;
+  },
+  // 意向总结分「过往交流摘要 + 当前会话摘要」两段（§7.9）；historySummary 传 null 表示该渠道不回顾历史（如 b2b，§8A.5）
+  renderCommunicationAiPanel({ summary, historySummary, intentProduct, profile, tags = [], recommendation, warning, showProfile = true }) {
     const sourceHint = profile?.enrichmentSource === "apollo"
       ? `<p class="muted small">企业工商信息来源：Apollo（参展/风险一期未接入）</p>`
       : (profile?.humanEdited ? `<p class="muted small">企业工商信息来源：人工维护</p>` : "");
-    return `
-      <div class="ai-panel">
-        <div>
-          <strong>${summaryTitle}</strong>
-          <p>${summary}</p>
-          ${tags.length ? `<p>${tags.map(t => `<span class="badge blue">${t}</span>`).join(" ")}</p>` : ""}
-        </div>
+    const profileBlocks = `
         <div>
           <strong>客户画像 · 企业工商信息</strong>
           ${sourceHint}
@@ -608,7 +638,30 @@ window.CRMCommunicationPage = {
         <div>
           <strong>企业风险提示</strong>
           ${this.renderCompanyRisk(profile)}
+        </div>`;
+    return `
+      <div class="ai-panel">
+        <div>
+          <strong>意向总结</strong>
+          ${historySummary === null ? "" : `
+          <div class="ai-summary-part">
+            <span class="ai-summary-label">过往交流摘要</span>
+            <p>${historySummary || "暂无历史沟通"}</p>
+          </div>`}
+          <div class="ai-summary-part">
+            <span class="ai-summary-label">当前会话摘要</span>
+            <p>${summary || "—"}</p>
+          </div>
         </div>
+        <div>
+          <strong>意向产品</strong>
+          <p>${this.profileDisplayValue(intentProduct)}</p>
+        </div>
+        <div>
+          <strong>询盘标签</strong>
+          <p>${tags.length ? tags.map(t => `<span class="badge blue">${t}</span>`).join(" ") : "—"}</p>
+        </div>
+        ${showProfile ? profileBlocks : ""}
         <div>
           <strong>AI 综合建议</strong>
           <p>${recommendation || profile?.aiRecommendation || "建议结合沟通内容与企业工商信息综合判断客户价值，并制定下一步动作。"}</p>
@@ -1034,8 +1087,9 @@ window.CRMCommunicationPage = {
     CRMUI.$("#chatInfo").innerHTML = `
       <div class="card-title">AI 智能分析</div>
       ${this.renderCommunicationAiPanel({
-        summaryTitle: "会话摘要",
         summary: c.aiSummary,
+        historySummary: this.whatsappHistorySummary(c),
+        intentProduct: c.aiIntentProduct,
         profile,
         tags: c.aiTags,
         recommendation: profile?.aiRecommendation || "建议结合 WhatsApp 会话内容、联系人信息、客户资料和历史 CRM 记录确定跟进优先级。",
@@ -1130,6 +1184,281 @@ window.CRMCommunicationPage = {
       CRMUI.closeModal();
       CRMUI.toast("线索已生成");
       this.renderChatDetail();
+    });
+  },
+
+  // ===== 沟通中心 · b2b 聊天记录（§8A）=====
+  // 会话与线索/客户/站点无关联，不参与工作台与分析中心统计；页面仅做展示 + AI 分析 + 删除
+  B2B_PAGE_SIZE: 30,
+  canOperateB2bChat() {
+    return CRM_MOCK.currentUser.role !== "协同人";
+  },
+  b2bAiEnabled() {
+    const master = (CRM_MOCK.businessRuleSettings || []).find(item => item.name === "AI 功能启用");
+    return !master || master.value === "开启";
+  },
+  b2bAnalysisInterval() {
+    const rule = (CRM_MOCK.businessRuleSettings || []).find(item => item.code === "b2bchat_ai_analysis_interval");
+    return rule?.value || "60 分钟";
+  },
+  // 会话无站点与负责人归属，租户内全部可见，仅按页面搜索条件过滤（§8A.1）
+  b2bConversations() {
+    return (CRM_MOCK.b2bChatConversations || [])
+      .filter(item => !item.deleted)
+      .sort((a, b) => String(b.lastMessageTime).localeCompare(String(a.lastMessageTime)));
+  },
+  b2bFilteredConversations() {
+    const tenant = (this.b2bState.tenantId || "").trim().toLowerCase();
+    const conversationId = (this.b2bState.conversationId || "").trim().toLowerCase();
+    // 两字段均为可选、模糊包含；同时填写取 AND（§8A.2.1）
+    return this.b2bConversations().filter(item => {
+      const byTenant = !tenant || String(item.tenantId).toLowerCase().includes(tenant);
+      const byConversation = !conversationId || String(item.conversationId).toLowerCase().includes(conversationId);
+      return byTenant && byConversation;
+    });
+  },
+  b2bHasSearch() {
+    return Boolean((this.b2bState.tenantId || "").trim() || (this.b2bState.conversationId || "").trim());
+  },
+  // 今天显时分、昨天显「昨天」、更早显月/日、跨年显 YYYY/MM/DD（§8A.3）
+  b2bListTime(value) {
+    const text = String(value || "");
+    const date = new Date(text.replace(/-/g, "/"));
+    if (!text || Number.isNaN(date.getTime())) return text;
+    const now = new Date();
+    const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (isSameDay(date, now)) return text.slice(11, 16);
+    if (isSameDay(date, new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))) return "昨天";
+    if (date.getFullYear() !== now.getFullYear()) {
+      return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+    }
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  },
+  b2bNowText() {
+    const now = new Date();
+    const pad = value => String(value).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  },
+  // 非文本类型降级为文本占位（§8A.4）
+  b2bMessagePlainText(message = {}) {
+    if (message.type === "image") return `[图片] ${message.fileName || ""}`.trim();
+    if (message.type === "file") return `[文件] ${message.fileName || ""}`.trim();
+    return message.text || "";
+  },
+  b2bMessageDigest(conversation) {
+    const text = this.b2bMessagePlainText((conversation.messages || []).at(-1) || {});
+    return text.length > 30 ? `${text.slice(0, 30)}...` : text;
+  },
+  renderB2bChat(root) {
+    this.b2bRoot = root;
+    this.b2bState = { tenantId: "", conversationId: "", selected: "", visibleCount: this.B2B_PAGE_SIZE, analyzing: false };
+    root.innerHTML = `
+      <div class="list-toolbar">
+        <div class="toolbar-filters">
+          <div class="filters search-filter">
+            <label class="filter-item"><span>租户 ID</span><input id="b2bTenantSearch" placeholder="模糊匹配租户 ID"></label>
+            <label class="filter-item"><span>会话 ID</span><input id="b2bConversationSearch" placeholder="模糊匹配会话 ID"></label>
+          </div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="card whatsapp-contact-panel" id="b2bList"></div>
+        <div class="card pad" id="b2bBody"></div>
+        <div class="card pad" id="b2bAi"></div>
+      </div>
+    `;
+    // 输入防抖 300ms 自动查询，无需按 Enter；清空即恢复完整列表（§8A.2.1）
+    const bindSearch = (selector, field) => {
+      CRMUI.$(selector).addEventListener("input", event => {
+        const value = event.target.value;
+        clearTimeout(this._b2bSearchTimer);
+        this._b2bSearchTimer = setTimeout(() => {
+          this.b2bState[field] = value;
+          this.renderB2bList();
+        }, 300);
+      });
+    };
+    bindSearch("#b2bTenantSearch", "tenantId");
+    bindSearch("#b2bConversationSearch", "conversationId");
+    this.renderB2bList();
+  },
+  renderB2bList() {
+    const list = this.b2bFilteredConversations();
+    if (this.b2bState.selected && !list.some(item => item.id === this.b2bState.selected)) this.b2bState.selected = "";
+    CRMUI.$("#b2bList").innerHTML = list.length
+      ? `<div class="wa-contact-list">${list.map(item => this.renderB2bListItem(item)).join("")}</div>`
+      : `<div class="wa-contact-empty">${this.b2bHasSearch() ? "未找到相关会话" : "暂无 b2b 聊天记录"}</div>`;
+    CRMUI.$$("[data-b2b-select]").forEach(el => el.addEventListener("click", () => {
+      this.b2bState.selected = el.dataset.b2bSelect;
+      this.b2bState.visibleCount = this.B2B_PAGE_SIZE;
+      this.renderB2bList();
+    }));
+    CRMUI.$$("[data-b2b-delete]").forEach(el => el.addEventListener("click", event => {
+      event.stopPropagation();
+      this.openB2bDeleteModal(el.dataset.b2bDelete);
+    }));
+    this.renderB2bDetail();
+  },
+  renderB2bListItem(conversation) {
+    const active = conversation.id === this.b2bState.selected ? "active" : "";
+    return `
+      <div class="b2b-conv-item ${active}" data-b2b-select="${conversation.id}" role="button" tabindex="0">
+        <div class="b2b-conv-head">
+          <span class="b2b-conv-id" title="${this.escapeHtml(conversation.conversationId)}">${this.escapeHtml(conversation.conversationId)}</span>
+          <span class="b2b-conv-time">${this.b2bListTime(conversation.lastMessageTime)}</span>
+        </div>
+        <div class="b2b-conv-sub">
+          <span class="b2b-conv-tenant" title="${this.escapeHtml(conversation.tenantId)}">租户 ${this.escapeHtml(conversation.tenantId)}</span>
+          ${this.canOperateB2bChat() ? `<button class="link-btn danger-text" type="button" data-b2b-delete="${conversation.id}">删除</button>` : ""}
+        </div>
+        <div class="b2b-conv-digest">${this.escapeHtml(this.b2bMessageDigest(conversation))}</div>
+      </div>
+    `;
+  },
+  renderB2bDetail() {
+    const body = CRMUI.$("#b2bBody");
+    const aiPanel = CRMUI.$("#b2bAi");
+    if (!body || !aiPanel) return;
+    const conversation = this.b2bConversations().find(item => item.id === this.b2bState.selected);
+    if (!conversation) {
+      body.innerHTML = `<div class="muted">请从左侧选择一个会话查看聊天记录</div>`;
+      aiPanel.innerHTML = "";
+      return;
+    }
+    const messages = conversation.messages || [];
+    const visible = messages.slice(Math.max(0, messages.length - this.b2bState.visibleCount));
+    const hasEarlier = visible.length < messages.length;
+    body.innerHTML = `
+      <div class="detail-title">${this.escapeHtml(conversation.conversationId)}</div>
+      <p class="muted">租户 ${this.escapeHtml(conversation.tenantId)} · 最近消息 ${this.escapeHtml(conversation.lastMessageTime)}</p>
+      <div class="toolbar">
+        ${this.canOperateB2bChat()
+          ? `<button class="btn danger" id="b2bDeleteCurrent" type="button">删除</button>`
+          : `<span class="muted small">当前角色为只读，不可删除会话</span>`}
+      </div>
+      <div class="chat-body" id="b2bMessages">
+        ${hasEarlier ? `<div class="b2b-earlier-hint muted small">滚动到顶部加载更早消息</div>` : ""}
+        ${messages.length ? visible.map(message => this.renderB2bMessage(message)).join("") : `<div class="muted">暂无消息记录</div>`}
+      </div>
+      <p class="muted small">只读会话：不支持发送、回复、上传与删除单条消息。</p>
+    `;
+    aiPanel.innerHTML = this.renderB2bAiPanel(conversation);
+    CRMUI.$("#b2bDeleteCurrent")?.addEventListener("click", () => this.openB2bDeleteModal(conversation.id));
+    CRMUI.$("#b2bManualAnalyze")?.addEventListener("click", () => this.runB2bManualAnalysis(conversation.id));
+    const messagesEl = CRMUI.$("#b2bMessages");
+    if (!messagesEl) return;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    // 滚动到顶懒加载更早 30 条，加载后保持原视觉位置（§8A.4）
+    if (!hasEarlier) return;
+    messagesEl.addEventListener("scroll", () => {
+      if (messagesEl.scrollTop > 0) return;
+      const previousHeight = messagesEl.scrollHeight;
+      this.b2bState.visibleCount += this.B2B_PAGE_SIZE;
+      this.renderB2bDetail();
+      const next = CRMUI.$("#b2bMessages");
+      if (next) next.scrollTop = next.scrollHeight - previousHeight;
+    }, { once: true });
+  },
+  renderB2bMessage(message) {
+    const isAi = message.from === "ai";
+    let content = "";
+    if (message.type === "image") {
+      content = `<div class="b2b-attachment">🖼 <button class="link-btn" type="button" data-b2b-attachment="preview">${this.escapeHtml(message.fileName || "图片")}</button></div>`;
+    } else if (message.type === "file") {
+      content = `<div class="b2b-attachment">📎 ${this.escapeHtml(message.fileName || "附件")} <span class="muted small">${this.escapeHtml(message.fileSize || "")}</span> <button class="link-btn" type="button" data-b2b-attachment="download">下载</button></div>`;
+    } else {
+      content = this.escapeHtml(message.text || "");
+    }
+    return `
+      <div class="bubble ${isAi ? "me" : ""}">
+        <div class="b2b-msg-sender">${isAi ? "AI 客服" : "客户"}</div>
+        ${content}
+        <div class="small">${this.escapeHtml(message.time || "")}</div>
+      </div>
+    `;
+  },
+  renderB2bAiPanel(conversation) {
+    const title = `<div class="card-title">AI 智能分析</div>`;
+    // AI 未启用时灰占位，不阻断会话查看与删除（§8A.5 降级，引用 §29.7）
+    if (!this.b2bAiEnabled()) {
+      return `${title}<div class="ai-panel"><div class="muted">AI 能力当前不可用（系统参数 · 业务规则「AI 功能启用」已关闭），暂不提供会话分析。不影响会话查看与删除。</div></div>`;
+    }
+    const analyzed = Boolean(conversation.aiAnalyzedAt);
+    const analyzing = this.b2bState.analyzing;
+    const resultBlock = analyzed
+      ? this.renderCommunicationAiPanel({
+          summary: conversation.aiSummary,
+          // b2b 无跨会话身份关联，意向总结仅取当前会话摘要（§8A.5）
+          historySummary: null,
+          intentProduct: conversation.aiIntentProduct,
+          tags: conversation.aiTags || [],
+          showProfile: false,
+          recommendation: "b2b 聊天记录仅作独立展示与分析，不生成线索、不写入客户。",
+          warning: "未发现明显安全风险。"
+        })
+      : `<div class="ai-panel"><div class="muted">暂无分析结果，可点击【手动分析】</div></div>`;
+    return `
+      ${title}
+      ${resultBlock}
+      <div class="toolbar">
+        ${this.canOperateB2bChat()
+          ? `<button class="btn primary" id="b2bManualAnalyze" type="button" ${analyzing ? "disabled" : ""}>${analyzing ? "分析中…" : "手动分析"}</button>`
+          : `<span class="muted small">当前角色为只读，不可手动分析</span>`}
+      </div>
+      <p class="muted small">
+        ${analyzed ? `最近分析时间：${this.escapeHtml(conversation.aiAnalyzedAt)}。` : ""}定时自动分析周期：${this.escapeHtml(this.b2bAnalysisInterval())}（系统参数 · 业务规则）。
+      </p>
+    `;
+  },
+  // 手动分析立即重新分析并覆盖上次结果；分析期间禁止重复提交（§8A.5）
+  runB2bManualAnalysis(conversationId) {
+    if (this.b2bState.analyzing) return;
+    if (!this.canOperateB2bChat()) return CRMUI.toast("当前角色为只读，不可手动分析");
+    const conversation = this.b2bConversations().find(item => item.id === conversationId);
+    if (!conversation) return;
+    this.b2bState.analyzing = true;
+    this.renderB2bDetail();
+    setTimeout(() => {
+      this.b2bState.analyzing = false;
+      if (!this.b2bAiEnabled()) {
+        CRMUI.toast("AI 分析失败，请重试");
+        this.renderB2bDetail();
+        return;
+      }
+      const customerText = (conversation.messages || [])
+        .filter(message => message.from === "customer")
+        .map(message => this.b2bMessagePlainText(message))
+        .join(" ");
+      conversation.aiSummary = `本次会话客户主要提出：${customerText.slice(0, 80)}${customerText.length > 80 ? "…" : ""}。已按当前会话内容重新生成意向总结。`;
+      conversation.aiAnalyzedAt = this.b2bNowText();
+      CRMUI.toast("会话分析已完成");
+      this.renderB2bDetail();
+    }, 700);
+  },
+  // 软删除整条会话（含全部消息与分析结果）+ 二次确认 + 系统操作日志（§8A.6）
+  openB2bDeleteModal(conversationId) {
+    if (!this.canOperateB2bChat()) return CRMUI.toast("当前角色为只读，不可删除会话");
+    const conversation = this.b2bConversations().find(item => item.id === conversationId);
+    if (!conversation) return;
+    CRMUI.modal("删除会话", `
+      <p>删除后该会话及其聊天记录、分析结果将不再展示，确认删除？</p>
+      <p class="muted small">${this.escapeHtml(conversation.conversationId)} · 租户 ${this.escapeHtml(conversation.tenantId)}</p>
+    `, () => {
+      conversation.deleted = true;
+      (CRM_MOCK.operateLogs || []).unshift({
+        id: `op-b2b-${Date.now()}`,
+        user: CRM_MOCK.currentUser?.name || "",
+        type: "删除",
+        object: "b2b 聊天记录",
+        objectName: conversation.conversationId,
+        content: `删除会话（软删除），租户 ${conversation.tenantId}`,
+        ip: "-",
+        operateTime: `${this.b2bNowText()}:00`
+      });
+      if (this.b2bState.selected === conversation.id) this.b2bState.selected = "";
+      CRMUI.closeModal();
+      CRMUI.toast("会话已删除");
+      this.renderB2bList();
     });
   }
 };

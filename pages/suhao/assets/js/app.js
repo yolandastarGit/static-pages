@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     analytics: CRMAnalyticsPage,
     email: window.CRMCommunicationPage,
     whatsapp: window.CRMCommunicationPage,
+    b2bChat: window.CRMCommunicationPage,
     leads: window.CRMCrmPage,
     customers: window.CRMCrmPage,
     ai: window.CRMAdminPage

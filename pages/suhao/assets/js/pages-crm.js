@@ -57,7 +57,7 @@ window.CRMCrmPage = {
       updateTimeEnd: "",
       selected: new Set()
     };
-    const channelOpts = ["邮件", "WhatsApp", "官网询盘", "自然询盘", "展会", "客户转介绍", "其他"].map(v => ({ value: v, label: v }));
+    const channelOpts = this.dictLeafItems("sourceChannel").map(item => ({ value: item.name, label: item.name }));
     const tagOpts = this.leadTagOptions().map(tag => ({ value: tag, label: tag }));
     root.innerHTML = `
       <div class="tabs" id="leadTabs">${tabs.map(s => `<div class="tab ${s === this.leadState.status ? "active" : ""}" data-status="${s}">${s}</div>`).join("")}</div>
@@ -178,7 +178,7 @@ window.CRMCrmPage = {
             <label class="filter-item"><span>站点</span><select id="poolSite"><option value="">全部站点</option>${CRMUI.optionList(CRM_MOCK.sites)}</select></label>
             <label class="filter-item"><span>关键词</span><input id="poolSearch" placeholder="搜索线索编号、联系人、企业名称"></label>
             <label class="filter-item"><span>入池时间</span><span class="range-picker"><input type="date" id="poolStart" value="${monthRange.start}"><span class="range-separator">-</span><input type="date" id="poolEnd" value="${monthRange.end}"></span></label>
-            <label class="filter-item"><span>来源渠道</span><select id="poolChannel"><option value="">全部来源渠道</option><option>邮件</option><option>WhatsApp</option><option>官网询盘</option><option>自然询盘</option><option>展会</option><option>客户转介绍</option><option>其他</option></select></label>
+            <label class="filter-item"><span>来源渠道</span><select id="poolChannel"><option value="">全部来源渠道</option>${this.dictLeafItems("sourceChannel").map(item => `<option>${item.name}</option>`).join("")}</select></label>
             <label class="filter-item"><span>意向产品</span><select id="poolProduct"><option value="">全部意向产品</option>${(CRM_MOCK.purchaseIntentOptions || []).map(item => `<option>${item}</option>`).join("")}</select></label>
             <label class="filter-item"><span>状态</span><select id="poolStatus"><option value="">全部状态</option><option>待分配</option><option>无效</option><option>丢失</option></select></label>
             <label class="filter-item"><span>阶段</span><select id="poolStage"><option value="">全部阶段</option>${this.dictItems("followStage").map(item => `<option value="${item.name}">${item.name}</option>`).join("")}</select></label>

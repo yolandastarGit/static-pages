@@ -183,7 +183,7 @@ window.CRM_MOCK = {
       { id: "as1", code: "mail_intent", name: "邮件意向分析", sort: 10, status: "启用", builtin: true },
       { id: "as2", code: "wa_intent", name: "WhatsApp 意向分析", sort: 20, status: "启用", builtin: true },
       { id: "as3", code: "company_extract", name: "AI 自动提取企业信息", sort: 30, status: "启用", builtin: true, remark: "一期闲置：画像企业块改 Apollo，可不绑定能力" },
-      { id: "as4", code: "batch_refine", name: "批量 AI 提炼", sort: 40, status: "启用", builtin: true }
+      { id: "as4", code: "batch_refine", name: "批量 AI 提炼", sort: 40, status: "启用", builtin: true, remark: "触发入口：邮件列表【批量 AI 提炼】；b2b 聊天记录会话分析（定时/手动，复用本场景路由，不新增场景）" }
     ]},
     { id: "dict-ai-provider", code: "aiProvider", name: "AI 服务商", domain: "系统域", tier: "business", sort: 170, updatedAt: "2026-07-15 10:00", updatedBy: "系统管理员", items: [
       { id: "ap1", code: "openai", name: "OpenAI / Azure OpenAI", sort: 10, status: "启用", builtin: true },
@@ -325,6 +325,7 @@ window.CRM_MOCK = {
     { id: "br04", name: "渠道定义规则", value: "系统默认", desc: "获客分析消息渠道分类映射（邮件/WhatsApp）", effect: "立即生效" },
     { id: "br04b", name: "客户活跃度判定天数", value: "90 天", desc: "客户在该天数内有跟进/消息互动记为活跃，超过记为沉默；用于客户经营·客户活跃度分析", effect: "立即生效" },
     { id: "br05", name: "AI 功能启用", value: "开启", desc: "AI 总开关；关闭后消息意向分析（邮件/WhatsApp）、批量 AI 提炼等全部停用，不自动识别询盘、不自动创建线索，转人工兜底创建。不控制 Apollo 客户画像（见集成配置）", effect: "立即生效" },
+    { id: "br05b", name: "AI 调用分析时间频次（b2b 聊天记录）", code: "b2bchat_ai_analysis_interval", value: "60 分钟", min: 1, max: 1440, desc: "仅作用于 b2b 聊天记录的定时自动分析周期；数字类型，取值 1–1440，单位分钟。不影响 b2b 的【手动分析】，也不改变邮件/WhatsApp 接入即时分析口径", effect: "立即生效" },
     { id: "br06", name: "钉钉推送启用", value: "开启", desc: "关闭后不再发送钉钉推送", effect: "立即生效" }
   ],
   systemConfig: [
@@ -514,6 +515,7 @@ window.CRM_MOCK = {
       leadId: "l01",
       attachments: ["drawing-v3.pdf", "spec-sheet.xlsx"],
       aiTags: ["高意向", "批量采购", "需资质"],
+      aiIntentProduct: "CNC 铝制外壳",
       aiSummary: "客户明确给出季度采购量，关注 MOQ、交期、认证和样品政策，建议优先回复并同步技术规格确认。"
     },
     {
@@ -531,6 +533,7 @@ window.CRM_MOCK = {
       leadId: "l02",
       attachments: ["reference-photo.jpg"],
       aiTags: ["节日订单", "定制包装"],
+      aiIntentProduct: "毛绒玩具",
       aiSummary: "客户关注私标、认证与包装设计，具备明确活动节点，可作为高优先级商机推进。"
     },
     {
@@ -548,6 +551,7 @@ window.CRM_MOCK = {
       leadId: "",
       attachments: [],
       aiTags: ["来源未识别", "信息不足"],
+      aiIntentProduct: "",
       aiSummary: "采购意图存在但身份信息不足，发件域名无法匹配站点，建议先确认公司与应用场景。"
     },
     {
@@ -555,6 +559,7 @@ window.CRM_MOCK = {
       mailbox: "sales@industrial.example.com",
       folder: "sent",
       from: "管理员 <sales@industrial.example.com>",
+      to: "Elena Rodriguez <elena@aeromex-parts.com>",
       senderName: "管理员",
       subject: "Re: Inquiry for custom CNC aluminum parts",
       summary: "Thanks for your inquiry. We can support CNC aluminum housing...",
@@ -565,6 +570,7 @@ window.CRM_MOCK = {
       leadId: "l01",
       attachments: ["question-list.docx"],
       aiTags: ["已回复"],
+      aiIntentProduct: "CNC 铝制外壳",
       aiSummary: "我方已完成首轮回复，下一步等待客户补充图纸细节。"
     },
     {
@@ -582,6 +588,7 @@ window.CRM_MOCK = {
       leadId: "l01",
       attachments: [],
       aiTags: ["草稿"],
+      aiIntentProduct: "CNC 铝件样品",
       aiSummary: "草稿内容围绕样品政策与批量订单抵扣规则。"
     },
     {
@@ -599,6 +606,7 @@ window.CRM_MOCK = {
       leadId: "",
       attachments: [],
       aiTags: ["无效营销"],
+      aiIntentProduct: "",
       aiSummary: "该邮件为营销推广内容，不建议生成线索。"
     }
   ],
@@ -618,6 +626,7 @@ window.CRM_MOCK = {
       customerId: "",
       lastMessageTime: "2026-07-02 13:37",
       aiTags: ["高意向", "采购经理"],
+      aiIntentProduct: "毛绒玩具",
       aiSummary: "联系人连续询问报价、包装和交期，采购窗口较近，建议今天完成报价并确认样品费。",
       messages: [
         { id: "wm01", from: "customer", text: "Hi, can you make plush toys with our logo?", time: "09:20" },
@@ -640,10 +649,95 @@ window.CRM_MOCK = {
       customerId: "c02",
       lastMessageTime: "2026-07-01 11:26",
       aiTags: ["老客户", "复购"],
+      aiIntentProduct: "五金支架",
       aiSummary: "该客户已有合同记录，本次咨询为复购扩展，适合由原负责人直接跟进。",
       messages: [
         { id: "wm04", from: "customer", text: "We need another batch of brackets in August.", time: "昨天" },
         { id: "wm05", from: "me", text: "I will check previous contract and send the updated quote.", time: "昨天" }
+      ]
+    }
+  ],
+  // b2b 聊天记录：外部 AI 客服写入，与线索/客户/站点无关联，仅展示 + AI 分析（PRD §8A）
+  b2bChatConversations: [
+    {
+      id: "b2b01",
+      tenantId: "TENANT-8842",
+      conversationId: "CONV-20260727-000913",
+      lastMessageTime: "2026-07-27 14:52",
+      deleted: false,
+      aiAnalyzedAt: "2026-07-27 15:00",
+      aiSummary: "访客咨询不锈钢法兰的规格与起订量，明确提出 DN50/PN16 需求与 500 件试单意向，关注交期与是否提供材质报告。",
+      aiIntentProduct: "不锈钢法兰",
+      aiTags: ["明确采购", "五金件", "关注交期"],
+      messages: [
+        { id: "b2bm01", from: "customer", type: "text", text: "你好，请问你们的不锈钢法兰有 DN50 PN16 的现货吗？", time: "2026-07-27 14:31" },
+        { id: "b2bm02", from: "ai", type: "text", text: "您好，DN50 PN16 属于常备规格，材质可选 304 / 316L。请问您需要的数量大概是多少？", time: "2026-07-27 14:32" },
+        { id: "b2bm03", from: "customer", type: "text", text: "先试单 500 件，316L。能提供材质报告吗？", time: "2026-07-27 14:38" },
+        { id: "b2bm04", from: "customer", type: "file", fileName: "法兰图纸-DN50.pdf", fileSize: "412 KB", time: "2026-07-27 14:40" },
+        { id: "b2bm05", from: "ai", type: "text", text: "可以提供第三方材质报告。500 件常规交期 15 个工作日，图纸我已收到，会同步给工程确认。", time: "2026-07-27 14:52" }
+      ]
+    },
+    {
+      id: "b2b02",
+      tenantId: "TENANT-8842",
+      conversationId: "CONV-20260727-000876",
+      lastMessageTime: "2026-07-27 10:18",
+      deleted: false,
+      aiAnalyzedAt: "",
+      aiSummary: "",
+      aiIntentProduct: "",
+      aiTags: [],
+      messages: [
+        { id: "b2bm06", from: "customer", type: "text", text: "Do you ship to Vietnam?", time: "2026-07-27 10:05" },
+        { id: "b2bm07", from: "ai", type: "text", text: "Yes, we ship to Vietnam by sea and by air. Which product are you interested in?", time: "2026-07-27 10:06" },
+        { id: "b2bm08", from: "customer", type: "image", fileName: "sample-photo.jpg", text: "[图片] sample-photo.jpg", time: "2026-07-27 10:18" }
+      ]
+    },
+    {
+      id: "b2b03",
+      tenantId: "TENANT-9017",
+      conversationId: "CONV-20260726-000355",
+      lastMessageTime: "2026-07-26 17:44",
+      deleted: false,
+      aiAnalyzedAt: "2026-07-26 18:00",
+      aiSummary: "访客询问注塑件开模费用与打样周期，尚未给出具体产品与数量，采购意向处于早期阶段，建议先引导补充图纸与年用量。",
+      aiIntentProduct: "注塑件",
+      aiTags: ["询价", "需补充需求"],
+      messages: [
+        { id: "b2bm09", from: "customer", type: "text", text: "开一套注塑模具大概多少钱？", time: "2026-07-26 17:30" },
+        { id: "b2bm10", from: "ai", type: "text", text: "模具费用与产品尺寸、结构复杂度、腔数相关。方便提供 3D 图纸或产品照片吗？", time: "2026-07-26 17:31" },
+        { id: "b2bm11", from: "customer", type: "text", text: "图纸还在画，先问下打样要多久。", time: "2026-07-26 17:44" }
+      ]
+    },
+    {
+      id: "b2b04",
+      tenantId: "TENANT-9017",
+      conversationId: "CONV-20260725-000208",
+      lastMessageTime: "2026-07-25 09:12",
+      deleted: false,
+      aiAnalyzedAt: "2026-07-25 09:30",
+      aiSummary: "访客为同行比价，反复索取底价但不提供公司与用量信息，采购意向弱，判定为低质量会话。",
+      aiIntentProduct: "",
+      aiTags: ["低意向", "同行比价"],
+      messages: [
+        { id: "b2bm12", from: "customer", type: "text", text: "最低价多少？", time: "2026-07-25 09:02" },
+        { id: "b2bm13", from: "ai", type: "text", text: "报价需要结合规格与数量，方便说明一下具体需求吗？", time: "2026-07-25 09:03" },
+        { id: "b2bm14", from: "customer", type: "text", text: "你先报个底价。", time: "2026-07-25 09:12" }
+      ]
+    },
+    {
+      id: "b2b05",
+      tenantId: "TENANT-7601",
+      conversationId: "CONV-20251230-000042",
+      lastMessageTime: "2025-12-30 16:20",
+      deleted: false,
+      aiAnalyzedAt: "2025-12-30 16:40",
+      aiSummary: "访客咨询年度框架采购的付款方式与账期，倾向 30% 预付 + 尾款见提单，需商务确认账期政策。",
+      aiIntentProduct: "包装耗材",
+      aiTags: ["账期关注", "年度框架"],
+      messages: [
+        { id: "b2bm15", from: "customer", type: "text", text: "年度框架合同可以做账期吗？", time: "2025-12-30 16:05" },
+        { id: "b2bm16", from: "ai", type: "text", text: "常规为 30% 预付、尾款见提单副本。年度框架可另议，我帮您转商务同事确认。", time: "2025-12-30 16:20" }
       ]
     }
   ],
@@ -1013,23 +1107,23 @@ window.CRM_MOCK = {
   mock.mailboxes = mock.emailAccounts.filter(account => account.status === "启用").map(account => account.email);
 
   appendById("emails", [
-    { id: "m07", mailbox: "quotes@auto-parts.example.com", folder: "inbox", from: "Marco Silva <procurement@andesfleet.cl>", senderName: "Marco Silva", subject: "RFQ for brake caliper brackets", summary: "Please quote 18,000 brake caliper brackets with PPAP documents...", body: "We are sourcing brake caliper brackets for fleet maintenance. Please quote 18,000 pcs with PPAP documents and delivery schedule.", time: "2026-07-03 09:15", read: false, siteId: "s04", leadId: "l05", attachments: ["rfq-caliper.pdf"], aiTags: ["批量采购", "汽车配件"], aiSummary: "客户明确数量和 PPAP 要求，可优先分配汽车零部件业务员跟进。" },
-    { id: "m08", mailbox: "inquiry@home.example.com", folder: "inbox", from: "Emma Brown <buyer@casa-global.co.uk>", senderName: "Emma Brown", subject: "Kitchen organizer private label", summary: "We need private label kitchen organizers for Q4 retail shelves...", body: "Please quote kitchen organizers with private label packaging. First batch 12,000 sets, target shipment in September.", time: "2026-07-03 10:05", read: true, siteId: "s05", leadId: "l06", attachments: ["package-reference.jpg"], aiTags: ["私标", "Q4 订单"], aiSummary: "客户有明确上市节点和数量，建议同步包装方案和打样周期。" },
-    { id: "m09", mailbox: "sales@electronics.example.com", folder: "inbox", from: "Daniel Park <daniel@koreatech.kr>", senderName: "Daniel Park", subject: "Connector samples request", summary: "Could you provide USB-C connector samples and datasheet?", body: "Could you provide USB-C connector samples and datasheet? We are qualifying suppliers for a smart device project.", time: "2026-07-03 11:25", read: false, siteId: "s06", leadId: "l07", attachments: ["connector-spec.xlsx"], aiTags: ["样品评估", "电子元件"], aiSummary: "客户处于供应商导入阶段，需快速提供规格书和样品政策。" },
-    { id: "m10", mailbox: "orders@medical.example.com", folder: "inbox", from: "Dr. Priya Nair <sourcing@medline-in.in>", senderName: "Dr. Priya Nair", subject: "Disposable nitrile gloves tender", summary: "Tender for disposable nitrile gloves, monthly 200 cartons...", body: "We are preparing a tender for disposable nitrile gloves. Monthly demand is about 200 cartons. Please provide certificates and payment terms.", time: "2026-07-03 13:40", read: true, siteId: "s07", leadId: "l08", attachments: ["tender-terms.pdf"], aiTags: ["招标", "认证关注"], aiSummary: "客户需要资质和付款条款，建议由医疗耗材负责人跟进投标资料。" },
-    { id: "m11", mailbox: "contact@outdoor.example.com", folder: "inbox", from: "Noah Wilson <noah@trailmart.com.au>", senderName: "Noah Wilson", subject: "Camping cookware quote", summary: "Quote lightweight camping cookware set, 6,000 sets...", body: "We need a quote for lightweight camping cookware set, 6,000 sets, with retail box. Please include lead time.", time: "2026-07-03 15:18", read: false, siteId: "s08", leadId: "l09", attachments: [], aiTags: ["户外装备", "价格咨询"], aiSummary: "客户询价信息完整，可按 SKU 和包装方案推进报价。" },
-    { id: "m12", mailbox: "rfq@packaging.example.com", folder: "inbox", from: "Sofia Rossi <sofia@italiafoods.it>", senderName: "Sofia Rossi", subject: "Custom kraft paper bags", summary: "Looking for kraft paper bags with FSC certificate...", body: "We are looking for custom kraft paper bags with FSC certificate. Please quote 50,000 pcs and 100,000 pcs.", time: "2026-07-04 08:50", read: true, siteId: "s09", leadId: "l10", attachments: ["bag-size.pdf"], aiTags: ["包装材料", "认证关注"], aiSummary: "客户关注环保认证和阶梯报价，建议同步 MOQ、交期和打样费。" },
-    { id: "m13", mailbox: "sales@industrial.example.com", folder: "inbox", from: "Henry Adams <henry@polar-mining.ca>", senderName: "Henry Adams", subject: "Machined stainless valve body", summary: "Need stainless valve body samples before annual order...", body: "We need stainless valve body samples before confirming annual order. Please share machining tolerance and QC process.", time: "2026-07-04 10:32", read: false, siteId: "s01", leadId: "l11", attachments: ["valve-drawing.step"], aiTags: ["样品评估", "工业制造"], aiSummary: "客户询问样品与质检流程，属于工业站高价值技术询盘。" },
-    { id: "m14", mailbox: "info@toys.example.com", folder: "inbox", from: "Marta Lopez <marta@fiesta-shop.mx>", senderName: "Marta Lopez", subject: "Holiday plush assortment", summary: "Need holiday plush assortment with mixed SKUs...", body: "Need holiday plush assortment with mixed SKUs. Please quote 20,000 pcs and provide EN71 certificate.", time: "2026-07-04 11:46", read: false, siteId: "s02", leadId: "l12", attachments: [], aiTags: ["节日订单", "批量采购"], aiSummary: "客户需求明确且数量较大，可进入报价阶段。" },
-    { id: "m15", mailbox: "quotes@auto-parts.example.com", folder: "sent", from: "管理员 <quotes@auto-parts.example.com>", senderName: "管理员", subject: "Re: RFQ for brake caliper brackets", summary: "Thanks for your RFQ, we will prepare tooling and PPAP timeline...", body: "Thanks for your RFQ. We will prepare tooling cost, PPAP timeline and mass production schedule.", time: "2026-07-03 09:48", read: true, siteId: "s04", leadId: "l05", attachments: [], aiTags: ["已回复"], aiSummary: "已完成首轮回复，下一步等待客户确认图纸版本。" },
-    { id: "m16", mailbox: "inquiry@home.example.com", folder: "draft", from: "管理员 <inquiry@home.example.com>", senderName: "管理员", subject: "Draft: Kitchen organizer quotation", summary: "Draft quotation for 12,000 sets with private label packaging...", body: "Draft quotation for 12,000 sets with private label packaging and September shipment.", time: "2026-07-03 16:20", read: true, siteId: "s05", leadId: "l06", attachments: [], aiTags: ["草稿"], aiSummary: "草稿报价待补充包装费用。" },
-    { id: "m17", mailbox: "sales@electronics.example.com", folder: "trash", from: "ads@unknown-tools.net", senderName: "Unknown Ads", subject: "SEO service for suppliers", summary: "We can promote your B2B website globally...", body: "We can promote your B2B website globally with SEO service.", time: "2026-07-02 18:05", read: true, siteId: "s06", leadId: "", attachments: [], aiTags: ["无效营销"], aiSummary: "推广邮件，不建议进入线索。" }
+    { id: "m07", mailbox: "quotes@auto-parts.example.com", folder: "inbox", from: "Marco Silva <procurement@andesfleet.cl>", senderName: "Marco Silva", subject: "RFQ for brake caliper brackets", summary: "Please quote 18,000 brake caliper brackets with PPAP documents...", body: "We are sourcing brake caliper brackets for fleet maintenance. Please quote 18,000 pcs with PPAP documents and delivery schedule.", time: "2026-07-03 09:15", read: false, siteId: "s04", leadId: "l05", attachments: ["rfq-caliper.pdf"], aiTags: ["批量采购", "汽车配件"], aiIntentProduct: "刹车卡钳支架", aiSummary: "客户明确数量和 PPAP 要求，可优先分配汽车零部件业务员跟进。" },
+    { id: "m08", mailbox: "inquiry@home.example.com", folder: "inbox", from: "Emma Brown <buyer@casa-global.co.uk>", senderName: "Emma Brown", subject: "Kitchen organizer private label", summary: "We need private label kitchen organizers for Q4 retail shelves...", body: "Please quote kitchen organizers with private label packaging. First batch 12,000 sets, target shipment in September.", time: "2026-07-03 10:05", read: true, siteId: "s05", leadId: "l06", attachments: ["package-reference.jpg"], aiTags: ["私标", "Q4 订单"], aiIntentProduct: "厨房收纳盒", aiSummary: "客户有明确上市节点和数量，建议同步包装方案和打样周期。" },
+    { id: "m09", mailbox: "sales@electronics.example.com", folder: "inbox", from: "Daniel Park <daniel@koreatech.kr>", senderName: "Daniel Park", subject: "Connector samples request", summary: "Could you provide USB-C connector samples and datasheet?", body: "Could you provide USB-C connector samples and datasheet? We are qualifying suppliers for a smart device project.", time: "2026-07-03 11:25", read: false, siteId: "s06", leadId: "l07", attachments: ["connector-spec.xlsx"], aiTags: ["样品评估", "电子元件"], aiIntentProduct: "USB-C 连接器", aiSummary: "客户处于供应商导入阶段，需快速提供规格书和样品政策。" },
+    { id: "m10", mailbox: "orders@medical.example.com", folder: "inbox", from: "Dr. Priya Nair <sourcing@medline-in.in>", senderName: "Dr. Priya Nair", subject: "Disposable nitrile gloves tender", summary: "Tender for disposable nitrile gloves, monthly 200 cartons...", body: "We are preparing a tender for disposable nitrile gloves. Monthly demand is about 200 cartons. Please provide certificates and payment terms.", time: "2026-07-03 13:40", read: true, siteId: "s07", leadId: "l08", attachments: ["tender-terms.pdf"], aiTags: ["招标", "认证关注"], aiIntentProduct: "丁腈手套", aiSummary: "客户需要资质和付款条款，建议由医疗耗材负责人跟进投标资料。" },
+    { id: "m11", mailbox: "contact@outdoor.example.com", folder: "inbox", from: "Noah Wilson <noah@trailmart.com.au>", senderName: "Noah Wilson", subject: "Camping cookware quote", summary: "Quote lightweight camping cookware set, 6,000 sets...", body: "We need a quote for lightweight camping cookware set, 6,000 sets, with retail box. Please include lead time.", time: "2026-07-03 15:18", read: false, siteId: "s08", leadId: "l09", attachments: [], aiTags: ["户外装备", "价格咨询"], aiIntentProduct: "户外炊具套装", aiSummary: "客户询价信息完整，可按 SKU 和包装方案推进报价。" },
+    { id: "m12", mailbox: "rfq@packaging.example.com", folder: "inbox", from: "Sofia Rossi <sofia@italiafoods.it>", senderName: "Sofia Rossi", subject: "Custom kraft paper bags", summary: "Looking for kraft paper bags with FSC certificate...", body: "We are looking for custom kraft paper bags with FSC certificate. Please quote 50,000 pcs and 100,000 pcs.", time: "2026-07-04 08:50", read: true, siteId: "s09", leadId: "l10", attachments: ["bag-size.pdf"], aiTags: ["包装材料", "认证关注"], aiIntentProduct: "牛皮纸袋", aiSummary: "客户关注环保认证和阶梯报价，建议同步 MOQ、交期和打样费。" },
+    { id: "m13", mailbox: "sales@industrial.example.com", folder: "inbox", from: "Henry Adams <henry@polar-mining.ca>", senderName: "Henry Adams", subject: "Machined stainless valve body", summary: "Need stainless valve body samples before annual order...", body: "We need stainless valve body samples before confirming annual order. Please share machining tolerance and QC process.", time: "2026-07-04 10:32", read: false, siteId: "s01", leadId: "l11", attachments: ["valve-drawing.step"], aiTags: ["样品评估", "工业制造"], aiIntentProduct: "不锈钢阀体", aiSummary: "客户询问样品与质检流程，属于工业站高价值技术询盘。" },
+    { id: "m14", mailbox: "info@toys.example.com", folder: "inbox", from: "Marta Lopez <marta@fiesta-shop.mx>", senderName: "Marta Lopez", subject: "Holiday plush assortment", summary: "Need holiday plush assortment with mixed SKUs...", body: "Need holiday plush assortment with mixed SKUs. Please quote 20,000 pcs and provide EN71 certificate.", time: "2026-07-04 11:46", read: false, siteId: "s02", leadId: "l12", attachments: [], aiTags: ["节日订单", "批量采购"], aiIntentProduct: "节日毛绒玩具", aiSummary: "客户需求明确且数量较大，可进入报价阶段。" },
+    { id: "m15", mailbox: "quotes@auto-parts.example.com", folder: "sent", from: "管理员 <quotes@auto-parts.example.com>", to: "Marco Silva <procurement@andesfleet.cl>", senderName: "管理员", subject: "Re: RFQ for brake caliper brackets", summary: "Thanks for your RFQ, we will prepare tooling and PPAP timeline...", body: "Thanks for your RFQ. We will prepare tooling cost, PPAP timeline and mass production schedule.", time: "2026-07-03 09:48", read: true, siteId: "s04", leadId: "l05", attachments: [], aiTags: ["已回复"], aiIntentProduct: "刹车卡钳支架", aiSummary: "已完成首轮回复，下一步等待客户确认图纸版本。" },
+    { id: "m16", mailbox: "inquiry@home.example.com", folder: "draft", from: "管理员 <inquiry@home.example.com>", to: "Emma Brown <buyer@casa-global.co.uk>", senderName: "管理员", subject: "Draft: Kitchen organizer quotation", summary: "Draft quotation for 12,000 sets with private label packaging...", body: "Draft quotation for 12,000 sets with private label packaging and September shipment.", time: "2026-07-03 16:20", read: true, siteId: "s05", leadId: "l06", attachments: [], aiTags: ["草稿"], aiIntentProduct: "厨房收纳盒", aiSummary: "草稿报价待补充包装费用。" },
+    { id: "m17", mailbox: "sales@electronics.example.com", folder: "trash", from: "ads@unknown-tools.net", senderName: "Unknown Ads", subject: "SEO service for suppliers", summary: "We can promote your B2B website globally...", body: "We can promote your B2B website globally with SEO service.", time: "2026-07-02 18:05", read: true, siteId: "s06", leadId: "", attachments: [], aiTags: ["无效营销"], aiIntentProduct: "", aiSummary: "推广邮件，不建议进入线索。" }
   ]);
 
   appendById("whatsappConversations", [
-    { id: "w03", name: "Marco Silva", phone: "+56 9 2211 3488", company: "Andes Fleet Supply", location: "Santiago, Chile", listTime: "09:48", unreadCount: 2, avatarTone: "blue", previewIcon: "↘", siteId: "s04", leadId: "l05", customerId: "", lastMessageTime: "2026-07-03 09:48", aiTags: ["汽车配件", "批量采购"], aiSummary: "客户补充了年框采购计划，建议确认图纸版本。", messages: [{ id: "wm06", from: "customer", text: "Can you support PPAP level 3?", time: "09:42" }, { id: "wm07", from: "me", text: "Yes, please share the drawing revision.", time: "09:48" }] },
-    { id: "w04", name: "Emma Brown", phone: "+44 7700 900321", company: "Casa Global Retail", location: "London, UK", listTime: "10:18", unreadCount: 0, avatarTone: "violet", previewIcon: "✓✓", siteId: "s05", leadId: "l06", customerId: "", lastMessageTime: "2026-07-03 10:18", aiTags: ["私标", "零售"], aiSummary: "客户确认包装方案，等待报价。", messages: [{ id: "wm08", from: "customer", text: "Please include shelf-ready box cost.", time: "10:10" }, { id: "wm09", from: "me", text: "Noted, we will include it in the quote.", time: "10:18" }] },
-    { id: "w05", name: "Daniel Park", phone: "+82 10 8822 1900", company: "KoreaTech Devices", location: "Seoul, Korea", listTime: "11:31", unreadCount: 5, avatarTone: "cyan", previewIcon: "↘", siteId: "s06", leadId: "l07", customerId: "", lastMessageTime: "2026-07-03 11:31", aiTags: ["样品评估", "电子元件"], aiSummary: "客户正在导入供应商，需要样品与规格书。", messages: [{ id: "wm10", from: "customer", text: "Can you send 20 sample pcs first?", time: "11:31" }] },
+    { id: "w03", name: "Marco Silva", phone: "+56 9 2211 3488", company: "Andes Fleet Supply", location: "Santiago, Chile", listTime: "09:48", unreadCount: 2, avatarTone: "blue", previewIcon: "↘", siteId: "s04", leadId: "l05", customerId: "", lastMessageTime: "2026-07-03 09:48", aiTags: ["汽车配件", "批量采购"], aiIntentProduct: "刹车卡钳支架", aiSummary: "客户补充了年框采购计划，建议确认图纸版本。", messages: [{ id: "wm06", from: "customer", text: "Can you support PPAP level 3?", time: "09:42" }, { id: "wm07", from: "me", text: "Yes, please share the drawing revision.", time: "09:48" }] },
+    { id: "w04", name: "Emma Brown", phone: "+44 7700 900321", company: "Casa Global Retail", location: "London, UK", listTime: "10:18", unreadCount: 0, avatarTone: "violet", previewIcon: "✓✓", siteId: "s05", leadId: "l06", customerId: "", lastMessageTime: "2026-07-03 10:18", aiTags: ["私标", "零售"], aiIntentProduct: "厨房收纳盒", aiSummary: "客户确认包装方案，等待报价。", messages: [{ id: "wm08", from: "customer", text: "Please include shelf-ready box cost.", time: "10:10" }, { id: "wm09", from: "me", text: "Noted, we will include it in the quote.", time: "10:18" }] },
+    { id: "w05", name: "Daniel Park", phone: "+82 10 8822 1900", company: "KoreaTech Devices", location: "Seoul, Korea", listTime: "11:31", unreadCount: 5, avatarTone: "cyan", previewIcon: "↘", siteId: "s06", leadId: "l07", customerId: "", lastMessageTime: "2026-07-03 11:31", aiTags: ["样品评估", "电子元件"], aiIntentProduct: "USB-C 连接器", aiSummary: "客户正在导入供应商，需要样品与规格书。", messages: [{ id: "wm10", from: "customer", text: "Can you send 20 sample pcs first?", time: "11:31" }] },
     { id: "w06", name: "Priya Nair", phone: "+91 98765 10234", company: "Medline India", location: "Mumbai, India", listTime: "13:55", unreadCount: 1, avatarTone: "sage", previewIcon: "↘", siteId: "s07", leadId: "l08", customerId: "", lastMessageTime: "2026-07-03 13:55", aiTags: ["招标", "认证关注"], aiSummary: "客户需要投标资料和证书扫描件。", messages: [{ id: "wm11", from: "customer", text: "Please share CE and ISO certificates.", time: "13:55" }] },
     { id: "w07", name: "Noah Wilson", phone: "+61 412 900 778", company: "TrailMart", location: "Sydney, Australia", listTime: "15:22", unreadCount: 0, avatarTone: "amber", previewIcon: "✓✓", siteId: "s08", leadId: "l09", customerId: "", lastMessageTime: "2026-07-03 15:22", aiTags: ["户外装备"], aiSummary: "客户等待 6,000 套户外炊具报价。", messages: [{ id: "wm12", from: "customer", text: "Can you quote with retail box?", time: "15:18" }, { id: "wm13", from: "me", text: "Yes, please confirm color mix.", time: "15:22" }] },
     { id: "w08", name: "Sofia Rossi", phone: "+39 347 110 2290", company: "Italia Foods", location: "Milan, Italy", listTime: "08:58", unreadCount: 3, avatarTone: "green", previewIcon: "↘", siteId: "s09", leadId: "l10", customerId: "", lastMessageTime: "2026-07-04 08:58", aiTags: ["包装材料"], aiSummary: "客户要求 FSC 证书和阶梯报价。", messages: [{ id: "wm14", from: "customer", text: "FSC certificate is mandatory.", time: "08:58" }] },
@@ -1039,13 +1133,13 @@ window.CRM_MOCK = {
 
   appendById("leads", [
     { id: "l05", no: "LEAD-2026-0914", company: "Andes Fleet Supply", contact: "Marco Silva", email: "procurement@andesfleet.cl", phone: "+56 9 2211 3488", siteId: "s04", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "待跟进", stage: "待首响", products: ["刹车卡钳支架", "汽车冲压件"], purchaseIntent: "明确采购", aiTags: ["批量采购", "汽车配件"], manualTags: ["拉美市场"], createdAt: "2026-07-03 09:15", updatedAt: "2026-07-03 09:48", lastFollowAt: "2026-07-03 09:48", nextFollowAt: "2026-07-05 10:00", customerId: "", aiSummary: "客户要求 PPAP 文件与年度采购计划，适合快速技术评估。" },
-    { id: "l06", no: "LEAD-2026-0915", company: "Casa Global Retail", contact: "Emma Brown", email: "buyer@casa-global.co.uk", phone: "+44 7700 900321", siteId: "s05", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["厨房收纳盒", "私标包装"], purchaseIntent: "价格咨询", aiTags: ["私标", "Q4 订单"], manualTags: ["欧洲市场"], createdAt: "2026-07-03 10:05", updatedAt: "2026-07-03 16:20", lastFollowAt: "2026-07-03 16:20", nextFollowAt: "2026-07-05 15:00", customerId: "", aiSummary: "客户需要私标包装并关注上架时间，报价需包含包装方案。" },
+    { id: "l06", no: "LEAD-2026-0915", company: "Casa Global Retail", contact: "Emma Brown", email: "buyer@casa-global.co.uk", phone: "+44 7700 900321", siteId: "s05", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "跟进中", stage: "报价阶段", products: ["厨房收纳盒", "私标包装"], purchaseIntent: "价格咨询", aiTags: ["私标", "Q4 订单"], manualTags: ["欧洲市场"], createdAt: "2026-07-03 10:05", updatedAt: "2026-07-03 16:20", lastFollowAt: "2026-07-03 16:20", nextFollowAt: "2026-07-05 15:00", customerId: "", aiSummary: "客户需要私标包装并关注上架时间，报价需包含包装方案。" },
     { id: "l07", no: "LEAD-2026-0916", company: "KoreaTech Devices", contact: "Daniel Park", email: "daniel@koreatech.kr", phone: "+82 10 8822 1900", siteId: "s06", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["USB-C 连接器"], purchaseIntent: "样品评估", aiTags: ["样品评估", "电子元件"], manualTags: ["东南亚市场"], createdAt: "2026-07-03 11:25", updatedAt: "2026-07-03 11:31", lastFollowAt: "2026-07-03 11:31", nextFollowAt: "2026-07-04 16:00", customerId: "", aiSummary: "客户正在进行供应商导入，需优先提供样品和规格书。" },
     { id: "l08", no: "LEAD-2026-0917", company: "Medline India", contact: "Priya Nair", email: "sourcing@medline-in.in", phone: "+91 98765 10234", siteId: "s07", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "待跟进", stage: "需求确认", products: ["丁腈手套", "医疗耗材"], purchaseIntent: "明确采购", aiTags: ["招标", "认证关注"], manualTags: [], createdAt: "2026-07-03 13:40", updatedAt: "2026-07-03 13:55", lastFollowAt: "2026-07-03 13:55", nextFollowAt: "2026-07-04 11:00", customerId: "", aiSummary: "客户准备招标，需要证书和付款条款。" },
-    { id: "l09", no: "LEAD-2026-0918", company: "TrailMart", contact: "Noah Wilson", email: "noah@trailmart.com.au", phone: "+61 412 900 778", siteId: "s08", channel: "WhatsApp", entryMethod: "询盘转入", ownerId: "u04", status: "已联系", stage: "需求确认", products: ["户外炊具套装"], purchaseIntent: "价格咨询", aiTags: ["户外装备"], manualTags: ["样品优先"], createdAt: "2026-07-03 15:18", updatedAt: "2026-07-03 15:22", lastFollowAt: "2026-07-03 15:22", nextFollowAt: "2026-07-05 09:30", customerId: "", aiSummary: "客户关注包装和交期，报价前需确认颜色组合。" },
+    { id: "l09", no: "LEAD-2026-0918", company: "TrailMart", contact: "Noah Wilson", email: "noah@trailmart.com.au", phone: "+61 412 900 778", siteId: "s08", channel: "WhatsApp", entryMethod: "询盘转入", ownerId: "u04", status: "跟进中", stage: "需求确认", products: ["户外炊具套装"], purchaseIntent: "价格咨询", aiTags: ["户外装备"], manualTags: ["样品优先"], createdAt: "2026-07-03 15:18", updatedAt: "2026-07-03 15:22", lastFollowAt: "2026-07-03 15:22", nextFollowAt: "2026-07-05 09:30", customerId: "", aiSummary: "客户关注包装和交期，报价前需确认颜色组合。" },
     { id: "l10", no: "LEAD-2026-0919", company: "Italia Foods", contact: "Sofia Rossi", email: "sofia@italiafoods.it", phone: "+39 347 110 2290", siteId: "s09", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "跟进中", stage: "报价阶段", products: ["牛皮纸袋", "食品包装"], purchaseIntent: "明确采购", aiTags: ["包装材料", "认证关注"], manualTags: ["欧洲市场"], createdAt: "2026-07-04 08:50", updatedAt: "2026-07-04 08:58", lastFollowAt: "2026-07-04 08:58", nextFollowAt: "2026-07-05 14:30", customerId: "", aiSummary: "客户关注 FSC 认证和阶梯报价，需同步 MOQ 与打样费。" },
     { id: "l11", no: "LEAD-2026-0920", company: "Polar Mining", contact: "Henry Adams", email: "henry@polar-mining.ca", phone: "+1 604 882 1900", siteId: "s01", channel: "邮件", entryMethod: "询盘转入", ownerId: "u02", status: "跟进中", stage: "打样阶段", products: ["不锈钢阀体"], purchaseIntent: "样品评估", aiTags: ["工业制造", "样品评估"], manualTags: ["北美市场"], createdAt: "2026-07-04 10:32", updatedAt: "2026-07-04 10:36", lastFollowAt: "2026-07-04 10:36", nextFollowAt: "2026-07-06 10:30", customerId: "", aiSummary: "客户有技术图纸和样品需求，建议安排工程评审。" },
-    { id: "l12", no: "LEAD-2026-0921", company: "Fiesta Shop", contact: "Marta Lopez", email: "marta@fiesta-shop.mx", phone: "+52 55 4421 0091", siteId: "s02", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "已报价", stage: "报价阶段", products: ["节日毛绒玩具"], purchaseIntent: "明确采购", aiTags: ["节日订单", "批量采购"], manualTags: ["拉美市场"], createdAt: "2026-07-04 11:46", updatedAt: "2026-07-04 11:52", lastFollowAt: "2026-07-04 11:52", nextFollowAt: "2026-07-06 15:00", customerId: "", aiSummary: "客户要求 6 个 SKU 组合和 EN71 证书，适合推进报价确认。" }
+    { id: "l12", no: "LEAD-2026-0921", company: "Fiesta Shop", contact: "Marta Lopez", email: "marta@fiesta-shop.mx", phone: "+52 55 4421 0091", siteId: "s02", channel: "邮件", entryMethod: "询盘转入", ownerId: "u03", status: "跟进中", stage: "报价阶段", products: ["节日毛绒玩具"], purchaseIntent: "明确采购", aiTags: ["节日订单", "批量采购"], manualTags: ["拉美市场"], createdAt: "2026-07-04 11:46", updatedAt: "2026-07-04 11:52", lastFollowAt: "2026-07-04 11:52", nextFollowAt: "2026-07-06 15:00", customerId: "", aiSummary: "客户要求 6 个 SKU 组合和 EN71 证书，适合推进报价确认。" }
   ]);
 
   appendById("followLogs", [

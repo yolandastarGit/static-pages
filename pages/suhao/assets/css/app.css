@@ -2474,11 +2474,93 @@ a {
   background: var(--brand-tint);
 }
 
+.ai-summary-part + .ai-summary-part {
+  margin-top: 10px;
+}
+
+.ai-summary-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .ai-info-grid {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 8px 12px;
   margin: 10px 0;
+}
+
+/* b2b 聊天记录 · 会话列表与消息（PRD §8A） */
+.b2b-conv-item {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-faint);
+  background: #fff;
+  cursor: pointer;
+  transition: background .14s ease;
+}
+
+.b2b-conv-item:hover,
+.b2b-conv-item.active {
+  background: #f7fafc;
+}
+
+.b2b-conv-head,
+.b2b-conv-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.b2b-conv-id {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.b2b-conv-time,
+.b2b-conv-tenant {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.b2b-conv-tenant {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.b2b-conv-digest {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.b2b-msg-sender {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.b2b-earlier-hint {
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.link-btn.danger-text {
+  color: var(--red);
 }
 
 .ai-info-grid span {

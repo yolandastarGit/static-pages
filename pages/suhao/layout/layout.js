@@ -1,7 +1,7 @@
 window.CRMLayout = {
   menu: [
     { key: "workbench", icon: "⌂", label: "工作台" },
-    { label: "沟通中心", icon: "◉", children: [{ key: "email", label: "邮件" }, { key: "whatsapp", label: "WhatsApp" }] },
+    { label: "沟通中心", icon: "◉", children: [{ key: "email", label: "邮件" }, { key: "whatsapp", label: "WhatsApp" }, { key: "b2bChat", label: "b2b 聊天记录" }] },
     { label: "线索中心", icon: "◇", children: [{ key: "leads", label: "线索列表" }, { key: "publicPool", label: "公海池" }] },
     { label: "客户中心", icon: "□", children: [{ key: "customers", label: "客户列表" }, { key: "contracts", label: "合同中心" }] },
     { label: "分析中心", icon: "▣", children: [{ key: "analyticsSales", label: "销售经营" }, { key: "analyticsAcquisition", label: "获客分析" }, { key: "analyticsCustomer", label: "客户经营" }] },
