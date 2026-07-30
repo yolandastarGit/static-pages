@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>璇界AI - 用户端支付与发票设计</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-app="user">
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><b class="brand-mark">◆</b><span>璇界AI - Token网关平台</span></div>
+      <nav class="topnav"><a href="#">首页</a><a href="#">控制台</a><a href="#">模型广场</a><a href="#">文档</a></nav>
+      <div class="top-actions">
+        <button class="icon-btn" title="系统公告"><i data-lucide="bell"></i></button>
+        <button class="icon-btn" title="切换主题"><i data-lucide="monitor"></i></button>
+        <button class="icon-btn" title="切换语言"><i data-lucide="languages"></i></button>
+        <button class="avatar"><i>示</i>示例用户 <span>⌄</span></button>
+      </div>
+    </header>
+    <aside class="sidebar">
+      <div class="nav-section"><div class="nav-label">聊天</div><button class="nav-item"><i data-lucide="message-square"></i>文本对话</button></div>
+      <div class="nav-section"><div class="nav-label">控制台</div><button class="nav-item"><i data-lucide="layout-grid"></i>概览</button><button class="nav-item"><i data-lucide="key-round"></i>API密钥</button><button class="nav-item"><i data-lucide="chart-no-axes-column-increasing"></i>使用记录</button><button class="nav-item"><i data-lucide="square-check-big"></i>视频任务</button></div>
+      <div class="nav-section"><div class="nav-label">个人中心</div><button class="nav-item active" data-route="wallet"><i data-lucide="wallet-cards"></i>兑换&钱包管理</button><button class="nav-item"><i data-lucide="user-round"></i>个人设置</button></div>
+      <button class="sidebar-collapse">‹　收起侧边栏</button>
+    </aside>
+    <main class="content" id="app-content"></main>
+  </div>
+
+  <div class="modal-layer" id="pay-modal">
+    <div class="mask" data-close="pay-modal"></div>
+    <section class="modal">
+      <header class="modal-head"><div class="modal-title">微信扫码支付</div><button class="close" data-close="pay-modal"><i data-lucide="x"></i></button></header>
+      <div class="modal-body" id="pay-modal-body"></div>
+      <footer class="modal-foot"><button class="btn btn-plain" data-close="pay-modal">关闭</button><button class="btn btn-secondary" id="refresh-pay"><i data-lucide="refresh-cw"></i>我已支付，刷新结果</button></footer>
+    </section>
+  </div>
+
+  <div class="modal-layer" id="recharge-records-modal">
+    <div class="mask" data-close="recharge-records-modal"></div>
+    <section class="modal records-modal">
+      <header class="modal-head"><div class="modal-title" id="recharge-modal-title">充值记录</div><button class="close" data-close="recharge-records-modal"><i data-lucide="x"></i></button></header>
+      <div class="modal-body" id="recharge-modal-body"></div>
+      <footer class="modal-foot" id="recharge-modal-foot"><button class="btn btn-plain" data-close="recharge-records-modal">关闭</button></footer>
+    </section>
+  </div>
+
+  <div class="modal-layer" id="redeem-modal">
+    <div class="mask" data-close="redeem-modal"></div>
+    <section class="modal redeem-modal">
+      <header class="modal-head"><div class="modal-title">兑换码充值</div><button class="close" data-close="redeem-modal"><i data-lucide="x"></i></button></header>
+      <div class="modal-body" id="redeem-modal-body"></div>
+      <footer class="modal-foot"><button class="btn btn-plain" data-close="redeem-modal">取消</button><button class="btn btn-primary" id="confirm-redeem" disabled>确认兑换</button></footer>
+    </section>
+  </div>
+
+  <div class="drawer-layer" id="detail-drawer">
+    <div class="mask" data-close="detail-drawer"></div>
+    <aside class="drawer"><header class="drawer-head"><div class="drawer-title" id="drawer-title">详情</div><button class="close" data-close="detail-drawer"><i data-lucide="x"></i></button></header><div class="drawer-body" id="drawer-body"></div><footer class="drawer-foot"><button class="btn btn-plain" data-close="detail-drawer">关闭</button></footer></aside>
+  </div>
+
+  <div class="drawer-layer" id="invoice-drawer">
+    <div class="mask" data-close="invoice-drawer"></div>
+    <aside class="drawer"><header class="drawer-head"><div class="drawer-title">申请电子发票</div><button class="close" data-close="invoice-drawer"><i data-lucide="x"></i></button></header><div class="drawer-body" id="invoice-form"></div><footer class="drawer-foot"><button class="btn btn-plain" data-close="invoice-drawer">取消</button><button class="btn btn-primary" id="submit-invoice"><i data-lucide="send"></i>提交申请</button></footer></aside>
+  </div>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="invoice-domain.js"></script>
+  <script src="user.js"></script>
+</body>
+</html>

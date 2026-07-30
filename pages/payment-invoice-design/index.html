@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在线支付与发票功能原型</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f7fa; color: #1c1f23; font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    main { width: min(760px, calc(100% - 40px)); padding: 32px; border: 1px solid #e7e8ea; border-radius: 18px; background: #fff; box-shadow: 0 12px 36px rgba(28,31,35,.07); }
+    .tag { display: inline-flex; padding: 4px 10px; border-radius: 999px; background: #eaf5ff; color: #0064fa; font-size: 12px; }
+    h1 { margin: 16px 0 10px; font-size: 28px; }
+    p { margin: 0; color: #62666d; line-height: 24px; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
+    a { display: block; padding: 20px; border: 1px solid #e7e8ea; border-radius: 14px; color: #1c1f23; text-decoration: none; transition: .2s; }
+    a:hover { border-color: #0064fa; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,100,250,.1); }
+    a b { display: block; margin-bottom: 7px; font-size: 17px; }
+    a span { color: #62666d; font-size: 13px; line-height: 20px; }
+    @media (max-width: 600px) { main { padding: 22px; } .cards { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">一期 · 静态交互原型</span>
+    <h1>在线支付与财务手动开票</h1>
+    <p>用户提交开票申请，财务审核后在外部税务软件开票，并上传电子发票 PDF 供用户下载。</p>
+    <div class="cards">
+      <a href="user.html"><b>用户端</b><span>在线充值、开票申请、申请记录与发票下载</span></a>
+      <a href="admin.html"><b>财务后台</b><span>申请审核、驳回、退回、取消与发票上传</span></a>
+    </div>
+  </main>
+</body>
+</html>
